@@ -1,0 +1,132 @@
+package git
+
+import (
+	"ccrctl/pkg/coding"
+	"ccrctl/pkg/config"
+	"ccrctl/pkg/logger"
+	"ccrctl/pkg/system"
+	"fmt"
+	"strings"
+)
+
+var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
+
+func Clone(cloneURL, repoPath string) error {
+	logger.Logger.Infof("%s 开始clone", repoPath)
+	logger.Logger.Debugf("git clone --mirror %s %s", cloneURL, repoPath)
+	out, err := system.RunCommand("git", "./", "clone", "--mirror", cloneURL, repoPath)
+	if err != nil {
+		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
+	}
+	logger.Logger.Infof("%s clone成功", repoPath)
+	return nil
+}
+
+func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
+	logger.Logger.Infof("%s 开始push", repoPath)
+	if forcePush {
+		out, err := ForcePush(repoPath, pushURL)
+		if err != nil {
+			return out, err
+		}
+	} else {
+		out, err := NormalPushWithoutForce(repoPath, pushURL)
+		if err != nil {
+			return out, err
+		}
+	}
+	logger.Logger.Infof("%s push成功", repoPath)
+	return output, nil
+}
+
+// 强制推送
+func ForcePush(workDir, pushURL string) (output string, err error) {
+	logger.Logger.Debugf("git push -f %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*", pushURL)
+	output, err = system.RunCommand("git", workDir, "push", "-f", pushURL, "refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*")
+	if err != nil {
+		return output, err
+	}
+	return output, nil
+}
+
+// 普通推送不带-f参数
+func NormalPushWithoutForce(workDir, pushURL string) (output string, err error) {
+	logger.Logger.Debugf("git push %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*", pushURL)
+	output, err = system.RunCommand("git", workDir, "push", pushURL, "refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*")
+	if err != nil {
+		return output, err
+	}
+	return output, nil
+}
+
+func IsLFSRepo(repoPath string) (error, bool) {
+	workDir := repoPath
+	output, err := system.RunCommand("git", workDir, "lfs", "ls-files", "--all")
+	logger.Logger.Debugf("%s 检查是否是LFS仓库\n%s", repoPath, output)
+	if err != nil {
+		return err, false
+	}
+	return nil, len(output) > 0
+}
+
+func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
+	workDir := repoPath
+	logger.Logger.Infof("%s 下载LFS文件", repoPath)
+	output, err := system.RunCommand("git", workDir, "lfs", "fetch", "--all", "origin")
+	logger.Logger.Debugf("%s 下载LFS文件\n%s", repoPath, output)
+	if err != nil && allowIncompletePush {
+		logger.Logger.Warnf("%s 下载LFS文件失败,忽略报错继续执行lfs Push", repoPath)
+		logger.Logger.Infof("%s 正在设置lfs.allowincompletepush为true", repoPath)
+		output, err := system.RunCommand("git", workDir, "config", "lfs.allowincompletepush", "true")
+		if err != nil {
+			return output, err
+		}
+		logger.Logger.Infof("%s 设置lfs.allowincompletepush为true成功", repoPath)
+		return output, nil
+	}
+	if err != nil {
+		logger.Logger.Infof("%s 下载LFS文件失败", repoPath)
+		return output, err
+	}
+	logger.Logger.Infof("%s 下载LFS文件成功", repoPath)
+	return output, err
+}
+
+func PushLFS(repoPath, pushUrl string) (string, error) {
+	logger.Logger.Infof("%s 上传LFS文件", repoPath)
+	workDir := repoPath
+	output, err := system.RunCommand("git", workDir, "lfs", "push", "--all", pushUrl)
+	if err != nil {
+		logger.Logger.Errorf("%s 上传LFS文件失败", repoPath)
+		return output, err
+	}
+	logger.Logger.Infof("%s 上传LFS文件成功", repoPath)
+	return output, err
+}
+
+func FixExceededLimitError(repoPath string) error {
+	workDir := repoPath
+	above := "--above=" + FileLimitSize + "Mb"
+	logger.Logger.Infof("%s 使用git lfs migrate 处理历史提交中的大文件", repoPath)
+	output, err := system.RunCommand("git", workDir, "lfs", "migrate", "import", "--everything", above)
+	if err != nil {
+		return fmt.Errorf("git lfs migrate import 失败: %s\n%s", err, output)
+	}
+	logger.Logger.Infof("%s 使用git lfs migrate 处理历史提交中的大文件成功", repoPath)
+	logger.Logger.Debugf("%s 使用git lfs migrate 处理历史提交中的大文件成功\n%s", repoPath, output)
+	return nil
+}
+
+func IsExceededLimitError(output string) bool {
+	if strings.Contains(output, "exceeded limit") {
+		return true
+	}
+	return false
+}
+
+func IsSvnRepo(vcsType string) bool {
+	if vcsType == coding.SvnVcsType {
+		return true
+	}
+	return false
+}
