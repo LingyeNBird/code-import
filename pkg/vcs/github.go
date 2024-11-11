@@ -1,9 +1,9 @@
 package vcs
 
 import (
+	api "ccrctl/pkg/api/github"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
-	api "ccrctl/pkg/github"
 	"ccrctl/pkg/util"
 	"github.com/google/go-github/v66/github"
 	"strings"

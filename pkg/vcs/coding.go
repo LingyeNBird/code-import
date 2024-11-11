@@ -1,7 +1,7 @@
 package vcs
 
 import (
-	"ccrctl/pkg/coding"
+	"ccrctl/pkg/api/coding"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"

@@ -1,7 +1,7 @@
 package migrate
 
 import (
-	"ccrctl/pkg/cnb"
+	"ccrctl/pkg/api/cnb"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/logger"

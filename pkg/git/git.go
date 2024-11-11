@@ -1,7 +1,7 @@
 package git
 
 import (
-	"ccrctl/pkg/coding"
+	"ccrctl/pkg/api/coding"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/system"

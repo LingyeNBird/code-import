@@ -1,9 +1,9 @@
 package vcs
 
 import (
+	api "ccrctl/pkg/api/gitlab"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
-	api "ccrctl/pkg/gitlab"
 	"ccrctl/pkg/util"
 	"github.com/xanzy/go-gitlab"
 	"strings"
