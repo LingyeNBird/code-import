@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"ccrctl/pkg/api/gitee"
 	"fmt"
 )
 
@@ -24,6 +25,12 @@ func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 		return newGitlabRepo(), nil
 	case "github":
 		return newGithubRepo(), nil
+	case "gitee":
+		vcs, err := gitee.GetRepoList()
+		if err != nil {
+			return nil, fmt.Errorf("获取gitee仓库列表失败")
+		}
+		return vcs, nil
 	case "common":
 		return newCommonRepo(), nil
 	default:
