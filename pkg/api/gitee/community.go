@@ -2,14 +2,13 @@ package gitee
 
 import "C"
 import (
-	"ccrctl/pkg/api/github"
 	"ccrctl/pkg/config"
-	"ccrctl/pkg/git"
 	"ccrctl/pkg/http_client"
-	"ccrctl/pkg/util"
+	"ccrctl/pkg/logger"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -17,6 +16,7 @@ const (
 	apiPath     = "/api/v5"
 	host        = "https://gitee.com"
 	getRepoList = "/user/repos"
+	getUser     = "/user"
 )
 
 type Repo struct {
@@ -139,12 +139,63 @@ type Repo struct {
 	IssueTemplateSource string        `json:"issue_template_source"`
 }
 
+type ErrorResp struct {
+	Message string `json:"message"`
+}
+
+type User struct {
+	Id                int         `json:"id"`
+	Login             string      `json:"login"`
+	Name              string      `json:"name"`
+	AvatarUrl         string      `json:"avatar_url"`
+	Url               string      `json:"url"`
+	HtmlUrl           string      `json:"html_url"`
+	Remark            string      `json:"remark"`
+	FollowersUrl      string      `json:"followers_url"`
+	FollowingUrl      string      `json:"following_url"`
+	GistsUrl          string      `json:"gists_url"`
+	StarredUrl        string      `json:"starred_url"`
+	SubscriptionsUrl  string      `json:"subscriptions_url"`
+	OrganizationsUrl  string      `json:"organizations_url"`
+	ReposUrl          string      `json:"repos_url"`
+	EventsUrl         string      `json:"events_url"`
+	ReceivedEventsUrl string      `json:"received_events_url"`
+	Type              string      `json:"type"`
+	Blog              string      `json:"blog"`
+	Weibo             interface{} `json:"weibo"`
+	Bio               string      `json:"bio"`
+	PublicRepos       int         `json:"public_repos"`
+	PublicGists       int         `json:"public_gists"`
+	Followers         int         `json:"followers"`
+	Following         int         `json:"following"`
+	Stared            int         `json:"stared"`
+	Watched           int         `json:"watched"`
+	CreatedAt         time.Time   `json:"created_at"`
+	UpdatedAt         time.Time   `json:"updated_at"`
+	Email             interface{} `json:"email"`
+}
+
 func GetRepoListFetchPage(page string) ([]Repo, http.Header, error) {
-	endPoint := apiPath + getRepoList
+	queryParams := url.Values{}
+	queryParams.Add("access_token", config.Cfg.GetString("source.token"))
+	queryParams.Add("affiliation", "admin")
+	queryParams.Add("sort", "full_name")
+	queryParams.Add("per_page", "100")
+	queryParams.Add("page", page)
+	endPoint := apiPath + getRepoList + "?" + queryParams.Encode()
 	c := http_client.NewClient(host)
-	resp, header, _, err := c.GiteeClient(http.MethodGet, endPoint, nil, page)
+	resp, header, respCode, err := c.GiteeClient(http.MethodGet, endPoint, nil)
 	if err != nil {
+		logger.Logger.Error("Failed to get repo list", err)
 		return nil, nil, err
+	}
+	if respCode != http.StatusOK {
+		var e ErrorResp
+		err = c.Unmarshal(resp, &e)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, nil, fmt.Errorf("failed to get repo list: %s", e.Message)
 	}
 	var repoList []Repo
 	err = c.Unmarshal(resp, &repoList)
@@ -165,59 +216,38 @@ func GetRepoList() ([]Repo, error) {
 		if len(list) == 0 {
 			break
 		}
+		repoList = append(repoList, list...)
 		if strconv.Itoa(page) == header.Get("total_page") {
 			break
 		}
-		repoList = append(repoList, list...)
 		page++ // 直接递增整数
 	}
 	return repoList, nil
 }
 
-func (r *Repo) GetRepoPath() string {
-	return r.FullName
-}
-
-func (r *Repo) GetRepoName() string {
-	return r.Name
-}
-
-func (r *Repo) GetSubGroupName() string {
-	parts := strings.Split(r.GetRepoPath(), "/")
-	if len(parts) > 0 {
-		parts = parts[:len(parts)-1] // 去掉仓库名
-	}
-	result := strings.Join(parts, "/")
-	return result
-}
-
-func (r *Repo) GetRepoType() string {
-	return "Git"
-}
-
-func (r *Repo) GetCloneUrl() string {
-	return util.ConvertUrlWithAuth(r.HtmlUrl, github.GetUserName(), r.GetToken())
-}
-
-func (r *Repo) GetUserName() string {
-	return "gitee"
-}
-
-func (r *Repo) GetToken() string {
-	return config.Cfg.GetString("source.token")
-}
-
-func (r *Repo) Clone() error {
-	err := git.Clone(r.GetCloneUrl(), r.GetRepoPath())
+func GetUserName() (name string, err error) {
+	c := http_client.NewClient(host)
+	queryParams := url.Values{}
+	queryParams.Add("access_token", config.Cfg.GetString("source.token"))
+	endPoint := apiPath + getUser + "?" + queryParams.Encode()
+	resp, _, respCode, err := c.GiteeClient(http.MethodGet, endPoint, nil)
 	if err != nil {
-		return err
+		logger.Logger.Error("Failed to get username", err)
+		return name, err
 	}
-	return nil
-}
-
-func (r *Repo) GetRepoPrivate() bool {
-	if !r.Public {
-		return true
+	if respCode != http.StatusOK {
+		var e ErrorResp
+		err = c.Unmarshal(resp, &e)
+		if err != nil {
+			return name, err
+		}
+		return name, fmt.Errorf("failed to get username: %s", e.Message)
 	}
-	return false
+	var data User
+	err = c.Unmarshal(resp, &data)
+	if err != nil {
+		return name, err
+	}
+	name = data.Login
+	return name, err
 }

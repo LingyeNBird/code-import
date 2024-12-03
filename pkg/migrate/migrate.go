@@ -40,7 +40,7 @@ var (
 )
 
 func Run() {
-	if SourcePlatformName == "github" {
+	if SourcePlatformName == "github" || SourcePlatformName == "gitee" {
 		organizationMappingLevel = 2
 	}
 	startTime := time.Now()     // 记录迁移开始时间
