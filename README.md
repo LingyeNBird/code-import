@@ -59,6 +59,20 @@ docker run --rm  \
   cnbcool/code-import
 ````
 
+### 从 Gitee 导入
+
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_SOURCE_URL="https://gitlab.com" \
+  -e PLUGIN_SOURCE_PLATFORM="gitee" \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -e PLUGIN_CNB_URL="https://cnb.example.com" \
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+````
+
 ### 从通用第三方代码平台导入
 
 ```shell
@@ -103,6 +117,9 @@ Github Token 权限要求:
 Gitlab Token 权限要求：
 - read_api
 
+Gitee Token 权限要求:
+- user_info
+- projects
 ### source_platform
 
 - 类型: 字符串
@@ -110,7 +127,7 @@ Gitlab Token 权限要求：
 - 枚举: coding,gitlab,common
 - 默认值: coding
 
-导入的平台名称，目前支持 coding/gitlab/github, 其他通用平台填写 common
+导入的平台名称，目前支持 coding/gitlab/github/gitee, 其他通用平台填写 common
 
 ### source_project
 

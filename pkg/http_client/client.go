@@ -134,6 +134,38 @@ func (c *Client) RequestV3(method, endpoint string, token string, body interface
 	return respBody, resp.Header, resp.StatusCode, nil
 }
 
+func (c *Client) GiteeClient(method, endpoint string, body interface{}) ([]byte, http.Header, int, error) {
+	// 将 body 转换为 JSON 格式
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	fullUrl := fmt.Sprintf("%s%s", c.BaseURL, endpoint)
+	// 创建一个新的 HTTP 请求
+	req, err := http.NewRequest(method, fullUrl, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	// 设置请求头
+	req.Header.Set("Content-Type", "application/json")
+
+	// 发送请求
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	// 读取响应体
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	return respBody, resp.Header, resp.StatusCode, nil
+}
+
 func (c *Client) Unmarshal(data []byte, v interface{}) error {
 	err := json.Unmarshal(data, v)
 	if err != nil {

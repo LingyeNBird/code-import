@@ -24,6 +24,8 @@ func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 		return newGitlabRepo(), nil
 	case "github":
 		return newGithubRepo(), nil
+	case "gitee":
+		return newGiteeRepo(), nil
 	case "common":
 		return newCommonRepo(), nil
 	default:

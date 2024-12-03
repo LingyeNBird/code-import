@@ -104,7 +104,7 @@ func CheckConfig() error {
 	}
 
 	platform := config.Source.Platform
-	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" {
+	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" {
 		return fmt.Errorf("source.platform error only support coding、gitlab、github、common")
 	}
 
