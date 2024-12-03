@@ -59,10 +59,7 @@ func (r *GiteeVcs) Clone() error {
 }
 
 func (r *GiteeVcs) GetRepoPrivate() bool {
-	if !r.Private {
-		return true
-	}
-	return false
+	return r.Private
 }
 
 func newGiteeRepo() []VCS {
