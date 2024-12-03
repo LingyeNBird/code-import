@@ -1,6 +1,5 @@
 package gitee
 
-import "C"
 import (
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/http_client"
