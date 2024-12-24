@@ -5,7 +5,7 @@
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
 主要包含以下特性：
-1. 支持CODING、Github、Gitlab以及通用第三方代码平台的代码仓库批量导入至CNB
+1. 支持CODING、Github、Gitlab、Gitee以及通用第三方代码托管平台的代码仓库批量导入至CNB
 2. 支持按CODING团队、项目、仓库多维度迁移
 3. 支持Git LFS文件迁移
 4. 支持自动处理LFS历史提交中文件过大报错
@@ -13,7 +13,7 @@
 6. 详细的迁移日志记录
 7. 自动跳过迁移成功的仓库
 
-**注意:开始导入前，请确保根组织已存在** 
+⚠️开始导入前，请确保根组织已存在
 
 **Tips:云原生开发自带 docker 命令**
 ## 在Docker上使用
