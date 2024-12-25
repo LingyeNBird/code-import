@@ -178,7 +178,7 @@ func CreateSubOrganization(url, token, subGroupName string) (err error) {
 	_, err = c.Request("POST", createSubOrganizationEndPoint, token, body)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "already exist") {
+		if strings.Contains(err.Error(), "组织名称已经被占用") {
 			logger.Logger.Infof("子组织%s已存在", groupPath)
 			return nil
 		} else {
