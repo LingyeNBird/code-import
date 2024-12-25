@@ -19,13 +19,24 @@ func init() {
 }
 
 func GetProjects() ([]*gitlab.Project, error) {
-	projects, _, err := Git.Projects.ListProjects(&gitlab.ListProjectsOptions{
-		ListOptions: gitlab.ListOptions{
-			PerPage: 100,
-		},
-	})
-	if err != nil {
-		logger.Logger.Fatalf("Failed to get projects: %v", err)
+	var Projects []*gitlab.Project
+	page := 1
+	for {
+		projects, resp, err := Git.Projects.ListProjects(&gitlab.ListProjectsOptions{
+			ListOptions: gitlab.ListOptions{
+				PerPage: 100,
+				Page:    page,
+			},
+			Owned: gitlab.Bool(true),
+		})
+		if err != nil {
+			logger.Logger.Fatalf("Failed to get Projects: %v", err)
+		}
+		Projects = append(Projects, projects...)
+		if resp.NextPage == 0 {
+			break
+		}
+		page++
 	}
-	return projects, nil
+	return Projects, nil
 }
