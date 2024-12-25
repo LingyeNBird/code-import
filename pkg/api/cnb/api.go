@@ -175,15 +175,15 @@ func CreateSubOrganization(url, token, subGroupName string) (err error) {
 	body := &CreateOrganization{
 		Path: groupPath,
 	}
-	_, err = c.Request("POST", createSubOrganizationEndPoint, token, body)
+	_, _, resStatusCode, err := c.RequestV3("POST", createSubOrganizationEndPoint, token, body)
 
 	if err != nil {
-		if strings.Contains(err.Error(), "组织名称已经被占用") {
-			logger.Logger.Infof("子组织%s已存在", groupPath)
-			return nil
-		} else {
-			return fmt.Errorf("创建子组织%s失败: %v", groupPath, err)
-		}
+		return fmt.Errorf("创建子组织%s失败: %v", groupPath, err)
+	}
+
+	if resStatusCode == 409 {
+		logger.Logger.Infof("子组织%s已存在", groupPath)
+		return nil
 	}
 	logger.Logger.Infof("创建子组织%s成功", groupPath)
 	return nil
