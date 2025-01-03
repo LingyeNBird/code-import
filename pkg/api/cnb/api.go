@@ -181,18 +181,21 @@ func CreateSubOrganization(url, token, subGroupName string) (err error) {
 	body := &CreateOrganization{
 		Path: groupPath,
 	}
-	_, _, resStatusCode, err := c.RequestV3("POST", createSubOrganizationEndPoint, token, body)
+	resp, _, statusCode, err := c.RequestV3("POST", createSubOrganizationEndPoint, token, body)
 
 	if err != nil {
 		return fmt.Errorf("创建子组织%s失败: %v", groupPath, err)
 	}
 
-	if resStatusCode == 409 {
+	if statusCode == 409 {
 		logger.Logger.Infof("子组织%s已存在", groupPath)
 		return nil
 	}
-	logger.Logger.Infof("创建子组织%s成功", groupPath)
-	return nil
+	if statusCode == 201 {
+		logger.Logger.Infof("创建子组织%s成功", groupPath)
+		return nil
+	}
+	return fmt.Errorf("创建子组织%s失败: %s %d", groupPath, string(resp))
 }
 
 func CreateRepo(url, token, group, repo string, organizationMappingLevel int, private bool) (err error) {

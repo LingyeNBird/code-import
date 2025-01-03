@@ -21,7 +21,7 @@ type Client struct {
 	Token      string
 }
 
-// NewClient 创建一个新的 OpenAPI 客户端
+// NewClientV2 创建一个新的 OpenAPI 客户端
 func NewClient(baseURL string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
