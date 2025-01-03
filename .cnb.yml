@@ -1,2 +1,10 @@
 include:
   - https://cnb.cool/cnb/plugins/market/-/blob/main/hub.docker.com.yml
+
+main:
+  pull_request:
+    - stages:
+        - name: 代码评审
+          image: cnbcool/ai-review:latest
+          settings:
+            type: code-review

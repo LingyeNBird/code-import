@@ -5,6 +5,7 @@ import (
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"
+	"strconv"
 )
 
 const (
@@ -57,6 +58,14 @@ func (r *CodingVcs) GetToken() string {
 
 func (r *CodingVcs) GetRepoPrivate() bool {
 	return true
+}
+
+func (r *CodingVcs) GetReleases() []releases {
+	return nil
+}
+
+func (r *CodingVcs) GetProjectID() string {
+	return strconv.Itoa(0)
 }
 
 func newCodingRepo() []VCS {

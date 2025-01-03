@@ -6,6 +6,7 @@ import (
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"
 	"github.com/google/go-github/v66/github"
+	"strconv"
 	"strings"
 )
 
@@ -60,6 +61,14 @@ func (g *GithubVcs) Clone() error {
 
 func (g *GithubVcs) GetRepoPrivate() bool {
 	return g.Private
+}
+
+func (g *GithubVcs) GetReleases() (cnbReleases []releases) {
+	return nil
+}
+
+func (g *GithubVcs) GetProjectID() string {
+	return strconv.Itoa(0)
 }
 
 func newGithubRepo() []VCS {

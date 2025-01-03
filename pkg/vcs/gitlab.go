@@ -6,6 +6,7 @@ import (
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"
 	"github.com/xanzy/go-gitlab"
+	"strconv"
 	"strings"
 )
 
@@ -15,11 +16,12 @@ const (
 )
 
 type GitlabVcs struct {
-	httpURL  string
-	RepoPath string
-	RepoName string
-	RepoType string
-	Private  string
+	httpURL   string
+	RepoPath  string
+	RepoName  string
+	RepoType  string
+	Private   string
+	ProjectId int
 }
 
 func (g *GitlabVcs) GetRepoPath() string {
@@ -73,6 +75,34 @@ func (g *GitlabVcs) GetRepoPrivate() bool {
 	return false
 }
 
+func (g *GitlabVcs) GetReleases() (cnbReleases []releases) {
+	gitlabReleases, err := api.GetReleases(g.ProjectId)
+	if err != nil {
+		panic(err)
+	}
+	for _, gitlabRelease := range gitlabReleases {
+		var assets []Asset
+		for _, link := range gitlabRelease.Assets.Links {
+			assets = append(assets, Asset{
+				Name: link.Name,
+				Url:  link.URL,
+			})
+		}
+		cnbReleases = append(cnbReleases, releases{
+			TagName:    gitlabRelease.TagName,
+			Name:       gitlabRelease.Name,
+			Body:       gitlabRelease.Description,
+			Assets:     assets,
+			Prerelease: gitlabRelease.UpcomingRelease,
+		})
+	}
+	return cnbReleases
+}
+
+func (g *GitlabVcs) GetProjectID() string {
+	return strconv.Itoa(g.ProjectId)
+}
+
 func newGitlabRepo() []VCS {
 	repoList, err := api.GetProjects()
 	if err != nil {
@@ -85,11 +115,12 @@ func GitlabCovertToVcs(repoList []*gitlab.Project) []VCS {
 	var VCS []VCS
 	for _, repo := range repoList {
 		VCS = append(VCS, &GitlabVcs{
-			httpURL:  repo.HTTPURLToRepo,
-			RepoPath: repo.PathWithNamespace,
-			RepoName: repo.Name,
-			RepoType: Git,
-			Private:  string(repo.Visibility),
+			httpURL:   repo.HTTPURLToRepo,
+			RepoPath:  repo.PathWithNamespace,
+			RepoName:  repo.Name,
+			RepoType:  Git,
+			Private:   string(repo.Visibility),
+			ProjectId: repo.ID,
 		})
 	}
 	return VCS

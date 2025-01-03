@@ -4,6 +4,7 @@ import (
 	"ccrctl/pkg/api/cnb"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
+	"ccrctl/pkg/http_client"
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/system"
 	"ccrctl/pkg/vcs"
@@ -20,7 +21,7 @@ import (
 const (
 	GitDirName     = "source_git_dir"
 	CnbUserName    = "cnb"
-	MaxConcurrency = 20
+	MaxConcurrency = 10
 )
 
 var (
@@ -37,6 +38,7 @@ var (
 	allowIncompletePush                                                     = config.Cfg.GetBool("migrate.allow_incomplete_push")
 	SourcePlatformName                                                      = config.Cfg.GetString("source.platform")
 	SkipExistsRepo                                                          = config.Cfg.GetBool("migrate.skip_exists_repo")
+	MigrateRelease                                                          = config.Cfg.GetBool("migrate.release")
 )
 
 func Run() {
@@ -208,7 +210,7 @@ func migrateDo(depot vcs.VCS) (err error) {
 	if err != nil {
 		return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 	}
-
+	// 判断是否是LFS仓库
 	err, IsLFSRepo := git.IsLFSRepo(repoPath)
 	if err != nil {
 		return fmt.Errorf("%s 判断是否是LFS仓库失败: %s", repoPath, err)
@@ -223,7 +225,12 @@ func migrateDo(depot vcs.VCS) (err error) {
 			return fmt.Errorf("%s 上传LFS文件失败: %s\n%s", repoPath, err, out)
 		}
 	}
-
+	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {
+		err = migrateRelease(depot)
+		if err != nil {
+			return err
+		}
+	}
 	successfulRepoNumber++
 	failedRepoNumber--
 	duration := time.Since(startTime)
@@ -244,4 +251,49 @@ func isMigrated(repoPath, filePath string) (error, bool) {
 		return fmt.Errorf("正则表达式编译失败: %s", err), false
 	}
 	return nil, re.MatchString(string(content))
+}
+
+func migrateRelease(depot vcs.VCS) (createReleaseErr error) {
+	releases := depot.GetReleases()
+	repoPath := depot.GetRepoPath()
+	logger.Logger.Infof("%s 开始迁移 release", repoPath)
+	for _, release := range releases {
+		logger.Logger.Infof("%s 开始迁移 release %s", repoPath, release.Name)
+		releaseID, exist, createReleaseErr := cnb.CreateRelease(repoPath, release.Name, release.Body, release.TagName, depot.GetProjectID(), release.Prerelease)
+		if createReleaseErr != nil {
+			logger.Logger.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, createReleaseErr)
+			return createReleaseErr
+		}
+		if exist {
+			logger.Logger.Warnf("%s 迁移release: %s 已存在，跳过迁移", repoPath, release.Name)
+			continue
+		}
+		if release.Assets != nil && len(release.Assets) > 0 {
+			for _, asset := range release.Assets {
+				migrateAssetErr := migrateReleaseAsset(repoPath, releaseID, asset.Name, asset.Url)
+				if migrateAssetErr != nil {
+					logger.Logger.Errorf("%s 迁移 release %s asset %s 失败: %s", repoPath, release.Name, asset.Name, migrateAssetErr)
+					return migrateAssetErr
+				}
+			}
+		}
+
+		logger.Logger.Infof("%s 迁移 release %s 成功", repoPath, release.Name)
+	}
+	logger.Logger.Infof("%s 迁移 release 成功", repoPath)
+	return nil
+}
+
+func migrateReleaseAsset(repoPath, releaseID, fileName, downloadUrl string) (err error) {
+	data, err := http_client.DownloadFromUrl(downloadUrl)
+	if err != nil {
+		logger.Logger.Errorf("%s 下载release asset %s 失败: %s", downloadUrl, fileName, err)
+		return err
+	}
+	err = cnb.UploadReleaseAsset(repoPath, releaseID, fileName, data)
+	if err != nil {
+		logger.Logger.Errorf("%s 上传release asset %s 失败: %s", downloadUrl, fileName, err)
+		return err
+	}
+	return nil
 }

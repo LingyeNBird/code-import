@@ -256,3 +256,12 @@ CODING与CNB组织映射关系，仅支持 Coding 平台
 日志级别，默认info
 
 
+### migrate_release
+
+- 类型: 布尔值
+- 必填: 否
+- 默认值: false
+
+迁移release（暂时只支持 gitlab release迁移）
+
+

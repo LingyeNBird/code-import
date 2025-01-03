@@ -4,6 +4,22 @@ import (
 	"fmt"
 )
 
+type releases struct {
+	Body            string  `json:"body"`
+	Draft           bool    `json:"draft"`
+	MakeLatest      string  `json:"make_latest"`
+	Name            string  `json:"name"`
+	Prerelease      bool    `json:"prerelease"`
+	TagName         string  `json:"tag_name"`
+	TargetCommitish string  `json:"target_commitish"`
+	Assets          []Asset `json:"assets"`
+}
+
+type Asset struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
+}
+
 type VCS interface {
 	GetRepoPath() string
 	GetRepoName() string
@@ -14,6 +30,8 @@ type VCS interface {
 	GetToken() string
 	Clone() error
 	GetRepoPrivate() bool
+	GetReleases() []releases
+	GetProjectID() string
 }
 
 func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {

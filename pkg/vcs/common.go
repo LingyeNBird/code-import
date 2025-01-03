@@ -5,6 +5,7 @@ import (
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
+	"strconv"
 	"strings"
 )
 
@@ -58,6 +59,14 @@ func (c *CommonVcs) Clone() error {
 
 func (c *CommonVcs) GetRepoPrivate() bool {
 	return true
+}
+
+func (c *CommonVcs) GetReleases() []releases {
+	return nil
+}
+
+func (c *CommonVcs) GetProjectID() string {
+	return strconv.Itoa(0)
 }
 
 func newCommonRepo() []VCS {

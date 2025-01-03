@@ -298,6 +298,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"migrate.log_level",
 		"migrate.file_limit_size",
 		"migrate.skip_exists_repo",
+		"migrate.release",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -322,6 +323,7 @@ func setDefaultValues(config *viper.Viper) {
 		"source.platform":                    "coding",
 		"migrate.file_limit_size":            "500",
 		"migrate.skip_exists_repo":           "true",
+		"migrate.release":                    "false",
 	}
 
 	// 使用循环来设置默认值

@@ -5,6 +5,7 @@ import (
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"
+	"strconv"
 	"strings"
 )
 
@@ -60,6 +61,14 @@ func (r *GiteeVcs) Clone() error {
 
 func (r *GiteeVcs) GetRepoPrivate() bool {
 	return r.Private
+}
+
+func (r *GiteeVcs) GetReleases() []releases {
+	return nil
+}
+
+func (r *GiteeVcs) GetProjectID() string {
+	return strconv.Itoa(0)
 }
 
 func newGiteeRepo() []VCS {

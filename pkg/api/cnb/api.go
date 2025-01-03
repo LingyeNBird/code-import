@@ -1,28 +1,27 @@
 package cnb
 
 import (
+	"bytes"
+	"ccrctl/pkg/api/gitlab"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/http_client"
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
 	"ccrctl/pkg/vcs"
+	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
 	"time"
 )
 
-//const (
-//	RootOrganization              = "liuhuantest4"
-//	ListSubOrganizationEndPoint   = "/" + RootOrganization + "/-/sub-groups?page=1&page_size=1000"
-//	CreateSubOrganizationEndPoint = "/groups"
-//	CreateRepoEndPoint            = "/" + RootOrganization + "/%s/-/repos"
-//	ListRepoEndPoint              = CreateRepoEndPoint + "?page=1&page_size=1000"
-//)
-
 const (
-	PageSize = "100"
+	PageSize            = "100"
+	ReleaseAssetMaxSize = 1024 * 1024 * 1024 * 50
 )
 
 var (
@@ -34,6 +33,13 @@ var (
 	createRepoUnderRootOrganizationEndPoint = "/" + RootOrganization + "/-/repos"
 	listRepoEndPoint                        = createRepoEndPoint + "?page=%s&page_size=" + PageSize
 	getRepoInfoEndPoint                     = "/" + RootOrganization + "/%s"
+	c                                       = http_client.NewClientV2()
+	UploadImgEndPoint                       = "/%s/-/upload/imgs"
+	UploadFileEndPoint                      = "/%s/-/upload/files"
+	CnbURL                                  = config.Cfg.GetString("cnb.url")
+	CnbApiURL                               = config.ConvertToApiURL(CnbURL)
+	CnbToken                                = config.Cfg.GetString("cnb.token")
+	sourcePlatformURL                       = config.Cfg.GetString("source.url")
 )
 
 type users struct {
@@ -446,4 +452,292 @@ func GetPushUrl(organizationMappingLevel int, cnbURL, userName, token, projectNa
 		pushURL = parts[0] + "://" + userName + ":" + token + "@" + parts[1] + "/" + RootOrganization + "/" + repoName + ".git"
 	}
 	return pushURL
+}
+
+type CreateReleaseReq struct {
+	Body            string `json:"body"`
+	Draft           bool   `json:"draft"`
+	MakeLatest      string `json:"make_latest"`
+	Name            string `json:"name"`
+	Prerelease      bool   `json:"prerelease"`
+	TagName         string `json:"tag_name"`
+	TargetCommitish string `json:"target_commitish"`
+}
+
+type CreateReleaseRes struct {
+	Id           string      `json:"id"`
+	TagName      string      `json:"tag_name"`
+	TagCommitish string      `json:"tag_commitish"`
+	Name         string      `json:"name"`
+	Body         string      `json:"body"`
+	Draft        bool        `json:"draft"`
+	Prerelease   bool        `json:"prerelease"`
+	IsLatest     bool        `json:"is_latest"`
+	CreatedAt    time.Time   `json:"created_at"`
+	UpdatedAt    time.Time   `json:"updated_at"`
+	PublishedAt  time.Time   `json:"published_at"`
+	Author       interface{} `json:"author"`
+	Assets       interface{} `json:"assets"`
+}
+
+func CreateRelease(repoPath, name, desc, tagName, projectID string, preRelease bool) (releaseID string, exist bool, err error) {
+	defer logger.Logger.Debugw(util.GetFunctionName(), "repoPath", repoPath, "name", name, "body", desc, "tagName", tagName)
+	endpoint := fmt.Sprintf("/%s/%s/-/releases", RootOrganization, repoPath)
+	desc, err = convertDescLink(desc, repoPath, projectID)
+	if err != nil {
+		logger.Logger.Errorf("%s:%s release 创建失败: %v", repoPath, name, err)
+		return "", exist, err
+	}
+	body := &CreateReleaseReq{
+		Body:       desc,
+		Name:       name,
+		TagName:    tagName,
+		Prerelease: preRelease,
+	}
+	res, _, statusCode, err := c.RequestV4(http.MethodPost, endpoint, body)
+	if err != nil {
+		if statusCode == http.StatusConflict {
+			logger.Logger.Warnf("%s:%s release 已存在", repoPath, name)
+			return "", true, nil
+		}
+		logger.Logger.Errorf("%s:%s release 创建失败: %v", repoPath, name, err)
+		return "", exist, err
+	}
+	var data CreateReleaseRes
+	err = json.Unmarshal(res, &data)
+	if err != nil {
+		logger.Logger.Errorf("%s:%s release 创建失败: %v", repoPath, name, err)
+		return "", exist, err
+	}
+	return data.Id, exist, nil
+}
+
+// 转换release描述中的链接为cnb链接
+func convertDescLink(desc, repoPath, projectID string) (newDesc string, err error) {
+	attachments, images, exists := util.ExtractAttachments(desc)
+	if !exists {
+		return desc, nil
+	}
+	for attachmentName, attachmentUrl := range attachments {
+		uploadFiles, err := gitlab.ListUploads(projectID)
+		if err != nil {
+			return newDesc, err
+		}
+		fileID, ok := uploadFiles[attachmentName]
+		if !ok {
+			logger.Logger.Warnf("%s 附件 %s 不存在", repoPath, attachmentName)
+			continue
+		}
+		data, err := gitlab.DownloadFile(projectID, fileID)
+		if err != nil {
+			logger.Logger.Errorf("%s 下载release asset %s 失败: %s", attachmentUrl, attachmentName, err)
+			return newDesc, err
+		}
+
+		cnbPath, err := UploadReleaseDescImgAndAttachments(repoPath, attachmentName, data, "file")
+		newDesc = strings.Replace(desc, attachmentUrl, cnbPath, -1)
+		desc = newDesc
+	}
+	for imageName, imageUrl := range images {
+		uploadFiles, err := gitlab.ListUploads(projectID)
+		if err != nil {
+			return newDesc, err
+		}
+		fileID, ok := uploadFiles[imageName]
+		if !ok {
+			logger.Logger.Warnf("%s 附件 %s 不存在", repoPath, imageName)
+			continue
+		}
+		data, err := gitlab.DownloadFile(projectID, fileID)
+		if err != nil {
+			logger.Logger.Errorf("%s 下载release asset %s 失败: %s", imageUrl, imageName, err)
+			return newDesc, err
+		}
+
+		cnbPath, err := UploadReleaseDescImgAndAttachments(repoPath, imageName, data, "img")
+		newDesc = strings.Replace(desc, imageUrl, cnbPath, -1)
+		desc = newDesc
+	}
+	return newDesc, nil
+}
+
+type UploadImgOrFileRes struct {
+	Assets struct {
+		Path        string `json:"path"`
+		ContentType string `json:"content_type"`
+		Name        string `json:"name"`
+		Size        int    `json:"size"`
+	} `json:"assets"`
+	UploadUrl string        `json:"upload_url"`
+	Form      UploadImgForm `json:"form"`
+	Token     string        `json:"token"`
+}
+
+type UploadImgForm struct {
+	ContentType    string `json:"Content-Type"`
+	Bucket         string `json:"bucket"`
+	Key            string `json:"key"`
+	Policy         string `json:"policy"`
+	XAmzAlgorithm  string `json:"x-amz-algorithm"`
+	XAmzCredential string `json:"x-amz-credential"`
+	XAmzDate       string `json:"x-amz-date"`
+	XAmzSignature  string `json:"x-amz-signature"`
+}
+
+type UploadImgsReq struct {
+	Name string `json:"name"`
+	Size int    `json:"size"`
+}
+
+func UploadReleaseDescImgAndAttachments(repoPath, fileName string, fileData []byte, fileType string) (path string, err error) {
+	res, err := GetCosUploadUrlAndForm(repoPath, fileName, fileType, len(fileData))
+	if err != nil {
+		logger.Logger.Errorf("Get cos  upload form error: %v", err)
+		return "", err
+	}
+	err = UploadFileToCos(res.UploadUrl, fileName, res.Form, fileData)
+	if err != nil {
+		logger.Logger.Errorf("Upload file to cos error: %v", err)
+		return "", err
+	}
+	err = PlatformConfirmUpload(res.Assets.Path, res.Token)
+	if err != nil {
+		logger.Logger.Errorf("Confirm upload error: %v", err)
+		return "", err
+	}
+	return res.Assets.Path, nil
+}
+
+func UploadReleaseAsset(repoPath, releaseID, assetName string, data []byte) (err error) {
+	if len(data) > ReleaseAssetMaxSize {
+		logger.Logger.Warnf("%s附件大小超过5GiB，跳过上传", assetName)
+		return nil
+	}
+	uploadURL, err := GetReleaseAssetUploadUrl(repoPath, releaseID, assetName)
+	err = c.UploadData(uploadURL.UploadUrl, data)
+	if err != nil {
+		logger.Logger.Errorf("Upload data error: %v", err)
+		return err
+	}
+	err = ConfirmUpload(uploadURL.VerifyUrl)
+	if err != nil {
+		logger.Logger.Errorf("Confirm upload error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func ConfirmUpload(verifyUrl string) (err error) {
+	_, _, _, err = c.RequestWithURL(http.MethodPost, verifyUrl, nil)
+	if err != nil {
+		logger.Logger.Errorf("Confirm  upload error: %v", err)
+		return err
+	}
+	return nil
+}
+
+type UploadUrl struct {
+	UploadUrl    string `json:"upload_url"`
+	ExpiresInSec int    `json:"expires_in_sec"`
+	VerifyUrl    string `json:"verify_url"`
+}
+
+type GetReleaseUploadUrlReq struct {
+	AssetName string `json:"asset_name"`
+	Overwrite bool   `json:"overwrite"`
+}
+
+func GetReleaseAssetUploadUrl(repoPath, releaseID, assetName string) (uploadURL UploadUrl, err error) {
+	reqPath := fmt.Sprintf("/%s/%s/-/releases/%s/asset-upload-url", RootOrganization, repoPath, releaseID)
+	body := &GetReleaseUploadUrlReq{
+		AssetName: assetName,
+		Overwrite: true,
+	}
+	res, _, _, err := c.RequestV4(http.MethodPost, reqPath, body)
+	if err != nil {
+		logger.Logger.Errorf("Get upload url error: %v", err)
+		return uploadURL, err
+	}
+	err = json.Unmarshal(res, &uploadURL)
+	if err != nil {
+		logger.Logger.Errorf("Unmarshal upload url error: %v", err)
+		return uploadURL, err
+	}
+	return uploadURL, nil
+}
+
+func UploadFileToCos(reqUrl, fileName string, form UploadImgForm, data []byte) (err error) {
+	// 创建一个缓冲区以写入我们的表单数据
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+
+	// 添加其他字段
+	w.WriteField("Content-Type", form.ContentType)
+	w.WriteField("bucket", form.Bucket)
+	w.WriteField("key", form.Key)
+	w.WriteField("policy", form.Policy)
+	w.WriteField("x-amz-algorithm", form.XAmzAlgorithm)
+	w.WriteField("x-amz-credential", form.XAmzCredential)
+	w.WriteField("x-amz-date", form.XAmzDate)
+	w.WriteField("x-amz-signature", form.XAmzSignature)
+
+	//添加 file 字段
+	//if err := http_client.AddFormFile(w, "file", "c436cc0b-7aeb-4029-9ff1-4fa4cdf1f3d1.png", data); err != nil {
+	//	return err
+	//}
+
+	writer, err := w.CreateFormFile("file", fileName)
+
+	io.Copy(writer, bytes.NewReader(data))
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	if err = w.Close(); err != nil {
+		return err
+	}
+
+	_, err = c.SendUploadRequest(reqUrl, w.FormDataContentType(), &b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func PlatformConfirmUpload(repoPath, token string) (err error) {
+	reqPath := fmt.Sprintf("%s?token=%s", repoPath, token)
+	_, _, _, err = c.RequestV4(http.MethodPut, reqPath, nil)
+	if err != nil {
+		logger.Logger.Errorf("Confirm  upload error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func GetCosUploadUrlAndForm(repoPath, fileName, fileType string, fileSize int) (form UploadImgOrFileRes, err error) {
+	var reqPath string
+	repoPath = RootOrganization + "/" + repoPath
+	if fileType == "img" {
+		reqPath = fmt.Sprintf(UploadImgEndPoint, repoPath)
+	} else {
+		reqPath = fmt.Sprintf(UploadFileEndPoint, repoPath)
+	}
+	// 如果上传图片，文件名必须是图片格式后缀
+	body := &UploadImgsReq{
+		Name: fileName,
+		Size: fileSize,
+	}
+	res, _, _, err := c.RequestV4(http.MethodPost, reqPath, body)
+	if err != nil {
+		logger.Logger.Errorf("Get upload url and form error: %v", err)
+		return form, err
+	}
+	err = json.Unmarshal(res, &form)
+	if err != nil {
+		logger.Logger.Errorf("Unmarshal upload url error: %v", err)
+		return form, err
+	}
+	return form, nil
 }
