@@ -176,6 +176,7 @@ CNB 授权令牌，权限要求:
 - account-engage 只读
 - group-resource 读写
 - group-manage 读写
+- repo-content 读写
 
 ### cnb_root_organization
 
