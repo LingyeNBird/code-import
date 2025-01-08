@@ -70,7 +70,7 @@ func MatchMarkdownImgeUrl(md string) map[string]string {
 	return imgUrls
 }
 
-// extractAttachments 从 Markdown 内容中提取附件和图片的名称和 URL
+// ExtractAttachments  从 Markdown 内容中提取附件和图片的名称和 URL
 func ExtractAttachments(markdown string) (attachments map[string]string, images map[string]string, exists bool) {
 	// 正则表达式匹配 Markdown 链接（附件）
 	linkRe := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)

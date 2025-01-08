@@ -3,6 +3,7 @@ package http_client
 import (
 	"bytes"
 	"ccrctl/pkg/config"
+	"ccrctl/pkg/logger"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,6 +41,7 @@ func NewClientV2() *Client {
 
 // Request 发送一个 HTTP 请求到 OpenAPI
 func (c *Client) Request(method, endpoint string, token string, body interface{}) ([]byte, error) {
+	defer logger.Logger.Debugw("Request", "body", body, "reqPath", endpoint, "url", c.BaseURL+endpoint)
 	// 将 body 转换为 JSON 格式
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -74,7 +76,6 @@ func (c *Client) Request(method, endpoint string, token string, body interface{}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
 	}
-
 	return respBody, nil
 }
 

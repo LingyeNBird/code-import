@@ -136,6 +136,7 @@ type CreateRepoBody struct {
 	Visibility  string `json:"visibility"`
 }
 
+// CreateSubOrganizationIfNotExists 创建子组织，如果不存在则创建
 func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token, "depotList", depotList)
 	subGroups, err := GetSubGroupsByRootGroup(url, token)
