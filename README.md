@@ -265,4 +265,11 @@ CODING与CNB组织映射关系，仅支持 Coding 平台
 
 迁移release（暂时只支持 gitlab release迁移）
 
+### migrate_file_limit_size
+
+- 类型: int
+- 必填：否
+- 默认值：100
+
+CNB最大文件大小限制，单位Mib
 
