@@ -39,6 +39,7 @@ var (
 	SourcePlatformName                                                      = config.Cfg.GetString("source.platform")
 	SkipExistsRepo                                                          = config.Cfg.GetBool("migrate.skip_exists_repo")
 	MigrateRelease                                                          = config.Cfg.GetBool("migrate.release")
+	MigrateCode                                                             = config.Cfg.GetBool("migrate.code")
 )
 
 func Run() {
@@ -170,56 +171,58 @@ func migrateDo(depot vcs.VCS) (err error) {
 	//	return fmt.Errorf("创建%s目录失败", depot.Name)
 	//}
 	//cloneURL := depot.GetCloneUrl()
-	err = depot.Clone()
-	if err != nil {
-		logger.Logger.Errorf(err.Error())
-		return fmt.Errorf(err.Error())
-	}
-
-	// 设置要进入的目录路径
-	pwdDir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	// 完整的仓库目录路径
-	fullRepoDir := filepath.Join(pwdDir, repoPath)
-	defer func(path string) {
-		err := os.RemoveAll(path)
+	if MigrateCode {
+		err = depot.Clone()
 		if err != nil {
-			logger.Logger.Errorf("%s 删除失败: %s", path, err)
+			logger.Logger.Errorf(err.Error())
+			return fmt.Errorf(err.Error())
 		}
-	}(fullRepoDir)
 
-	pushURL := cnb.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
-
-	output, err := git.Push(repoPath, pushURL, IsForcePush)
-	if err != nil && useLfsMigrate && git.IsExceededLimitError(output) {
-		logger.Logger.Warnf("%s 历史提交文件大小超过%sM", repoPath, git.FileLimitSize)
-		fixError := git.FixExceededLimitError(repoPath)
-		if fixError != nil {
-			return fmt.Errorf("%s 修复大文件超过限制: %s", repoPath, fixError)
+		// 设置要进入的目录路径
+		pwdDir, err := os.Getwd()
+		if err != nil {
+			return err
 		}
-		output, err = git.Push(repoPath, pushURL, IsForcePush)
+		// 完整的仓库目录路径
+		fullRepoDir := filepath.Join(pwdDir, repoPath)
+		defer func(path string) {
+			err := os.RemoveAll(path)
+			if err != nil {
+				logger.Logger.Errorf("%s 删除失败: %s", path, err)
+			}
+		}(fullRepoDir)
+
+		pushURL := cnb.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
+
+		output, err := git.Push(repoPath, pushURL, IsForcePush)
+		if err != nil && useLfsMigrate && git.IsExceededLimitError(output) {
+			logger.Logger.Warnf("%s 历史提交文件大小超过%sM", repoPath, git.FileLimitSize)
+			fixError := git.FixExceededLimitError(repoPath)
+			if fixError != nil {
+				return fmt.Errorf("%s 修复大文件超过限制: %s", repoPath, fixError)
+			}
+			output, err = git.Push(repoPath, pushURL, IsForcePush)
+			if err != nil {
+				return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
+			}
+		}
 		if err != nil {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 		}
-	}
-	if err != nil {
-		return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
-	}
-	// 判断是否是LFS仓库
-	err, IsLFSRepo := git.IsLFSRepo(repoPath)
-	if err != nil {
-		return fmt.Errorf("%s 判断是否是LFS仓库失败: %s", repoPath, err)
-	}
-	if IsLFSRepo {
-		out, err := git.FetchLFS(repoPath, allowIncompletePush)
+		// 判断是否是LFS仓库
+		err, IsLFSRepo := git.IsLFSRepo(repoPath)
 		if err != nil {
-			return fmt.Errorf("%s 下载LFS文件失败: %s\n%s", repoPath, err, out)
+			return fmt.Errorf("%s 判断是否是LFS仓库失败: %s", repoPath, err)
 		}
-		out, err = git.PushLFS(repoPath, pushURL)
-		if err != nil {
-			return fmt.Errorf("%s 上传LFS文件失败: %s\n%s", repoPath, err, out)
+		if IsLFSRepo {
+			out, err := git.FetchLFS(repoPath, allowIncompletePush)
+			if err != nil {
+				return fmt.Errorf("%s 下载LFS文件失败: %s\n%s", repoPath, err, out)
+			}
+			out, err = git.PushLFS(repoPath, pushURL)
+			if err != nil {
+				return fmt.Errorf("%s 上传LFS文件失败: %s\n%s", repoPath, err, out)
+			}
 		}
 	}
 	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {

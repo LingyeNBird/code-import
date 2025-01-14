@@ -195,7 +195,7 @@ func init() {
 
 	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo")
 
-	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo")
+	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code")
 	if err != nil {
 		panic(err)
 	}
@@ -299,6 +299,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"migrate.file_limit_size",
 		"migrate.skip_exists_repo",
 		"migrate.release",
+		"migrate.code",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -324,6 +325,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.file_limit_size":            "100",
 		"migrate.skip_exists_repo":           "true",
 		"migrate.release":                    "false",
+		"migrate.code":                       "true",
 	}
 
 	// 使用循环来设置默认值
