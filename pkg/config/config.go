@@ -321,7 +321,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.allow_incomplete_push":      "false",
 		"migrate.log_level":                  "info",
 		"source.platform":                    "coding",
-		"migrate.file_limit_size":            "500",
+		"migrate.file_limit_size":            "100",
 		"migrate.skip_exists_repo":           "true",
 		"migrate.release":                    "false",
 	}
