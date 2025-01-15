@@ -57,6 +57,7 @@ func GetReleases(projectID int) (releases []*gitlab.Release, err error) {
 				PerPage: 100,
 				Page:    page,
 			},
+			Sort: gitlab.String("asc"),
 		})
 		if err != nil {
 			logger.Logger.Fatalf("Failed to get Releases: %v", err)
