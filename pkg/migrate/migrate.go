@@ -7,6 +7,7 @@ import (
 	"ccrctl/pkg/http_client"
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/system"
+	"ccrctl/pkg/util"
 	"ccrctl/pkg/vcs"
 	"context"
 	"fmt"
@@ -258,7 +259,7 @@ func migrateRelease(depot vcs.VCS) (createReleaseErr error) {
 	repoPath := depot.GetRepoPath()
 	logger.Logger.Infof("%s 开始迁移 release", repoPath)
 	for _, release := range releases {
-		logger.Logger.Infof("%s 开始迁移 release %s", repoPath, release.Name)
+		logger.Logger.Infof("%s 开始迁移release: %s", repoPath, release.Name)
 		releaseID, exist, createReleaseErr := cnb.CreateRelease(repoPath, release.Name, release.Body, release.TagName, depot.GetProjectID(), release.Prerelease)
 		if createReleaseErr != nil {
 			logger.Logger.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, createReleaseErr)
@@ -270,7 +271,12 @@ func migrateRelease(depot vcs.VCS) (createReleaseErr error) {
 		}
 		if release.Assets != nil && len(release.Assets) > 0 {
 			for _, asset := range release.Assets {
-				migrateAssetErr := migrateReleaseAsset(repoPath, releaseID, asset.Name, asset.Url)
+				fileName, err := util.GetFileNameFromURL(asset.Url)
+				if err != nil {
+					logger.Logger.Errorf("%s 获取release asset 文件名失败: %s", asset.Url, err)
+					return err
+				}
+				migrateAssetErr := migrateReleaseAsset(repoPath, releaseID, fileName, asset.Url)
 				if migrateAssetErr != nil {
 					logger.Logger.Errorf("%s 迁移 release %s asset %s 失败: %s", repoPath, release.Name, asset.Name, migrateAssetErr)
 					return migrateAssetErr

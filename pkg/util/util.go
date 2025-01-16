@@ -2,7 +2,9 @@ package util
 
 import (
 	"ccrctl/pkg/logger"
+	"fmt"
 	"net/url"
+	"path"
 	"regexp"
 	"runtime"
 	"strings"
@@ -135,4 +137,23 @@ func RemoveImageFileExtension(filename string) string {
 	}
 	// 如果没有找到匹配的后缀，返回原始文件名
 	return filename
+}
+
+func GetFileNameFromURL(urlStr string) (string, error) {
+	// 解析URL
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return "", fmt.Errorf("parse URL failed: %w", err)
+	}
+
+	// 获取路径的最后一部分作为文件名
+	fileName := path.Base(u.Path)
+
+	// URL解码
+	decodedFileName, err := url.QueryUnescape(fileName)
+	if err != nil {
+		return "", fmt.Errorf("decode filename failed: %w", err)
+	}
+
+	return decodedFileName, nil
 }
