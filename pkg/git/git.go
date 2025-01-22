@@ -11,12 +11,16 @@ import (
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
 
-func Clone(cloneURL, repoPath string) error {
+func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 	logger.Logger.Infof("%s 开始clone", repoPath)
 	logger.Logger.Debugf("git clone --mirror %s %s", cloneURL, repoPath)
 	out, err := system.RunCommand("git", "./", "clone", "--mirror", cloneURL, repoPath)
 	if err != nil {
 		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
+	}
+	out, err = FetchLFS(repoPath, allowIncompletePush)
+	if err != nil {
+		return fmt.Errorf("%s 下载LFS文件失败: %s\n %s", repoPath, err, out)
 	}
 	logger.Logger.Infof("%s clone成功", repoPath)
 	return nil
@@ -30,7 +34,7 @@ func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
 			return out, err
 		}
 	} else {
-		out, err := NormalPushWithoutForce(repoPath, pushURL)
+		out, err := NormalPush(repoPath, pushURL)
 		if err != nil {
 			return out, err
 		}
@@ -50,7 +54,7 @@ func ForcePush(workDir, pushURL string) (output string, err error) {
 }
 
 // 普通推送不带-f参数
-func NormalPushWithoutForce(workDir, pushURL string) (output string, err error) {
+func NormalPush(workDir, pushURL string) (output string, err error) {
 	logger.Logger.Debugf("git push %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*", pushURL)
 	output, err = system.RunCommand("git", workDir, "push", pushURL, "refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*")
 	if err != nil {
@@ -85,10 +89,9 @@ func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
 		return output, nil
 	}
 	if err != nil {
-		logger.Logger.Infof("%s 下载LFS文件失败", repoPath)
+		logger.Logger.Errorf("%s 下载LFS文件失败", repoPath)
 		return output, err
 	}
-	logger.Logger.Infof("%s 下载LFS文件成功", repoPath)
 	return output, err
 }
 

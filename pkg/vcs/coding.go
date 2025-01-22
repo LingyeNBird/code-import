@@ -45,7 +45,7 @@ func (r *CodingVcs) GetUserName() string {
 }
 
 func (r *CodingVcs) Clone() error {
-	err := git.Clone(r.GetCloneUrl(), r.GetRepoPath())
+	err := git.Clone(r.GetCloneUrl(), r.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}

@@ -58,7 +58,7 @@ func (g *GitlabVcs) GetToken() string {
 }
 
 func (g *GitlabVcs) Clone() error {
-	err := git.Clone(g.GetCloneUrl(), g.GetRepoPath())
+	err := git.Clone(g.GetCloneUrl(), g.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}
