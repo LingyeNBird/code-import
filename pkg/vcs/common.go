@@ -50,7 +50,7 @@ func (c *CommonVcs) GetToken() string {
 }
 
 func (c *CommonVcs) Clone() error {
-	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath())
+	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}

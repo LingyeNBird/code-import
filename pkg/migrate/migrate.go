@@ -148,14 +148,14 @@ func migrateDo(depot vcs.VCS) (err error) {
 		logger.Logger.Infof("%s svn仓库，跳过同步", repoPath)
 		return nil
 	}
-	cnbRepoPath := cnb.GetCnbRepoPath(subGroupName, repoName, organizationMappingLevel)
-	has, err := cnb.HasRepoV2(CnbApiURL, CnbToken, subGroupName, repoName, organizationMappingLevel)
+	cnbRepoPath, cnbRepoGroup := cnb.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
+	has, err := cnb.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
 	if err != nil {
 		return err
 	}
 
 	if !has {
-		err = cnb.CreateRepo(CnbApiURL, CnbToken, subGroupName, repoName, organizationMappingLevel, repoPrivate)
+		err = cnb.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, repoPrivate)
 		if err != nil {
 
 			return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
@@ -209,21 +209,6 @@ func migrateDo(depot vcs.VCS) (err error) {
 		}
 		if err != nil {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
-		}
-		// 判断是否是LFS仓库
-		err, IsLFSRepo := git.IsLFSRepo(repoPath)
-		if err != nil {
-			return fmt.Errorf("%s 判断是否是LFS仓库失败: %s", repoPath, err)
-		}
-		if IsLFSRepo {
-			out, err := git.FetchLFS(repoPath, allowIncompletePush)
-			if err != nil {
-				return fmt.Errorf("%s 下载LFS文件失败: %s\n%s", repoPath, err, out)
-			}
-			out, err = git.PushLFS(repoPath, pushURL)
-			if err != nil {
-				return fmt.Errorf("%s 上传LFS文件失败: %s\n%s", repoPath, err, out)
-			}
 		}
 	}
 	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {

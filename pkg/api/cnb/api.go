@@ -22,17 +22,18 @@ import (
 const (
 	PageSize            = "100"
 	ReleaseAssetMaxSize = 1024 * 1024 * 1024 * 50
+	DescAssetMaxSize    = 1024 * 1024 * 5
 )
 
 var (
-	RootOrganization                        = config.Cfg.GetString("cnb.root_organization")
-	listRootSubOrganizationEndPoint         = "/" + RootOrganization + "/-/sub-groups?page=%s&page_size=" + PageSize
-	listSubOrganizationEndPoint             = "/" + RootOrganization + "/" + "%s" + "/-/sub-groups?page=%s&page_size=" + PageSize
+	RootOrganizationName                    = config.Cfg.GetString("cnb.root_organization")
+	listRootSubOrganizationEndPoint         = "/" + RootOrganizationName + "/-/sub-groups?page=%s&page_size=" + PageSize
+	listSubOrganizationEndPoint             = "/" + RootOrganizationName + "/" + "%s" + "/-/sub-groups?page=%s&page_size=" + PageSize
 	createSubOrganizationEndPoint           = "/groups"
-	createRepoEndPoint                      = "/" + RootOrganization + "/%s/-/repos"
-	createRepoUnderRootOrganizationEndPoint = "/" + RootOrganization + "/-/repos"
+	createRepoEndPoint                      = "/" + RootOrganizationName + "/%s/-/repos"
+	createRepoUnderRootOrganizationEndPoint = "/" + RootOrganizationName + "/-/repos"
 	listRepoEndPoint                        = createRepoEndPoint + "?page=%s&page_size=" + PageSize
-	getRepoInfoEndPoint                     = "/" + RootOrganization + "/%s"
+	getRepoInfoEndPoint                     = "/" + RootOrganizationName + "/%s"
 	c                                       = http_client.NewClientV2()
 	UploadImgEndPoint                       = "/%s/-/upload/imgs"
 	UploadFileEndPoint                      = "/%s/-/upload/files"
@@ -177,7 +178,7 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 
 func CreateSubOrganization(url, token, subGroupName string) (err error) {
 	c := http_client.NewClient(url)
-	groupPath := path.Join(RootOrganization, subGroupName)
+	groupPath := path.Join(RootOrganizationName, subGroupName)
 	logger.Logger.Infof("开始创建子组织%s", groupPath)
 	body := &CreateOrganization{
 		Path: groupPath,
@@ -199,23 +200,17 @@ func CreateSubOrganization(url, token, subGroupName string) (err error) {
 	return fmt.Errorf("创建子组织%s失败: %s %d", groupPath, string(resp))
 }
 
-func CreateRepo(url, token, group, repo string, organizationMappingLevel int, private bool) (err error) {
+func CreateRepo(url, token, group, repoName string, private bool) (err error) {
 	c := http_client.NewClient(url)
-	var endpoint, visibility string
-	switch organizationMappingLevel {
-	case 1:
-		endpoint = fmt.Sprintf(createRepoEndPoint, group)
-	case 2:
-		endpoint = createRepoUnderRootOrganizationEndPoint
-	}
-
+	var visibility string
+	endpoint := group + "/-/repos"
 	if private {
 		visibility = "private"
 	} else {
 		visibility = "public"
 	}
 	body := &CreateRepoBody{
-		Name:       repo,
+		Name:       repoName,
 		Visibility: visibility,
 	}
 	_, err = c.Request("POST", endpoint, token, body)
@@ -225,14 +220,22 @@ func CreateRepo(url, token, group, repo string, organizationMappingLevel int, pr
 	return nil
 }
 
-func GetCnbRepoPath(subgroupName, repoName string, organizationMappingLevel int) (repoPath string) {
+func GetCnbRepoPathAndGroup(subgroupName, repoName string, organizationMappingLevel int) (repoPath, repoGroup string) {
 	switch organizationMappingLevel {
 	case 1:
-		repoPath = RootOrganization + "/" + subgroupName + "/" + repoName
+		// 处理当 subgroupName 为空时的情况
+		if subgroupName == "" {
+			repoPath = "/" + RootOrganizationName + "/" + repoName
+			repoGroup = "/" + RootOrganizationName
+		} else {
+			repoPath = "/" + RootOrganizationName + "/" + subgroupName + "/" + repoName
+			repoGroup = "/" + RootOrganizationName + "/" + subgroupName
+		}
 	case 2:
-		repoPath = RootOrganization + "/" + repoName
+		repoPath = "/" + RootOrganizationName + "/" + repoName
+		repoGroup = "/" + RootOrganizationName
 	}
-	return repoPath
+	return repoPath, repoGroup
 }
 
 func HasRepo(url, token, group, repo, organizationMappingLevel string) (has bool, err error) {
@@ -244,16 +247,9 @@ func HasRepo(url, token, group, repo, organizationMappingLevel string) (has bool
 	return ok, nil
 }
 
-func HasRepoV2(url, token, group, repo string, organizationMappingLevel int) (has bool, err error) {
+func HasRepoV2(url, token, repoPath string) (has bool, err error) {
 	c := http_client.NewClient(url)
-	var repoPath string
-	switch organizationMappingLevel {
-	case 1:
-		repoPath = group + "/" + repo
-	case 2:
-		repoPath = repo
-	}
-	endpoint := fmt.Sprintf(getRepoInfoEndPoint, repoPath)
+	endpoint := repoPath
 	_, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
 		return false, fmt.Errorf("判断仓库是否存在失败: %v", err)
@@ -393,14 +389,14 @@ func GetSubGroupsByRootGroup(url, token string) (Data map[string]bool, err error
 func CreateRootOrganizationIfNotExists(url, token string) (err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token)
 	c := http_client.NewClient(url)
-	endpoint := "/" + RootOrganization
+	endpoint := "/" + RootOrganizationName
 	_, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
 		return fmt.Errorf("判断根组织是否存在失败%s", err)
 	}
 	if respStatusCode == 404 {
 		// 创建根组织
-		logger.Logger.Infof("根组织不存在:%s", RootOrganization)
+		logger.Logger.Infof("根组织不存在:%s", RootOrganizationName)
 		err = CreateRootOrganization(url, token)
 		if err != nil {
 			return err
@@ -408,7 +404,7 @@ func CreateRootOrganizationIfNotExists(url, token string) (err error) {
 		return nil
 	}
 	if respStatusCode == 200 {
-		logger.Logger.Infof("根组织%s已存在", RootOrganization)
+		logger.Logger.Infof("根组织%s已存在", RootOrganizationName)
 		return nil
 	}
 	return fmt.Errorf("判断根组织是否存在错误的状态码:%d", respStatusCode)
@@ -417,7 +413,7 @@ func CreateRootOrganizationIfNotExists(url, token string) (err error) {
 func RootOrganizationExists(url, token string) (exists bool, err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token)
 	c := http_client.NewClient(url)
-	endpoint := "/" + RootOrganization
+	endpoint := "/" + RootOrganizationName
 	_, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
 		return false, fmt.Errorf("判断根组织是否存在失败%s", err)
@@ -432,9 +428,9 @@ func RootOrganizationExists(url, token string) (exists bool, err error) {
 }
 
 func CreateRootOrganization(url, token string) (err error) {
-	logger.Logger.Infof("开始创建根组织%s", RootOrganization)
+	logger.Logger.Infof("开始创建根组织%s", RootOrganizationName)
 	c := http_client.NewClient(url)
-	path := RootOrganization
+	path := RootOrganizationName
 	body := &CreateOrganization{
 		Path: path,
 	}
@@ -442,7 +438,7 @@ func CreateRootOrganization(url, token string) (err error) {
 	if err != nil {
 		return fmt.Errorf("创建根组织失败%s", err)
 	}
-	logger.Logger.Infof("创建根组织%s成功", RootOrganization)
+	logger.Logger.Infof("创建根组织%s成功", RootOrganizationName)
 	return nil
 }
 
@@ -451,9 +447,9 @@ func GetPushUrl(organizationMappingLevel int, cnbURL, userName, token, projectNa
 	parts := strings.Split(cnbURL, "://")
 	switch organizationMappingLevel {
 	case 1:
-		pushURL = parts[0] + "://" + userName + ":" + token + "@" + parts[1] + "/" + RootOrganization + "/" + path.Join(projectName, repoName) + ".git"
+		pushURL = parts[0] + "://" + userName + ":" + token + "@" + parts[1] + "/" + RootOrganizationName + "/" + path.Join(projectName, repoName) + ".git"
 	case 2:
-		pushURL = parts[0] + "://" + userName + ":" + token + "@" + parts[1] + "/" + RootOrganization + "/" + repoName + ".git"
+		pushURL = parts[0] + "://" + userName + ":" + token + "@" + parts[1] + "/" + RootOrganizationName + "/" + repoName + ".git"
 	}
 	return pushURL
 }
@@ -486,7 +482,7 @@ type CreateReleaseRes struct {
 
 func CreateRelease(repoPath, name, desc, tagName, projectID string, preRelease bool) (releaseID string, exist bool, err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "repoPath", repoPath, "name", name, "body", desc, "tagName", tagName)
-	endpoint := fmt.Sprintf("/%s/%s/-/releases", RootOrganization, repoPath)
+	endpoint := fmt.Sprintf("/%s/%s/-/releases", RootOrganizationName, repoPath)
 	desc, err = convertDescLink(desc, repoPath, projectID)
 	if err != nil {
 		logger.Logger.Errorf("%s:%s release 创建失败: %v", repoPath, name, err)
@@ -516,7 +512,7 @@ func CreateRelease(repoPath, name, desc, tagName, projectID string, preRelease b
 	return data.Id, exist, nil
 }
 
-// 转换release描述中的链接为cnb链接
+// 转换release描述中的附件链接为cnb附件链接
 func convertDescLink(desc, repoPath, projectID string) (newDesc string, err error) {
 	attachments, images, exists := util.ExtractAttachments(desc)
 	if !exists {
@@ -652,7 +648,7 @@ type GetReleaseUploadUrlReq struct {
 }
 
 func GetReleaseAssetUploadUrl(repoPath, releaseID, assetName string) (uploadURL UploadUrl, err error) {
-	reqPath := fmt.Sprintf("/%s/%s/-/releases/%s/asset-upload-url", RootOrganization, repoPath, releaseID)
+	reqPath := fmt.Sprintf("/%s/%s/-/releases/%s/asset-upload-url", RootOrganizationName, repoPath, releaseID)
 	body := &GetReleaseUploadUrlReq{
 		AssetName: assetName,
 		Overwrite: true,
@@ -722,7 +718,7 @@ func PlatformConfirmUpload(repoPath, token string) (err error) {
 
 func GetCosUploadUrlAndForm(repoPath, fileName, fileType string, fileSize int) (form UploadImgOrFileRes, err error) {
 	var reqPath string
-	repoPath = RootOrganization + "/" + repoPath
+	repoPath = RootOrganizationName + "/" + repoPath
 	if fileType == "img" {
 		reqPath = fmt.Sprintf(UploadImgEndPoint, repoPath)
 	} else {

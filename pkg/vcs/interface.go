@@ -1,7 +1,12 @@
 package vcs
 
 import (
+	"ccrctl/pkg/config"
 	"fmt"
+)
+
+var (
+	allowIncompletePush = config.Cfg.GetBool("migrate.allow_incomplete_push")
 )
 
 type releases struct {
@@ -46,6 +51,8 @@ func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 		return newGiteeRepo(), nil
 	case "common":
 		return newCommonRepo(), nil
+	case "aliyun":
+		return newAliyunRepo(), nil
 	default:
 		return nil, fmt.Errorf("不支持的仓库平台: %s", sourceRepoPlatformName)
 	}

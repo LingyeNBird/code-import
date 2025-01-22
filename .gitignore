@@ -101,7 +101,7 @@ fabric.properties
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
 
-coding_git_dir
+source_git_dir
 /*.log
 config.yaml
 ccrctl
@@ -109,3 +109,4 @@ ccrctl
 /config.yaml.default
 /coding_repo_import_darwin_amd64
 /coding_repo_import_linux_amd64
+

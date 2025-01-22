@@ -93,22 +93,24 @@ func CheckConfig() error {
 	if err != nil {
 		log.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
-	// 检查 source 参数
-	if config.Source.URL == "" {
-		return fmt.Errorf("source.url is required")
-	}
-
-	// 检查 source.url 前缀
-	if !strings.HasPrefix(config.Source.URL, "http://") && !strings.HasPrefix(config.Source.URL, "https://") {
-		return fmt.Errorf("source.url must start with 'http://' or 'https://'")
-	}
 
 	platform := config.Source.Platform
-	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" {
-		return fmt.Errorf("source.platform error only support coding、gitlab、github、common")
+	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" {
+		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun")
+	}
+	if platform != "aliyun" {
+		// 检查 source 参数
+		if config.Source.URL == "" {
+			return fmt.Errorf("source.url is required")
+		}
+
+		// 检查 source.url 前缀
+		if !strings.HasPrefix(config.Source.URL, "http://") && !strings.HasPrefix(config.Source.URL, "https://") {
+			return fmt.Errorf("source.url must start with 'http://' or 'https://'")
+		}
 	}
 
-	if platform != "common" {
+	if platform != "common" && platform != "aliyun" {
 		if config.Source.Token == "" {
 			return fmt.Errorf("source.token is required")
 		}
@@ -116,8 +118,10 @@ func CheckConfig() error {
 		if config.Source.UserName == "" || config.Source.Password == "" {
 			return fmt.Errorf("when platform is common, source.username、password is required")
 		}
-		if len(config.Source.Repo) == 0 || config.Source.Repo[0] == "" {
-			return fmt.Errorf("when platform is common, source.repo is required")
+		if platform == "common" {
+			if len(config.Source.Repo) == 0 || config.Source.Repo[0] == "" {
+				return fmt.Errorf("when platform is common, source.repo is required")
+			}
 		}
 	}
 
@@ -144,7 +148,7 @@ func CheckConfig() error {
 	}
 
 	// 检查 cnb.url 前缀
-	if !strings.HasPrefix(config.Source.URL, "http://") && !strings.HasPrefix(config.Source.URL, "https://") {
+	if !strings.HasPrefix(config.CNB.URL, "http://") && !strings.HasPrefix(config.CNB.URL, "https://") {
 		return fmt.Errorf("cnb.url must start with 'http://' or 'https://'")
 	}
 
@@ -300,6 +304,9 @@ func bindEnvVariables(config *viper.Viper) error {
 		"migrate.skip_exists_repo",
 		"migrate.release",
 		"migrate.code",
+		"source.ak",
+		"source.as",
+		"source.endpoint",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -317,7 +324,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.ignore_lfs_notfound_error":  "false",
 		"migrate.use_lfs_migrate":            "false",
 		"migrate.organization_mapping_level": "1",
-		"migrate.concurrency":                "5",
+		"migrate.concurrency":                "10",
 		"migrate.type":                       "team",
 		"migrate.allow_incomplete_push":      "false",
 		"migrate.log_level":                  "info",
@@ -326,6 +333,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.skip_exists_repo":           "true",
 		"migrate.release":                    "false",
 		"migrate.code":                       "true",
+		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
 	}
 
 	// 使用循环来设置默认值

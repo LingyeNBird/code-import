@@ -52,7 +52,7 @@ func (g *GithubVcs) GetToken() string {
 }
 
 func (g *GithubVcs) Clone() error {
-	err := git.Clone(g.GetCloneUrl(), g.GetRepoPath())
+	err := git.Clone(g.GetCloneUrl(), g.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}
