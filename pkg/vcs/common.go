@@ -5,6 +5,7 @@ import (
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -38,6 +39,16 @@ func (c *CommonVcs) GetRepoType() string {
 }
 
 func (c *CommonVcs) GetCloneUrl() string {
+	ssh := config.Cfg.GetBool("migrate.ssh")
+	if ssh {
+		// 将 HTTP URL 转换为 SSH 格式
+		// 示例转换: http://example.com/group/repo.git -> git@example.com:group/repo.git
+		sshURL := strings.Replace(c.httpURL, "http://", "", 1)
+		sshURL = strings.Replace(sshURL, "https://", "", 1)
+		sshURL = strings.Replace(sshURL, "/", ":", 1)
+		return fmt.Sprintf("git@%s", sshURL)
+	}
+	// 默认保持 HTTP 协议克隆
 	return util.ConvertUrlWithAuth(c.httpURL, c.GetUserName(), c.GetToken())
 }
 

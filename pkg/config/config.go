@@ -52,13 +52,14 @@ type Config struct {
 }
 
 type Source struct {
-	URL      string   `yaml:"url"`
-	Token    string   `yaml:"token"`
-	Project  []string `yaml:"project"`
-	Repo     []string `yaml:"repo"`
-	Platform string   `yaml:"platform"`
-	UserName string   `yaml:"username"`
-	Password string   `yaml:"password"`
+	URL           string   `yaml:"url"`
+	Token         string   `yaml:"token"`
+	Project       []string `yaml:"project"`
+	Repo          []string `yaml:"repo"`
+	Platform      string   `yaml:"platform"`
+	UserName      string   `yaml:"username"`
+	Password      string   `yaml:"password"`
+	SshPrivateKey string   `yaml:"ssh_private_key"`
 }
 
 type CNB struct {
@@ -79,6 +80,7 @@ type Migrate struct {
 	LogLevel            string `yaml:"log_level"`
 	fileLimitSize       int64  `yaml:"file_limit_size"`
 	SkipExistsRepo      bool   `yaml:"skip_exists_repo"`
+	Ssh                 bool   `yaml:"ssh"`
 }
 
 func CheckConfig() error {
@@ -110,11 +112,15 @@ func CheckConfig() error {
 		}
 	}
 
+	//非阿里云平台和通用第三方平台迁移，检查 source.token 参数
 	if platform != "common" && platform != "aliyun" {
 		if config.Source.Token == "" {
 			return fmt.Errorf("source.token is required")
 		}
-	} else {
+	}
+
+	//common http迁移
+	if platform == "common" && !config.Migrate.Ssh {
 		if config.Source.UserName == "" || config.Source.Password == "" {
 			return fmt.Errorf("when platform is common, source.username、password is required")
 		}
@@ -168,6 +174,10 @@ func CheckConfig() error {
 		return fmt.Errorf("organization_mapping_level error only support 1 or 2 ")
 	}
 
+	if config.Migrate.Ssh && config.Source.SshPrivateKey == "" {
+		return fmt.Errorf("when migrate.ssh is true, source.ssh_private_key is required")
+	}
+
 	//logger.Logger.Infof("配置检查通过")
 	return nil
 }
@@ -199,7 +209,7 @@ func init() {
 
 	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo")
 
-	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code")
+	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh")
 	if err != nil {
 		panic(err)
 	}
@@ -307,6 +317,8 @@ func bindEnvVariables(config *viper.Viper) error {
 		"source.ak",
 		"source.as",
 		"source.endpoint",
+		"migrate.ssh",
+		"source.ssh_private_key",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -334,6 +346,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.release":                    "false",
 		"migrate.code":                       "true",
 		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
+		"migrate.ssh":                        "false",
 	}
 
 	// 使用循环来设置默认值

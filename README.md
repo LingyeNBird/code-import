@@ -91,6 +91,7 @@ docker run --rm  \
 
 ### 从通用第三方代码平台导入
 
+http协议
 ```shell
 docker run --rm  \
   -e PLUGIN_SOURCE_USERNAME="xxx"  \
@@ -104,6 +105,23 @@ docker run --rm  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
+ssh协议
+
+⚠️使用ssh协议时请在当前工作目录确保有对应的私钥文件，文件名固定为`ssh.key`
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_REPO="group1/repo1,group1/repo2,group2/repo3" \
+  -e PLUGIN_SOURCE_URL="https://common.example.com" \
+  -e PLUGIN_SOURCE_PLATFORM="common" \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -e PLUGIN_CNB_URL="https://cnb.example.com" \
+  -e PLUGIN_MIGRATE_SSH="true" \
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+````
+
+
 
 
 ## 参数介绍
@@ -121,7 +139,7 @@ docker run --rm  \
 | PLUGIN_SOURCE_AK                          | 字符串 | 否  | -                               | AccessKey ID,当 source_platform 为 aliyun时必填，需要有AliyunRDCReadOnlyAccess权限，如果是RAM用户，需要关联至云效账号，并授权管理员角色。<br/>[阿里云帮助文档](https://help.aliyun.com/zh/yunxiao/user-guide/add-a-ram-user?spm=5176.28366559.console-base_help.dexternal.211e336a7R37d8&scm=20140722.S_help%40%40%E6%96%87%E6%A1%A3%40%40203014.S_RQW%40ag0%2BBB2%40ag0%2BBB1%40ag0%2Bos0.ID_203014-RL_ram%E7%94%A8%E6%88%B7%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94%E8%87%B3%E4%BA%91%E6%95%88-LOC_console~UND~help-OR_ser-V_4-P0_0-P1_0) |
 | PLUGIN_SOURCE_AS                          | 字符串 | 否  | -                               | AccessKey Secret,当 source_platform 为 aliyun时必填。                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | PLUGIN_SOURCE_ENDPOINT                    | 字符串 | 否  | devops.cn-hangzhou.aliyuncs.com | AccessKey 请求的地址。                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| PLUGIN_SOURCE_ORGANIZATIONID              | 字符串 | 否  | -                               | 阿里云云效代码仓库企业ID，可在云效访问链接中获取，如https://devops.aliyun.com/organization/【OrganizationId】                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| PLUGIN_SOURCE_ORGANIZATIONID              | 字符串 | 否  | -                               | 阿里云云效代码仓库企业ID，可在云效访问链接中获取，如https://devops.aliyun.com/organization/【OrganizationId】                                                                                                                                                                                                                                                                                                                                                                                                          |
 | PLUGIN_CNB_URL                            | 字符串 | 是  | -                               | CNB访问URL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | PLUGIN_CNB_TOKEN                          | 字符串 | 是  | -                               | CNB 授权令牌，权限要求：<br>- repo-code 读写<br>- repo-basic-info 只读<br>- account-profile 只读<br>- account-engage 只读<br>- group-resource 读写<br>- group-manage 读写<br>- repo-content 读写                                                                                                                                                                                                                                                                                                                    |
 | PLUGIN_CNB_ROOT_ORGANIZATION              | 字符串 | 是  | -                               | 迁移后，CNB对应的根组织名称，请确保根组织已提前创建                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -136,4 +154,5 @@ docker run --rm  \
 | PLUGIN_MIGRATE_RELEASE                    | 布尔值 | 否  | false                           | 迁移release（暂时只支持 gitlab release迁移）                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | PLUGIN_MIGRATE_FILE_LIMIT_SIZE            | 数值  | 否  | 100                             | CNB最大文件大小限制，单位Mib                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | PLUGIN_MIGRATE_CODE                       | 布尔值 | 是  | true                            | 迁移代码                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| PLUGIN_MIGRATE_SSH                        | 布尔值 | 是  | false                           | 使用ssh协议克隆通用第三方平台代码仓库                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 

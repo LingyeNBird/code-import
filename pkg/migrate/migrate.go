@@ -54,6 +54,38 @@ func Run() {
 		panic(err)
 	}
 
+	if config.Cfg.GetBool("migrate.ssh") {
+		// 处理SSH私钥文件
+		sourceKeyPath := "ssh.key" // 当前目录下的私钥文件
+		sshDir := filepath.Join(os.Getenv("HOME"), ".ssh")
+
+		// 创建.ssh目录
+		if err := os.MkdirAll(sshDir, 0700); err != nil {
+			panic(fmt.Sprintf("创建.ssh目录失败: %v", err))
+		}
+
+		// 检查源文件是否存在
+		if _, err := os.Stat(sourceKeyPath); os.IsNotExist(err) {
+			panic(fmt.Sprintf("SSH私钥文件 %s 不存在于当前目录", sourceKeyPath))
+		}
+
+		// 设置目标路径
+		privateKeyPath := filepath.Join(sshDir, "id_rsa")
+
+		// 复制文件内容
+		keyData, err := os.ReadFile(sourceKeyPath)
+		if err != nil {
+			panic(fmt.Sprintf("读取SSH私钥文件失败: %v", err))
+		}
+
+		// 写入目标文件
+		if err := os.WriteFile(privateKeyPath, keyData, 0600); err != nil {
+			panic(fmt.Sprintf("复制SSH私钥文件失败: %v", err))
+		}
+
+		logger.Logger.Infof("已成功复制SSH私钥文件从 %s 到 %s", sourceKeyPath, privateKeyPath)
+	}
+
 	err = os.Mkdir(GitDirName, 0755) // 创建Git工作目录
 	if err != nil {
 		panic(err)
@@ -102,6 +134,7 @@ func Run() {
 	if Concurrency > MaxConcurrency { // 限制并发数不超过最大值
 		Concurrency = MaxConcurrency
 	}
+
 	logger.Logger.Infof("开始迁移仓库，当前并发数:%d", Concurrency)
 	sem := semaphore.NewWeighted(int64(Concurrency)) // 创建信号量控制并发
 	var wg sync.WaitGroup                            // 创建WaitGroup等待所有goroutine完成
