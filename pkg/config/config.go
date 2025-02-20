@@ -174,10 +174,6 @@ func CheckConfig() error {
 		return fmt.Errorf("organization_mapping_level error only support 1 or 2 ")
 	}
 
-	if config.Migrate.Ssh && config.Source.SshPrivateKey == "" {
-		return fmt.Errorf("when migrate.ssh is true, source.ssh_private_key is required")
-	}
-
 	//logger.Logger.Infof("配置检查通过")
 	return nil
 }
