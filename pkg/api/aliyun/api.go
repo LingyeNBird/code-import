@@ -2,13 +2,91 @@ package aliyun
 
 import (
 	C "ccrctl/pkg/config"
+	"ccrctl/pkg/git"
 	"ccrctl/pkg/logger"
+	"ccrctl/pkg/util"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	devops20210625 "github.com/alibabacloud-go/devops-20210625/v5/client"
 	"github.com/alibabacloud-go/tea/tea"
+	"strings"
 )
 
+var (
+	allowIncompletePush = C.Cfg.GetBool("migrate.allow_incomplete_push")
+)
+
+type releases struct {
+	Body            string  `json:"body"`
+	Draft           bool    `json:"draft"`
+	MakeLatest      string  `json:"make_latest"`
+	Name            string  `json:"name"`
+	Prerelease      bool    `json:"prerelease"`
+	TagName         string  `json:"tag_name"`
+	TargetCommitish string  `json:"target_commitish"`
+	Assets          []Asset `json:"assets"`
+}
+
+type Asset struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
+}
+
 var client *devops20210625.Client
+
+type repo devops20210625.ListRepositoriesResponseBodyResult
+
+func (c *repo) GetRepoPath() string {
+	return *c.PathWithNamespace
+}
+
+func (c *repo) GetSubGroupName() string {
+	parts := strings.Split(*c.PathWithNamespace, "/")
+	if len(parts) > 0 {
+		parts = parts[1 : len(parts)-1] // 去掉仓库名
+	}
+	result := strings.Join(parts, "/")
+	return result
+}
+
+func (c *repo) GetRepoName() string {
+	return *c.Name
+}
+
+func (c *repo) GetRepoType() string {
+	return "git"
+}
+
+func (c *repo) GetCloneUrl() string {
+	return util.ConvertUrlWithAuth(*c.WebUrl, c.GetUserName(), c.GetToken()) + ".git"
+}
+
+func (c *repo) GetUserName() string {
+	return C.Cfg.GetString("source.username")
+}
+
+func (c *repo) GetToken() string {
+	return C.Cfg.GetString("source.password")
+}
+
+func (c *repo) Clone() error {
+	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath(), allowIncompletePush)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *repo) GetRepoPrivate() bool {
+	return true
+}
+
+func (c *repo) GetReleases() (cnbReleases []releases) {
+	return nil
+}
+
+func (c *repo) GetProjectID() string {
+	return ""
+}
 
 func init() {
 	var err error
