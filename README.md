@@ -117,6 +117,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -e PLUGIN_MIGRATE_SSH="true" \
+  -e GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' \  
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````

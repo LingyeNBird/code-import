@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"golang.org/x/sync/semaphore"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sync"
@@ -77,11 +78,23 @@ func Run() {
 		if err != nil {
 			panic(fmt.Sprintf("读取SSH私钥文件失败: %v", err))
 		}
-
+		logger.Logger.Debugf("SSH私钥内容: \n %s", keyData)
 		// 写入目标文件
 		if err := os.WriteFile(privateKeyPath, keyData, 0600); err != nil {
 			panic(fmt.Sprintf("复制SSH私钥文件失败: %v", err))
 		}
+
+		privateKeyData, err := os.ReadFile(privateKeyPath)
+		if err != nil {
+			panic(fmt.Sprintf("读取SSH私钥文件失败: %v", err))
+		}
+		logger.Logger.Debugf("SSH私钥内容: \n %s", privateKeyData)
+
+		output, err := exec.Command("sh", "-c", "ls -l ~/.ssh/").CombinedOutput()
+		if err != nil {
+			panic(fmt.Sprintf("ls -l 失败: %v\n命令输出: %s", err, string(output)))
+		}
+		logger.Logger.Debug("ls -l: %s", string(output))
 
 		logger.Logger.Infof("已成功复制SSH私钥文件从 %s 到 %s", sourceKeyPath, privateKeyPath)
 	}
