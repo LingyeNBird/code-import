@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	GitDirName     = "source_git_dir"
-	CnbUserName    = "cnb"
-	MaxConcurrency = 10
+	GitDirName      = "source_git_dir"
+	CnbUserName     = "cnb"
+	MaxConcurrency  = 10
+	RebaseDirPrefix = "rebase"
 )
 
 var (
@@ -42,6 +43,7 @@ var (
 	SkipExistsRepo                                                          = config.Cfg.GetBool("migrate.skip_exists_repo")
 	MigrateRelease                                                          = config.Cfg.GetBool("migrate.release")
 	MigrateCode                                                             = config.Cfg.GetBool("migrate.code")
+	MigrateRebase                                                           = config.Cfg.GetBool("migrate.rebase")
 )
 
 func Run() {
@@ -240,6 +242,19 @@ func migrateDo(depot vcs.VCS) (err error) {
 		}(fullRepoDir)
 
 		pushURL := cnb.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
+		rebaseRepoPath := filepath.Join(RebaseDirPrefix, repoPath)
+		if MigrateRebase {
+			// 如果使用rebase同步，那么需要开启强制 push，避免出现冲突
+			IsForcePush = true
+			err := system.SetGlobalGitUser()
+			if err != nil {
+				return fmt.Errorf("设置用户名失败: %v", err)
+			}
+			rebaseCloneErr := git.NormalClone(pushURL, rebaseRepoPath)
+			if rebaseCloneErr != nil {
+				return fmt.Errorf("git clone失败: %s", err)
+			}
+		}
 
 		output, err := git.Push(repoPath, pushURL, IsForcePush)
 		if err != nil && useLfsMigrate && git.IsExceededLimitError(output) {
@@ -255,6 +270,12 @@ func migrateDo(depot vcs.VCS) (err error) {
 		}
 		if err != nil {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
+		}
+		if MigrateRebase {
+			rebaseErr := git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
+			if rebaseErr != nil {
+				return fmt.Errorf("git rebase失败: %s", err)
+			}
 		}
 	}
 	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {
