@@ -205,7 +205,7 @@ func init() {
 
 	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo")
 
-	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh")
+	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh", "migrate.rebase")
 	if err != nil {
 		panic(err)
 	}
@@ -343,6 +343,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.code":                       "true",
 		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
 		"migrate.ssh":                        "false",
+		"migrate.rebase":                     "false",
 	}
 
 	// 使用循环来设置默认值

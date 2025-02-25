@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const (
+	CnbOriginName    = "cnb"
+	SourceOriginName = "source"
+)
+
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
 
 func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
@@ -23,6 +28,51 @@ func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 		return fmt.Errorf("%s 下载LFS文件失败: %s\n %s", repoPath, err, out)
 	}
 	logger.Logger.Infof("%s clone成功", repoPath)
+	return nil
+}
+
+func NormalClone(cloneURL, repoPath string) error {
+	logger.Logger.Infof("%s 开始clone", repoPath)
+	logger.Logger.Debugf("git clone  %s %s", cloneURL, repoPath)
+	out, err := system.RunCommand("git", "./", "clone", cloneURL, repoPath)
+	if err != nil {
+		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
+	}
+	logger.Logger.Infof("%s clone成功", repoPath)
+	return nil
+}
+
+func Rebase(repoPath, cloneURL string) error {
+	logger.Logger.Infof("%s 开始rebase", repoPath)
+	logger.Logger.Debugf("git rebase %s %s", repoPath, cloneURL)
+	out, err := system.RunCommand("git", repoPath, "remote", "add", SourceOriginName, cloneURL)
+	if err != nil {
+		return fmt.Errorf("%s 添加source远程仓库失败: %s\n %s", repoPath, err, out)
+	}
+	logger.Logger.Infof("%s 添加source远程仓库成功", repoPath)
+	out, err = system.RunCommand("git", repoPath, "fetch", SourceOriginName)
+	if err != nil {
+		return fmt.Errorf("%s 拉取souce远程仓库失败: %s\n %s", repoPath, err, out)
+	}
+	logger.Logger.Infof("%s 拉取souce远程仓库成功", repoPath)
+
+	defaultBranchName, err := system.RunCommand("git", repoPath, "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		return fmt.Errorf("%s 获取当前分支失败: %s\n %s", repoPath, err, out)
+	}
+	defaultBranchName = strings.TrimSpace(defaultBranchName)
+	rebaseBranch := SourceOriginName + "/" + defaultBranchName
+	logger.Logger.Debugf("%s 当前默认分支: %s", repoPath, rebaseBranch)
+	out, err = system.RunCommand("git", repoPath, "rebase", rebaseBranch)
+	if err != nil {
+		return fmt.Errorf("%s rebase失败: %s\n %s", repoPath, err, out)
+	}
+	logger.Logger.Infof("%s rebase成功", repoPath)
+	pushOut, err := system.RunCommand("git", repoPath, "push", "-f")
+	if err != nil {
+		return fmt.Errorf("%s rebase后 push失败: %s\n %s", repoPath, err, pushOut)
+	}
+	logger.Logger.Infof("%s push成功", repoPath)
 	return nil
 }
 

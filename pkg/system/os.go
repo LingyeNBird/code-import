@@ -11,7 +11,9 @@ import (
 )
 
 const (
-	Limit = uint64(65535)
+	Limit        = uint64(65535)
+	GitUserName  = "cnb"
+	GitUserEmail = "cnb@cnb.cool"
 )
 
 func SetFileDescriptorLimit(limit uint64) error {
@@ -88,5 +90,20 @@ func CreateDirIfNotExists(dirPath string) error {
 	}
 
 	// 目录已存在
+	return nil
+}
+
+// SetGlobalGitUser 设置全局Git用户信息
+func SetGlobalGitUser() error {
+	// 设置用户名
+	if output, err := RunCommand("git", "", "config", "--global", "user.name", GitUserName); err != nil {
+		return fmt.Errorf("设置用户名失败: %v\n输出: %s", err, output)
+	}
+
+	// 设置邮箱
+	if output, err := RunCommand("git", "", "config", "--global", "user.email", GitUserEmail); err != nil {
+		return fmt.Errorf("设置邮箱失败: %v\n输出: %s", err, output)
+	}
+
 	return nil
 }
