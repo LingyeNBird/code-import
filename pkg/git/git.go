@@ -6,12 +6,19 @@ import (
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/system"
 	"fmt"
+	"path"
 	"strings"
 )
 
 const (
-	CnbOriginName    = "cnb"
-	SourceOriginName = "source"
+	CnbOriginName                   = "cnb"
+	SourceOriginName                = "source"
+	ListAllBranchesAndGrep          = "git branch -a | grep %s"
+	CheckoutBranch                  = "git checkout %s --"
+	RebaseBranch                    = "git rebase %s"
+	ForcePushBranch                 = "git push -f"
+	CNBYamlFileName                 = ".cnb.yml"
+	SetCheckOutDeafultRemoteCommand = " git config --global checkout.defaultRemote origin"
 )
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
@@ -42,38 +49,93 @@ func NormalClone(cloneURL, repoPath string) error {
 	return nil
 }
 
-func Rebase(repoPath, cloneURL string) error {
-	logger.Logger.Infof("%s 开始rebase", repoPath)
-	logger.Logger.Debugf("git rebase %s %s", repoPath, cloneURL)
-	out, err := system.RunCommand("git", repoPath, "remote", "add", SourceOriginName, cloneURL)
-	if err != nil {
-		return fmt.Errorf("%s 添加source远程仓库失败: %s\n %s", repoPath, err, out)
+func RebasePush(rebaseRepoPath string, rebaseSuccessBranches []string) error {
+	for _, branchName := range rebaseSuccessBranches {
+		checkBranchOut, CheckoutBranchErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branchName), rebaseRepoPath)
+		if CheckoutBranchErr != nil {
+			logger.Logger.Errorf("%s 切换分支到%s失败: %s \n%s", rebaseRepoPath, branchName, CheckoutBranchErr, checkBranchOut)
+			return CheckoutBranchErr
+		}
+		pushOut, err := system.ExecCommand(ForcePushBranch, rebaseRepoPath)
+		if err != nil {
+			return fmt.Errorf("%s %s rebase后 push失败: %s\n %s", rebaseRepoPath, branchName, err, pushOut)
+		}
 	}
-	logger.Logger.Infof("%s 添加source远程仓库成功", repoPath)
-	out, err = system.RunCommand("git", repoPath, "fetch", SourceOriginName)
-	if err != nil {
-		return fmt.Errorf("%s 拉取souce远程仓库失败: %s\n %s", repoPath, err, out)
-	}
-	logger.Logger.Infof("%s 拉取souce远程仓库成功", repoPath)
-
-	defaultBranchName, err := system.RunCommand("git", repoPath, "rev-parse", "--abbrev-ref", "HEAD")
-	if err != nil {
-		return fmt.Errorf("%s 获取当前分支失败: %s\n %s", repoPath, err, out)
-	}
-	defaultBranchName = strings.TrimSpace(defaultBranchName)
-	rebaseBranch := SourceOriginName + "/" + defaultBranchName
-	logger.Logger.Debugf("%s 当前默认分支: %s", repoPath, rebaseBranch)
-	out, err = system.RunCommand("git", repoPath, "rebase", rebaseBranch)
-	if err != nil {
-		return fmt.Errorf("%s rebase失败: %s\n %s", repoPath, err, out)
-	}
-	logger.Logger.Infof("%s rebase成功", repoPath)
-	pushOut, err := system.RunCommand("git", repoPath, "push", "-f")
-	if err != nil {
-		return fmt.Errorf("%s rebase后 push失败: %s\n %s", repoPath, err, pushOut)
-	}
-	logger.Logger.Infof("%s push成功", repoPath)
+	logger.Logger.Infof("%s reabase push成功", rebaseRepoPath)
 	return nil
+}
+
+func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
+	var rebaseSuccessBranches []string
+	logger.Logger.Infof("%s 开始rebase", rebaseRepoPath)
+	setErr := setCheckOutDefaultRemote()
+	if setErr != nil {
+		return nil, setErr
+	}
+	out, err := system.RunCommand("git", rebaseRepoPath, "remote", "add", SourceOriginName, cloneURL)
+	if err != nil {
+		return nil, fmt.Errorf("%s 添加source远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
+	}
+	logger.Logger.Infof("%s 添加source远程仓库成功", rebaseRepoPath)
+	out, err = system.RunCommand("git", rebaseRepoPath, "fetch", SourceOriginName)
+	if err != nil {
+		return nil, fmt.Errorf("%s 拉取souce远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
+	}
+	logger.Logger.Infof("%s 拉取souce远程仓库成功", rebaseRepoPath)
+	rebaseBranches := config.Cfg.GetStringSlice("migrate.rebase_branch")
+	// 如果没有指定rebaseBranches, 则默认rebase主分支
+	if len(rebaseBranches) == 0 {
+		defaultBranchName, err := system.RunCommand("git", rebaseRepoPath, "rev-parse", "--abbrev-ref", "HEAD")
+		if err != nil {
+			return nil, fmt.Errorf("%s 获取当前分支失败: %s\n %s", rebaseRepoPath, err, out)
+		}
+		defaultBranchName = strings.TrimSpace(defaultBranchName)
+		rebaseBranch := SourceOriginName + "/" + defaultBranchName
+		logger.Logger.Debugf("%s 当前默认分支: %s", rebaseRepoPath, rebaseBranch)
+		out, err = system.RunCommand("git", rebaseRepoPath, "rebase", rebaseBranch)
+		if err != nil {
+			return nil, fmt.Errorf("%s rebase失败: %s\n %s", rebaseRepoPath, err, out)
+		}
+		logger.Logger.Infof("%s rebase成功", rebaseRepoPath)
+		rebaseSuccessBranches = []string{defaultBranchName}
+		//pushOut, err := system.RunCommand("git", rebaseRepoPath, "push", "-f")
+		//if err != nil {
+		//	return nil, fmt.Errorf("%s rebase后 push失败: %s\n %s", rebaseRepoPath, err, pushOut)
+		//}
+		//logger.Logger.Infof("%s push成功", rebaseRepoPath)
+	} else {
+		for _, branch := range rebaseBranches {
+			//git checkout 到指定分支
+			_, grepBranchErr := system.ExecCommand(fmt.Sprintf(ListAllBranchesAndGrep, branch), rebaseRepoPath)
+			if grepBranchErr != nil {
+				logger.Logger.Debugf("%s 当前分支: %s 不存在", rebaseRepoPath, branch)
+				continue
+			}
+			// 切换到指定分支
+			checkBranchOut, CheckoutBranchErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), rebaseRepoPath)
+			if CheckoutBranchErr != nil {
+				logger.Logger.Errorf("%s 切换分支到%s失败: %s \n%s", rebaseRepoPath, branch, CheckoutBranchErr, checkBranchOut)
+				return nil, CheckoutBranchErr
+			}
+			//检查 .cnb.yaml文件是否存在
+			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, ".cnb.yml")
+			exist := system.FileExists(CNBYamlFileAbsPath)
+			if !exist {
+				logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, branch)
+				continue
+			}
+			rebaseBranch := SourceOriginName + "/" + branch
+			// rebase指定分支
+			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
+			if rebaseErr != nil {
+				logger.Logger.Errorf("%s rebase %s 失败: %s \n%s", rebaseRepoPath, rebaseBranch, rebaseErr, rebaseOut)
+				return nil, rebaseErr
+			}
+			logger.Logger.Infof("%s rebase %s 成功", rebaseRepoPath, rebaseBranch)
+			rebaseSuccessBranches = append(rebaseSuccessBranches, branch)
+		}
+	}
+	return rebaseSuccessBranches, nil
 }
 
 func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
@@ -182,4 +244,12 @@ func IsSvnRepo(vcsType string) bool {
 		return true
 	}
 	return false
+}
+
+func setCheckOutDefaultRemote() error {
+	output, err := system.ExecCommand(SetCheckOutDeafultRemoteCommand, ".")
+	if err != nil {
+		return fmt.Errorf("git config remote.origin.fetch 失败: %s\n%s", err, output)
+	}
+	return nil
 }

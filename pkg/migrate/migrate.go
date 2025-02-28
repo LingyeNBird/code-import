@@ -44,6 +44,7 @@ var (
 	MigrateRelease                                                          = config.Cfg.GetBool("migrate.release")
 	MigrateCode                                                             = config.Cfg.GetBool("migrate.code")
 	MigrateRebase                                                           = config.Cfg.GetBool("migrate.rebase")
+	rebaseSuccessBranches                                                   []string
 )
 
 func Run() {
@@ -252,7 +253,12 @@ func migrateDo(depot vcs.VCS) (err error) {
 			}
 			rebaseCloneErr := git.NormalClone(pushURL, rebaseRepoPath)
 			if rebaseCloneErr != nil {
-				return fmt.Errorf("git clone失败: %s", err)
+				return fmt.Errorf("git rebase clone失败: %s", err)
+			}
+			var rebaseErr error
+			rebaseSuccessBranches, rebaseErr = git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
+			if rebaseErr != nil {
+				return fmt.Errorf("git rebase失败: %s", err)
 			}
 		}
 
@@ -272,10 +278,7 @@ func migrateDo(depot vcs.VCS) (err error) {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 		}
 		if MigrateRebase {
-			rebaseErr := git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
-			if rebaseErr != nil {
-				return fmt.Errorf("git rebase失败: %s", err)
-			}
+			git.RebasePush(rebaseRepoPath, rebaseSuccessBranches)
 		}
 	}
 	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {
