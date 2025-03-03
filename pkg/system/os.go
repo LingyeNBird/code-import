@@ -48,6 +48,13 @@ func RunCommand(command, workDir string, args ...string) (string, error) {
 	return string(output), err
 }
 
+func ExecCommand(command, workDir string) (string, error) {
+	cmd := exec.Command("sh", "-c", command)
+	cmd.Dir = workDir
+	output, err := cmd.CombinedOutput()
+	return string(output), err
+}
+
 func HandleInterrupt(path string) {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -106,4 +113,14 @@ func SetGlobalGitUser() error {
 	}
 
 	return nil
+}
+
+func FileExists(path string) bool {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return false
+	}
+	logger.Logger.Debugf("当前工作目录: %s", pwd)
+	_, err = os.Stat(path)
+	return !os.IsNotExist(err)
 }
