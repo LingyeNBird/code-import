@@ -92,23 +92,25 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 		defaultBranchName = strings.TrimSpace(defaultBranchName)
 		rebaseBranch := SourceOriginName + "/" + defaultBranchName
 		logger.Logger.Debugf("%s 当前默认分支: %s", rebaseRepoPath, rebaseBranch)
-		out, err = system.RunCommand("git", rebaseRepoPath, "rebase", rebaseBranch)
-		if err != nil {
-			return nil, fmt.Errorf("%s rebase失败: %s\n %s", rebaseRepoPath, err, out)
+		//检查 .cnb.yaml文件是否存在
+		CNBYamlFileAbsPath := path.Join(rebaseRepoPath, ".cnb.yml")
+		exist := system.FileExists(CNBYamlFileAbsPath)
+		if !exist {
+			logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, defaultBranchName)
+			return nil, nil
+		}
+		rebaseOut, rebaseErr := system.RunCommand("git", rebaseRepoPath, "rebase", rebaseBranch)
+		if rebaseErr != nil {
+			return nil, fmt.Errorf("分支 %s rebase失败: %s\n %s", defaultBranchName, rebaseErr.Error(), rebaseOut)
 		}
 		logger.Logger.Infof("%s rebase成功", rebaseRepoPath)
 		rebaseSuccessBranches = []string{defaultBranchName}
-		//pushOut, err := system.RunCommand("git", rebaseRepoPath, "push", "-f")
-		//if err != nil {
-		//	return nil, fmt.Errorf("%s rebase后 push失败: %s\n %s", rebaseRepoPath, err, pushOut)
-		//}
-		//logger.Logger.Infof("%s push成功", rebaseRepoPath)
 	} else {
 		for _, branch := range rebaseBranches {
 			//git checkout 到指定分支
 			_, grepBranchErr := system.ExecCommand(fmt.Sprintf(ListAllBranchesAndGrep, branch), rebaseRepoPath)
 			if grepBranchErr != nil {
-				logger.Logger.Debugf("%s 当前分支: %s 不存在", rebaseRepoPath, branch)
+				logger.Logger.Debugf("%s 分支: %s 不存在,跳过 rebase", rebaseRepoPath, branch)
 				continue
 			}
 			// 切换到指定分支
@@ -128,8 +130,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 			// rebase指定分支
 			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
 			if rebaseErr != nil {
-				logger.Logger.Errorf("%s rebase %s 失败: %s \n%s", rebaseRepoPath, rebaseBranch, rebaseErr, rebaseOut)
-				return nil, rebaseErr
+				return nil, fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
 			}
 			logger.Logger.Infof("%s rebase %s 成功", rebaseRepoPath, rebaseBranch)
 			rebaseSuccessBranches = append(rebaseSuccessBranches, branch)

@@ -253,12 +253,12 @@ func migrateDo(depot vcs.VCS) (err error) {
 			}
 			rebaseCloneErr := git.NormalClone(pushURL, rebaseRepoPath)
 			if rebaseCloneErr != nil {
-				return fmt.Errorf("git rebase clone失败: %s", err)
+				return fmt.Errorf("git rebase clone失败: %s", rebaseCloneErr)
 			}
 			var rebaseErr error
 			rebaseSuccessBranches, rebaseErr = git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
 			if rebaseErr != nil {
-				return fmt.Errorf("git rebase失败: %s", err)
+				return rebaseErr
 			}
 		}
 

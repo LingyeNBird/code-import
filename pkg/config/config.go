@@ -281,6 +281,9 @@ func stringCovertToListAndSetConfigValue(v *viper.Viper, keys ...string) {
 	for _, key := range keys {
 		value := v.GetString(key)
 		listValue := strings.Split(value, ",")
+		if listValue[0] == "" {
+			listValue = nil
+		}
 		v.Set(key, listValue)
 	}
 	return
@@ -345,7 +348,6 @@ func setDefaultValues(config *viper.Viper) {
 		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
 		"migrate.ssh":                        "false",
 		"migrate.rebase":                     "false",
-		"migrate.rebase_branch":              "",
 	}
 
 	// 使用循环来设置默认值
