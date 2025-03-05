@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	CnbOriginName                   = "cnb"
 	SourceOriginName                = "source"
-	ListAllBranchesAndGrep          = "git branch -a | grep %s"
+	ListAllBranchesAndGrep          = "git branch -a | grep -E '(^|/)%s$'"
 	CheckoutBranch                  = "git checkout %s --"
 	RebaseBranch                    = "git rebase %s"
 	ForcePushBranch                 = "git push -f"
@@ -93,7 +92,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 		rebaseBranch := SourceOriginName + "/" + defaultBranchName
 		logger.Logger.Debugf("%s 当前默认分支: %s", rebaseRepoPath, rebaseBranch)
 		//检查 .cnb.yaml文件是否存在
-		CNBYamlFileAbsPath := path.Join(rebaseRepoPath, ".cnb.yml")
+		CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
 		exist := system.FileExists(CNBYamlFileAbsPath)
 		if !exist {
 			logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, defaultBranchName)
@@ -120,7 +119,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 				return nil, CheckoutBranchErr
 			}
 			//检查 .cnb.yaml文件是否存在
-			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, ".cnb.yml")
+			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
 			exist := system.FileExists(CNBYamlFileAbsPath)
 			if !exist {
 				logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, branch)
