@@ -135,6 +135,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 			rebaseSuccessBranches = append(rebaseSuccessBranches, branch)
 		}
 	}
+	logger.Logger.Infof("%s rebasse成功的分支列表 %s", rebaseRepoPath, rebaseSuccessBranches)
 	return rebaseSuccessBranches, nil
 }
 

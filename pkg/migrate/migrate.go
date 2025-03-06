@@ -45,6 +45,7 @@ var (
 	MigrateCode                                                             = config.Cfg.GetBool("migrate.code")
 	MigrateRebase                                                           = config.Cfg.GetBool("migrate.rebase")
 	rebaseSuccessBranches                                                   []string
+	rebaseBackDirPath                                                       string
 )
 
 func Run() {
@@ -119,7 +120,22 @@ func Run() {
 		}
 	}(gitDirABSPath)
 	system.HandleInterrupt(gitDirABSPath) // 处理中断信号
-	err = os.Chdir(GitDirName)            // 切换到Git工作目录
+	if MigrateRebase {
+		err = system.SetGlobalGitUser()
+		if err != nil {
+			panic(err)
+		}
+		// 创建rebase备份目录
+		rebaseBackDirPath = filepath.Join(pwdDir, time.Now().Format("20060102150405")+"bak")
+		err := os.Mkdir(rebaseBackDirPath, 0755)
+		if err != nil {
+			logger.Logger.Errorf("创建rebase备份目录失败: %s", err)
+			panic(err)
+		}
+		logger.Logger.Infof("创建rebase备份目录%s成功", rebaseBackDirPath)
+
+	}
+	err = os.Chdir(GitDirName) // 切换到Git工作目录
 	if err != nil {
 		panic(err)
 	}
@@ -149,12 +165,6 @@ func Run() {
 	}
 	if Concurrency > MaxConcurrency { // 限制并发数不超过最大值
 		Concurrency = MaxConcurrency
-	}
-	if MigrateRebase {
-		err = system.SetGlobalGitUser()
-		if err != nil {
-			panic(err)
-		}
 	}
 
 	logger.Logger.Infof("开始迁移仓库，当前并发数:%d", Concurrency)
@@ -249,7 +259,15 @@ func migrateDo(depot vcs.VCS) (err error) {
 			if rebaseCloneErr != nil {
 				return fmt.Errorf("git rebase clone失败: %s", rebaseCloneErr)
 			}
+			destPath := filepath.Join(rebaseBackDirPath, repoPath)
+			err = util.CopyDir(rebaseRepoPath, destPath)
+			if err != nil {
+				logger.Logger.Errorf("备份仓库失败: %v", err)
+				return fmt.Errorf("备份仓库失败: %w", err)
+			}
+			logger.Logger.Infof("%s 已备份仓库到 %s", repoPath, destPath)
 			var rebaseErr error
+			logger.Logger.Infof("%s 成功rebase的仓库列表 %s", repoPath, rebaseSuccessBranches)
 			rebaseSuccessBranches, rebaseErr = git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
 			if rebaseErr != nil {
 				return rebaseErr
@@ -272,7 +290,10 @@ func migrateDo(depot vcs.VCS) (err error) {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 		}
 		if MigrateRebase {
-			git.RebasePush(rebaseRepoPath, rebaseSuccessBranches)
+			err = git.RebasePush(rebaseRepoPath, rebaseSuccessBranches)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {
