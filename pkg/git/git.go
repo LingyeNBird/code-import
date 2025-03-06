@@ -17,7 +17,7 @@ const (
 	RebaseBranch                    = "git rebase %s"
 	ForcePushBranch                 = "git push -f"
 	CNBYamlFileName                 = ".cnb.yml"
-	SetCheckOutDeafultRemoteCommand = " git config --global checkout.defaultRemote origin"
+	SetCheckOutDefaultRemoteCommand = " git config --global checkout.defaultRemote origin"
 )
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
@@ -247,7 +247,7 @@ func IsSvnRepo(vcsType string) bool {
 }
 
 func setCheckOutDefaultRemote() error {
-	output, err := system.ExecCommand(SetCheckOutDeafultRemoteCommand, ".")
+	output, err := system.ExecCommand(SetCheckOutDefaultRemoteCommand, ".")
 	if err != nil {
 		return fmt.Errorf("git config remote.origin.fetch 失败: %s\n%s", err, output)
 	}

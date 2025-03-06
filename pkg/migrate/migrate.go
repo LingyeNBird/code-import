@@ -150,6 +150,12 @@ func Run() {
 	if Concurrency > MaxConcurrency { // 限制并发数不超过最大值
 		Concurrency = MaxConcurrency
 	}
+	if MigrateRebase {
+		err = system.SetGlobalGitUser()
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	logger.Logger.Infof("开始迁移仓库，当前并发数:%d", Concurrency)
 	sem := semaphore.NewWeighted(int64(Concurrency)) // 创建信号量控制并发
@@ -198,36 +204,28 @@ func migrateDo(depot vcs.VCS) (err error) {
 		return nil
 	}
 	cnbRepoPath, cnbRepoGroup := cnb.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
-	has, err := cnb.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
-	if err != nil {
-		return err
-	}
-
-	if !has {
-		err = cnb.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, repoPrivate)
-		if err != nil {
-
-			return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
-		}
-		logger.Logger.Infof("%s 仓库创建成功", repoPath)
-	} else if has && SkipExistsRepo {
-		skipRepoNumber++
-		failedRepoNumber--
-		logger.Logger.Warnf("%s CNB仓库%s已存在，跳过同步", repoPath, cnbRepoPath)
-		return nil
-	}
-	//err = system.CreateDirIfNotExists(depot.ProjectName)
-	//if err != nil {
-	//	return fmt.Errorf("创建%s目录失败", depot.Name)
-	//}
-	//cloneURL := depot.GetCloneUrl()
 	if MigrateCode {
 		err = depot.Clone()
 		if err != nil {
 			logger.Logger.Errorf(err.Error())
 			return fmt.Errorf(err.Error())
 		}
-
+		has, err := cnb.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
+		if err != nil {
+			return err
+		}
+		if !has {
+			err = cnb.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, repoPrivate)
+			if err != nil {
+				return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
+			}
+			logger.Logger.Infof("%s 仓库创建成功", repoPath)
+		} else if has && SkipExistsRepo {
+			skipRepoNumber++
+			failedRepoNumber--
+			logger.Logger.Warnf("%s CNB仓库%s已存在，跳过同步", repoPath, cnbRepoPath)
+			return nil
+		}
 		// 设置要进入的目录路径
 		pwdDir, err := os.Getwd()
 		if err != nil {
@@ -247,10 +245,6 @@ func migrateDo(depot vcs.VCS) (err error) {
 		if MigrateRebase {
 			// 如果使用rebase同步，那么需要开启强制 push，避免出现冲突
 			IsForcePush = true
-			err := system.SetGlobalGitUser()
-			if err != nil {
-				return fmt.Errorf("设置用户名失败: %v", err)
-			}
 			rebaseCloneErr := git.NormalClone(pushURL, rebaseRepoPath)
 			if rebaseCloneErr != nil {
 				return fmt.Errorf("git rebase clone失败: %s", rebaseCloneErr)
