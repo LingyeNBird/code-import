@@ -267,7 +267,6 @@ func migrateDo(depot vcs.VCS) (err error) {
 			}
 			logger.Logger.Infof("%s 已备份仓库到 %s", repoPath, destPath)
 			var rebaseErr error
-			logger.Logger.Infof("%s 成功rebase的仓库列表 %s", repoPath, rebaseSuccessBranches)
 			rebaseSuccessBranches, rebaseErr = git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
 			if rebaseErr != nil {
 				return rebaseErr
@@ -290,6 +289,7 @@ func migrateDo(depot vcs.VCS) (err error) {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 		}
 		if MigrateRebase {
+			logger.Logger.Infof("%s 成功rebase的仓库列表 %s", repoPath, rebaseSuccessBranches)
 			err = git.RebasePush(rebaseRepoPath, rebaseSuccessBranches)
 			if err != nil {
 				return err
