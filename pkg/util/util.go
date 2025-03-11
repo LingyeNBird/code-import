@@ -1,12 +1,14 @@
 package util
 
 import (
+	"bytes"
 	"ccrctl/pkg/logger"
 	"fmt"
 	"net/url"
 	"path"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -156,4 +158,13 @@ func GetFileNameFromURL(urlStr string) (string, error) {
 	}
 
 	return decodedFileName, nil
+}
+
+func GetGoroutineID() int {
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.Atoi(string(b))
+	return n
 }

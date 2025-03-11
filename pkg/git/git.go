@@ -59,18 +59,15 @@ func RebasePush(rebaseRepoPath string, rebaseSuccessBranches []string) error {
 		if err != nil {
 			return fmt.Errorf("%s %s rebase后 push失败: %s\n %s", rebaseRepoPath, branchName, err, pushOut)
 		}
+		logger.Logger.Infof("%s %s rebase后 push成功", rebaseRepoPath, branchName)
 	}
-	logger.Logger.Infof("%s reabase push成功", rebaseRepoPath)
+	logger.Logger.Infof("%s rebase push成功", rebaseRepoPath)
 	return nil
 }
 
 func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 	var rebaseSuccessBranches []string
 	logger.Logger.Infof("%s 开始rebase", rebaseRepoPath)
-	setErr := setCheckOutDefaultRemote()
-	if setErr != nil {
-		return nil, setErr
-	}
 	out, err := system.RunCommand("git", rebaseRepoPath, "remote", "add", SourceOriginName, cloneURL)
 	if err != nil {
 		return nil, fmt.Errorf("%s 添加source远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
@@ -152,7 +149,7 @@ func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
 			return out, err
 		}
 	}
-	logger.Logger.Infof("%s push成功", repoPath)
+	logger.Logger.Infof("%s 裸仓push成功", repoPath)
 	return output, nil
 }
 
@@ -247,7 +244,7 @@ func IsSvnRepo(vcsType string) bool {
 	return false
 }
 
-func setCheckOutDefaultRemote() error {
+func SetCheckOutDefaultRemote() error {
 	output, err := system.ExecCommand(SetCheckOutDefaultRemoteCommand, ".")
 	if err != nil {
 		return fmt.Errorf("git config remote.origin.fetch 失败: %s\n%s", err, output)

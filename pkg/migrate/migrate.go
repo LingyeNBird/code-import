@@ -11,12 +11,14 @@ import (
 	"ccrctl/pkg/vcs"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -28,24 +30,23 @@ const (
 )
 
 var (
-	CnbURL                                                                  = config.Cfg.GetString("cnb.url")
-	CnbApiURL                                                               = config.ConvertToApiURL(CnbURL)
-	CnbToken                                                                = config.Cfg.GetString("cnb.token")
-	MigrateType                                                             = config.Cfg.GetString("migrate.type")
-	Concurrency                                                             = config.Cfg.GetInt("migrate.concurrency")
-	totalRepoNumber, skipRepoNumber, successfulRepoNumber, failedRepoNumber int
-	IsForcePush                                                             = config.Cfg.GetBool("migrate.force_push")
-	IgnoreLFSNotFoundError                                                  = config.Cfg.GetBool("migrate.ignore_lfs_notfound_error")
-	useLfsMigrate                                                           = config.Cfg.GetBool("migrate.use_lfs_migrate")
-	organizationMappingLevel                                                = config.Cfg.GetInt("migrate.organization_mapping_level")
-	allowIncompletePush                                                     = config.Cfg.GetBool("migrate.allow_incomplete_push")
-	SourcePlatformName                                                      = config.Cfg.GetString("source.platform")
-	SkipExistsRepo                                                          = config.Cfg.GetBool("migrate.skip_exists_repo")
-	MigrateRelease                                                          = config.Cfg.GetBool("migrate.release")
-	MigrateCode                                                             = config.Cfg.GetBool("migrate.code")
-	MigrateRebase                                                           = config.Cfg.GetBool("migrate.rebase")
-	rebaseSuccessBranches                                                   []string
-	rebaseBackDirPath                                                       string
+	CnbURL                   = config.Cfg.GetString("cnb.url")
+	CnbApiURL                = config.ConvertToApiURL(CnbURL)
+	CnbToken                 = config.Cfg.GetString("cnb.token")
+	Concurrency              = config.Cfg.GetInt("migrate.concurrency")
+	totalRepoNumber          int64
+	skipRepoNumber           int64
+	successfulRepoNumber     int64
+	failedRepoNumber         int64
+	useLfsMigrate            = config.Cfg.GetBool("migrate.use_lfs_migrate")
+	organizationMappingLevel = config.Cfg.GetInt("migrate.organization_mapping_level")
+	SourcePlatformName       = config.Cfg.GetString("source.platform")
+	SkipExistsRepo           = config.Cfg.GetBool("migrate.skip_exists_repo")
+	MigrateRelease           = config.Cfg.GetBool("migrate.release")
+	MigrateCode              = config.Cfg.GetBool("migrate.code")
+	MigrateRebase            = config.Cfg.GetBool("migrate.rebase")
+	rebaseBackDirPath        string
+	rebaseBranchesMap        sync.Map
 )
 
 func Run() {
@@ -125,6 +126,10 @@ func Run() {
 		if err != nil {
 			panic(err)
 		}
+		err = git.SetCheckOutDefaultRemote()
+		if err != nil {
+			panic(err)
+		}
 		// 创建rebase备份目录
 		rebaseBackDirPath = filepath.Join(pwdDir, time.Now().Format("20060102150405")+"bak")
 		err := os.Mkdir(rebaseBackDirPath, 0755)
@@ -143,8 +148,10 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-	totalRepoNumber, failedRepoNumber = len(depotList), len(depotList) // 初始化统计变量
-	successfulRepoNumber, skipRepoNumber = 0, 0
+	atomic.StoreInt64(&totalRepoNumber, int64(len(depotList)))
+	atomic.StoreInt64(&failedRepoNumber, int64(len(depotList)))
+	atomic.StoreInt64(&successfulRepoNumber, 0)
+	atomic.StoreInt64(&skipRepoNumber, 0)
 	//err = cnb.CreateRootOrganizationIfNotExists(CnbApiURL, CnbToken) // 创建根组织
 	//if err != nil {
 	//	panic(err)
@@ -172,7 +179,9 @@ func Run() {
 	var wg sync.WaitGroup                            // 创建WaitGroup等待所有goroutine完成
 
 	for _, depot := range depotList { // 遍历仓库列表
-		wg.Add(1)                // 增加WaitGroup计数
+		wg.Add(1) // 增加WaitGroup计数
+		// 创建depot的副本
+		depotCopy := depot
 		go func(depot vcs.VCS) { // 启动goroutine进行迁移
 			defer wg.Done() // 完成后减少WaitGroup计数
 
@@ -180,44 +189,50 @@ func Run() {
 				panic(err)
 				return
 			}
-			defer sem.Release(1)   // 释放信号量
-			err = migrateDo(depot) // 执行迁移操作
+			defer sem.Release(1)    // 释放信号量
+			err := migrateDo(depot) // 执行迁移操作
 			if err != nil {
 				logger.Logger.Errorf("%s 仓库迁移失败: %s", depot.GetRepoPath(), err) // 记录迁移失败信息
 			}
-		}(depot)
+		}(depotCopy)
 	}
 	wg.Wait()                                                                                                                                                  // 等待所有goroutine完成
 	duration := time.Since(startTime)                                                                                                                          // 计算迁移耗时
 	logger.Logger.Infof("代码仓库迁移完成，耗时%s。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d", duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber) // 记录迁移完成信息
 }
 
-func migrateDo(depot vcs.VCS) (err error) {
+func migrateDo(depot vcs.VCS) error {
+	var err error
 	repoName, subGroupName, repoPath, repoPrivate := depot.GetRepoName(), depot.GetSubGroupName(), depot.GetRepoPath(), depot.GetRepoPrivate()
+
+	// 使用zap的With方法添加repo字段
+	log := logger.Logger.With(zap.String("repo", repoPath))
+
 	err, migrated := isMigrated(repoPath, logger.SuccessfulLogFilePath)
 	if err != nil {
+		log.Errorf("判断是否迁移失败: %s", err)
 		return fmt.Errorf("%s 判断是否迁移失败%s", repoPath, err)
 	}
 	if migrated {
-		skipRepoNumber++
-		failedRepoNumber--
-		logger.Logger.Infof("%s 已迁移，跳过同步", repoPath)
+		atomic.AddInt64(&skipRepoNumber, 1)
+		atomic.AddInt64(&failedRepoNumber, -1)
+		log.Infof("%s 已迁移，跳过同步", repoPath)
 		return nil
 	}
-	logger.Logger.Infof("%s 开始迁移", repoPath)
+	log.Infof("%s 开始迁移", repoPath)
 	startTime := time.Now()
 	isSvn := git.IsSvnRepo(depot.GetRepoType())
 	if isSvn {
-		skipRepoNumber++
-		failedRepoNumber--
-		logger.Logger.Infof("%s svn仓库，跳过同步", repoPath)
+		atomic.AddInt64(&skipRepoNumber, 1)
+		atomic.AddInt64(&failedRepoNumber, -1)
+		log.Infof("%s svn仓库，跳过同步", repoPath)
 		return nil
 	}
 	cnbRepoPath, cnbRepoGroup := cnb.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
 	if MigrateCode {
 		err = depot.Clone()
 		if err != nil {
-			logger.Logger.Errorf(err.Error())
+			log.Errorf(err.Error())
 			return fmt.Errorf(err.Error())
 		}
 		has, err := cnb.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
@@ -229,11 +244,11 @@ func migrateDo(depot vcs.VCS) (err error) {
 			if err != nil {
 				return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
 			}
-			logger.Logger.Infof("%s 仓库创建成功", repoPath)
+			log.Infof("%s 仓库创建成功", repoPath)
 		} else if has && SkipExistsRepo {
-			skipRepoNumber++
-			failedRepoNumber--
-			logger.Logger.Warnf("%s CNB仓库%s已存在，跳过同步", repoPath, cnbRepoPath)
+			atomic.AddInt64(&skipRepoNumber, 1)
+			atomic.AddInt64(&failedRepoNumber, -1)
+			log.Warnf("%s CNB仓库%s已存在，跳过同步", repoPath, cnbRepoPath)
 			return nil
 		}
 		// 设置要进入的目录路径
@@ -246,41 +261,49 @@ func migrateDo(depot vcs.VCS) (err error) {
 		defer func(path string) {
 			err := os.RemoveAll(path)
 			if err != nil {
-				logger.Logger.Errorf("%s 删除失败: %s", path, err)
+				log.Errorf("%s 删除失败: %s", path, err)
 			}
 		}(fullRepoDir)
 
 		pushURL := cnb.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
 		rebaseRepoPath := filepath.Join(RebaseDirPrefix, repoPath)
+		isForcePush := config.Cfg.GetBool("migrate.force_push")
 		if MigrateRebase {
 			// 如果使用rebase同步，那么需要开启强制 push，避免出现冲突
-			IsForcePush = true
+			isForcePush = true
 			rebaseCloneErr := git.NormalClone(pushURL, rebaseRepoPath)
 			if rebaseCloneErr != nil {
 				return fmt.Errorf("git rebase clone失败: %s", rebaseCloneErr)
 			}
 			destPath := filepath.Join(rebaseBackDirPath, repoPath)
+			//备份CNB侧仓库
 			err = util.CopyDir(rebaseRepoPath, destPath)
 			if err != nil {
-				logger.Logger.Errorf("备份仓库失败: %v", err)
+				log.Errorf("备份仓库失败: %v", err)
 				return fmt.Errorf("备份仓库失败: %w", err)
 			}
-			logger.Logger.Infof("%s 已备份仓库到 %s", repoPath, destPath)
-			var rebaseErr error
-			rebaseSuccessBranches, rebaseErr = git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
+			log.Infof("%s 已备份仓库到 %s", repoPath, destPath)
+			branches, rebaseErr := git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
 			if rebaseErr != nil {
 				return rebaseErr
 			}
+			// 将分支列表与仓库路径关联存储
+			if branches != nil {
+				log.Debugf("%s Goroutine %d: Setting rebaseSuccessBranches to %v", repoPath, util.GetGoroutineID(), branches)
+				rebaseBranchesMap.Store(repoPath, branches)
+			} else {
+				log.Debugf("%s 没有rebase成功的分支", repoPath)
+			}
 		}
 
-		output, err := git.Push(repoPath, pushURL, IsForcePush)
+		output, err := git.Push(repoPath, pushURL, isForcePush)
 		if err != nil && useLfsMigrate && git.IsExceededLimitError(output) {
-			logger.Logger.Warnf("%s 历史提交文件大小超过%sM", repoPath, git.FileLimitSize)
+			log.Warnf("%s 历史提交文件大小超过%sM", repoPath, git.FileLimitSize)
 			fixError := git.FixExceededLimitError(repoPath)
 			if fixError != nil {
 				return fmt.Errorf("%s 修复大文件超过限制: %s", repoPath, fixError)
 			}
-			output, err = git.Push(repoPath, pushURL, IsForcePush)
+			output, err = git.Push(repoPath, pushURL, isForcePush)
 			if err != nil {
 				return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 			}
@@ -289,10 +312,18 @@ func migrateDo(depot vcs.VCS) (err error) {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 		}
 		if MigrateRebase {
-			logger.Logger.Infof("%s 成功rebase的仓库列表 %s", repoPath, rebaseSuccessBranches)
-			err = git.RebasePush(rebaseRepoPath, rebaseSuccessBranches)
-			if err != nil {
-				return err
+			// 从map中获取该仓库的分支列表
+			branches, ok := rebaseBranchesMap.Load(repoPath)
+			if !ok {
+				log.Infof("%s rebase成功的分支为空，不需要push", repoPath)
+			} else {
+				branchList := branches.([]string)
+				log.Debugf("%s Goroutine %d: Reading rebaseSuccessBranches: %v", repoPath, util.GetGoroutineID(), branchList)
+				log.Infof("%s 成功rebase的仓库列表 %s", repoPath, branchList)
+				err = git.RebasePush(rebaseRepoPath, branchList)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -302,10 +333,10 @@ func migrateDo(depot vcs.VCS) (err error) {
 			return err
 		}
 	}
-	successfulRepoNumber++
-	failedRepoNumber--
+	atomic.AddInt64(&successfulRepoNumber, 1)
+	atomic.AddInt64(&failedRepoNumber, -1)
 	duration := time.Since(startTime)
-	logger.Logger.Infof("%s 迁移至CNB %s 成功,耗时%s", repoPath, cnbRepoPath, duration)
+	log.Infof("%s 迁移至CNB %s 成功,耗时%s", repoPath, cnbRepoPath, duration)
 	logger.RecordSuccessfulRepo(repoPath)
 	return nil
 }
