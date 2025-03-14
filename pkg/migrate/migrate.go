@@ -131,7 +131,7 @@ func Run() {
 			panic(err)
 		}
 		// 创建rebase备份目录
-		rebaseBackDirPath = filepath.Join(pwdDir, time.Now().Format("20060102150405")+"bak")
+		rebaseBackDirPath = filepath.Join(pwdDir, time.Now().Format("200601021504")+"bak")
 		err := os.Mkdir(rebaseBackDirPath, 0755)
 		if err != nil {
 			logger.Logger.Errorf("创建rebase备份目录失败: %s", err)
