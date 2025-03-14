@@ -18,6 +18,7 @@ const (
 	ForcePushBranch                 = "git push -f"
 	CNBYamlFileName                 = ".cnb.yml"
 	SetCheckOutDefaultRemoteCommand = " git config --global checkout.defaultRemote origin"
+	GetOriginBranchesCommand        = "git branch -r | grep '^  origin/'"
 )
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
@@ -79,31 +80,55 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 	}
 	logger.Logger.Infof("%s 拉取souce远程仓库成功", rebaseRepoPath)
 	rebaseBranches := config.Cfg.GetStringSlice("migrate.rebase_branch")
-	// 如果没有指定rebaseBranches, 则默认rebase主分支
+	// 如果没有指定rebaseBranches, 则遍历所有分支进行处理
 	if len(rebaseBranches) == 0 {
-		defaultBranchName, err := system.RunCommand("git", rebaseRepoPath, "rev-parse", "--abbrev-ref", "HEAD")
+		// 获取所有远程分支
+		out, err := system.ExecCommand(GetOriginBranchesCommand, rebaseRepoPath)
 		if err != nil {
-			return nil, fmt.Errorf("%s 获取当前分支失败: %s\n %s", rebaseRepoPath, err, out)
+			return nil, fmt.Errorf("%s 获取远程分支列表失败: %s\n %s", rebaseRepoPath, err, out)
 		}
-		defaultBranchName = strings.TrimSpace(defaultBranchName)
-		rebaseBranch := SourceOriginName + "/" + defaultBranchName
-		logger.Logger.Debugf("%s 当前默认分支: %s", rebaseRepoPath, rebaseBranch)
-		//检查 .cnb.yaml文件是否存在
-		CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
-		exist := system.FileExists(CNBYamlFileAbsPath)
-		if !exist {
-			logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, defaultBranchName)
-			return nil, nil
+
+		// 解析分支列表，过滤掉 HEAD 和 origin/HEAD
+		remoteBranches := strings.Split(strings.TrimSpace(out), "\n")
+		var branches []string
+		for _, branch := range remoteBranches {
+			branch = strings.TrimSpace(branch)
+			if strings.Contains(branch, "->") || strings.Contains(branch, "HEAD") {
+				continue
+			}
+			// 去除 "origin/" 前缀
+			branch = strings.TrimPrefix(branch, "origin/")
+			branches = append(branches, branch)
 		}
-		rebaseOut, rebaseErr := system.RunCommand("git", rebaseRepoPath, "rebase", rebaseBranch)
-		if rebaseErr != nil {
-			return nil, fmt.Errorf("分支 %s rebase失败: %s\n %s", defaultBranchName, rebaseErr.Error(), rebaseOut)
+		logger.Logger.Infof("%s 分支列表: %s", rebaseRepoPath, branches)
+
+		// 遍历所有分支进行rebase
+		for _, branch := range branches {
+			// 切换到指定分支
+			checkBranchOut, CheckoutBranchErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), rebaseRepoPath)
+			if CheckoutBranchErr != nil {
+				logger.Logger.Errorf("%s 切换分支到%s失败: %s \n%s", rebaseRepoPath, branch, CheckoutBranchErr, checkBranchOut)
+				return nil, CheckoutBranchErr
+			}
+			// 检查 .cnb.yaml文件是否存在
+			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
+			exist := system.FileExists(CNBYamlFileAbsPath)
+			if !exist {
+				logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, branch)
+				continue
+			}
+			rebaseBranch := SourceOriginName + "/" + branch
+			// rebase指定分支
+			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
+			if rebaseErr != nil {
+				return nil, fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
+			}
+			logger.Logger.Infof("%s %s rebase成功", rebaseRepoPath, rebaseBranch)
+			rebaseSuccessBranches = append(rebaseSuccessBranches, branch)
 		}
-		logger.Logger.Infof("%s rebase成功", rebaseRepoPath)
-		rebaseSuccessBranches = []string{defaultBranchName}
 	} else {
 		for _, branch := range rebaseBranches {
-			//git checkout 到指定分支
+			// 检查分支是否存在
 			_, grepBranchErr := system.ExecCommand(fmt.Sprintf(ListAllBranchesAndGrep, branch), rebaseRepoPath)
 			if grepBranchErr != nil {
 				logger.Logger.Debugf("%s 分支: %s 不存在,跳过 rebase", rebaseRepoPath, branch)
@@ -132,7 +157,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 			rebaseSuccessBranches = append(rebaseSuccessBranches, branch)
 		}
 	}
-	logger.Logger.Infof("%s rebasse成功的分支列表 %s", rebaseRepoPath, rebaseSuccessBranches)
+	logger.Logger.Infof("%s rebase成功的分支列表 %s", rebaseRepoPath, rebaseSuccessBranches)
 	return rebaseSuccessBranches, nil
 }
 
