@@ -25,7 +25,6 @@ docker run --rm  \
   -e PLUGIN_SOURCE_URL="https://coding.example.com" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
@@ -39,7 +38,6 @@ docker run --rm  \
   -e PLUGIN_SOURCE_PLATFORM="github" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
@@ -53,7 +51,6 @@ docker run --rm  \
   -e PLUGIN_SOURCE_PLATFORM="gitlab" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
@@ -67,7 +64,6 @@ docker run --rm  \
   -e PLUGIN_SOURCE_PLATFORM="gitee" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
@@ -84,7 +80,6 @@ docker run --rm  \
   -e PLUGIN_SOURCE_ORGANIZATIONID="xxx" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
@@ -101,7 +96,6 @@ docker run --rm  \
   -e PLUGIN_SOURCE_PLATFORM="common" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
@@ -115,7 +109,6 @@ docker run --rm  \
   -e PLUGIN_SOURCE_PLATFORM="common" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_CNB_URL="https://cnb.example.com" \
   -e PLUGIN_MIGRATE_SSH="true" \
   -e GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' \  
   -v $(pwd):$(pwd) -w $(pwd) \
@@ -141,7 +134,7 @@ docker run --rm  \
 | PLUGIN_SOURCE_AS                          | 字符串 | 否  | -                               | AccessKey Secret,当 source_platform 为 aliyun时必填。                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | PLUGIN_SOURCE_ENDPOINT                    | 字符串 | 否  | devops.cn-hangzhou.aliyuncs.com | AccessKey 请求的地址。                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | PLUGIN_SOURCE_ORGANIZATIONID              | 字符串 | 否  | -                               | 阿里云云效代码仓库企业ID，可在云效访问链接中获取，如https://devops.aliyun.com/organization/【OrganizationId】                                                                                                                                                                                                                                                                                                                                                                                                          |
-| PLUGIN_CNB_URL                            | 字符串 | 是  | -                               | CNB访问URL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| PLUGIN_CNB_URL                            | 字符串 | 是  | https://cnb.cool                | CNB访问URL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | PLUGIN_CNB_TOKEN                          | 字符串 | 是  | -                               | CNB 授权令牌，权限要求：<br>- repo-code 读写<br>- repo-basic-info 只读<br>- account-profile 只读<br>- account-engage 只读<br>- group-resource 读写<br>- group-manage 读写<br>- repo-content 读写                                                                                                                                                                                                                                                                                                                    |
 | PLUGIN_CNB_ROOT_ORGANIZATION              | 字符串 | 是  | -                               | 迁移后，CNB对应的根组织名称，请确保根组织已提前创建                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | PLUGIN_MIGRATE_TYPE                       | 字符串 | 否  | team                            | 要迁移的类型，支持项目(project)、仓库(repo)、团队(team)多维度迁移，只支持 coding 平台                                                                                                                                                                                                                                                                                                                                                                                                                                   |
