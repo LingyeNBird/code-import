@@ -348,6 +348,7 @@ func setDefaultValues(config *viper.Viper) {
 		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
 		"migrate.ssh":                        "false",
 		"migrate.rebase":                     "false",
+		"cnb.url":                            "https://cnb.cool",
 	}
 
 	// 使用循环来设置默认值
