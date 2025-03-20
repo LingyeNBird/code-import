@@ -46,7 +46,7 @@ docker run --rm  \
 ```shell
 docker run --rm  \
   -e PLUGIN_SOURCE_TOKEN="xxx"  \
-  -e PLUGIN_SOURCE_URL="https://gitlab.example.com" \
+  -e PLUGIN_SOURCE_URL="https://gitlab.com" \
   -e PLUGIN_SOURCE_PLATFORM="gitlab" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
@@ -59,7 +59,7 @@ docker run --rm  \
 ```shell
 docker run --rm  \
   -e PLUGIN_SOURCE_TOKEN="xxx"  \
-  -e PLUGIN_SOURCE_URL="https://gitlab.com" \
+  -e PLUGIN_SOURCE_URL="https://gitee.com" \
   -e PLUGIN_SOURCE_PLATFORM="gitee" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
