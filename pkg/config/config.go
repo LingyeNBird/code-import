@@ -349,6 +349,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.ssh":                        "false",
 		"migrate.rebase":                     "false",
 		"cnb.url":                            "https://cnb.cool",
+		"source.url":                         "https://e.coding.net",
 	}
 
 	// 使用循环来设置默认值
