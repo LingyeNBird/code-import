@@ -11,8 +11,6 @@ import (
 	"ccrctl/pkg/vcs"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +18,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -187,7 +188,6 @@ func Run() {
 
 			if err := sem.Acquire(context.Background(), 1); err != nil { // 获取信号量
 				panic(err)
-				return
 			}
 			defer sem.Release(1)    // 释放信号量
 			err := migrateDo(depot) // 执行迁移操作
@@ -355,39 +355,90 @@ func isMigrated(repoPath, filePath string) (error, bool) {
 	return nil, re.MatchString(string(content))
 }
 
-func migrateRelease(depot vcs.VCS) (createReleaseErr error) {
+// migrateRelease 处理仓库的所有release迁移
+// 参数:
+//   - depot: VCS接口实例，包含仓库信息
+//
+// 返回:
+//   - error: 迁移过程中的错误信息
+func migrateRelease(depot vcs.VCS) error {
 	releases := depot.GetReleases()
 	repoPath := depot.GetRepoPath()
-	logger.Logger.Infof("%s 开始迁移 release", repoPath)
+	log := logger.Logger
+
+	log.Infof("%s 开始迁移 release", repoPath)
+
+	// 遍历处理每个release
 	for _, release := range releases {
-		logger.Logger.Infof("%s 开始迁移release: %s", repoPath, release.Name)
-		releaseID, exist, createReleaseErr := cnb.CreateRelease(repoPath, release.Name, release.Body, release.TagName, depot.GetProjectID(), release.Prerelease)
-		if createReleaseErr != nil {
-			logger.Logger.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, createReleaseErr)
-			return createReleaseErr
+		if err := migrateOneRelease(depot, release, repoPath); err != nil {
+			return err
 		}
-		if exist {
-			logger.Logger.Warnf("%s 迁移release: %s 已存在，跳过迁移", repoPath, release.Name)
-			continue
+	}
+
+	log.Infof("%s 迁移 release 成功", repoPath)
+	return nil
+}
+
+// migrateOneRelease 处理单个release的迁移
+// 参数:
+//   - depot: VCS接口实例
+//   - release: 需要迁移的release信息
+//   - repoPath: 仓库路径
+//
+// 返回:
+//   - error: 迁移过程中的错误信息
+func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) error {
+	log := logger.Logger
+	log.Infof("%s 开始迁移release: %s", repoPath, release.Name)
+
+	// 在目标平台创建release
+	releaseID, exist, err := cnb.CreateRelease(repoPath, depot.GetProjectID(), release, depot)
+	if err != nil {
+		log.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, err)
+		return err
+	}
+
+	// 如果release已存在则跳过
+	if exist {
+		log.Warnf("%s 迁移release: %s 已存在，跳过迁移", repoPath, release.Name)
+		return nil
+	}
+
+	// 处理release附带的资源文件
+	if len(release.Assets) > 0 {
+		if err := migrateReleaseAssets(repoPath, releaseID, release); err != nil {
+			return err
 		}
-		if release.Assets != nil && len(release.Assets) > 0 {
-			for _, asset := range release.Assets {
-				fileName, err := util.GetFileNameFromURL(asset.Url)
-				if err != nil {
-					logger.Logger.Errorf("%s 获取release asset 文件名失败: %s", asset.Url, err)
-					return err
-				}
-				migrateAssetErr := migrateReleaseAsset(repoPath, releaseID, fileName, asset.Url)
-				if migrateAssetErr != nil {
-					logger.Logger.Errorf("%s 迁移 release %s asset %s 失败: %s", repoPath, release.Name, asset.Name, migrateAssetErr)
-					return migrateAssetErr
-				}
-			}
+	}
+
+	log.Infof("%s 迁移 release %s 成功", repoPath, release.Name)
+	return nil
+}
+
+// migrateReleaseAssets 处理release相关的资源文件迁移
+// 参数:
+//   - repoPath: 仓库路径
+//   - releaseID: release的唯一标识
+//   - release: release信息
+//
+// 返回:
+//   - error: 迁移过程中的错误信息
+func migrateReleaseAssets(repoPath, releaseID string, release vcs.Releases) error {
+	log := logger.Logger
+	// 遍历处理每个资源文件
+	for _, asset := range release.Assets {
+		fileName, err := util.GetFileNameFromURL(asset.Url)
+		if err != nil {
+			log.Errorf("%s 获取release asset 文件名失败: %s", asset.Url, err)
+			return err
 		}
 
-		logger.Logger.Infof("%s 迁移 release %s 成功", repoPath, release.Name)
+		if err := migrateReleaseAsset(repoPath, releaseID, fileName, asset.Url); err != nil {
+			log.Errorf("%s 迁移 release %s asset %s 失败: %s",
+				repoPath, release.Name, asset.Name, err)
+			return err
+		}
 	}
-	logger.Logger.Infof("%s 迁移 release 成功", repoPath)
 	return nil
 }
 

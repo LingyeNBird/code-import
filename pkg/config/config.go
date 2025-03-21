@@ -343,7 +343,7 @@ func setDefaultValues(config *viper.Viper) {
 		"source.platform":                    "coding",
 		"migrate.file_limit_size":            "100",
 		"migrate.skip_exists_repo":           "true",
-		"migrate.release":                    "false",
+		"migrate.release":                    "true",
 		"migrate.code":                       "true",
 		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
 		"migrate.ssh":                        "false",

@@ -5,8 +5,9 @@ import (
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"
-	devops20210625 "github.com/alibabacloud-go/devops-20210625/v5/client"
 	"strings"
+
+	devops20210625 "github.com/alibabacloud-go/devops-20210625/v5/client"
 )
 
 type AliyunVcs struct {
@@ -62,7 +63,7 @@ func (c *AliyunVcs) GetRepoPrivate() bool {
 	return true
 }
 
-func (c *AliyunVcs) GetReleases() (cnbReleases []releases) {
+func (c *AliyunVcs) GetReleases() (cnbReleases []Releases) {
 	return nil
 }
 
@@ -87,4 +88,8 @@ func aliyunCovertToVcs(repoList []*devops20210625.ListRepositoriesResponseBodyRe
 		})
 	}
 	return VCS
+}
+
+func (C *AliyunVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+	return nil, nil
 }

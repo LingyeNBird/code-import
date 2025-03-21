@@ -2,7 +2,6 @@ package cnb
 
 import (
 	"bytes"
-	"ccrctl/pkg/api/gitlab"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/http_client"
 	"ccrctl/pkg/logger"
@@ -197,7 +196,7 @@ func CreateSubOrganization(url, token, subGroupName string) (err error) {
 		logger.Logger.Infof("创建子组织%s成功", groupPath)
 		return nil
 	}
-	return fmt.Errorf("创建子组织%s失败: %s %d", groupPath, string(resp))
+	return fmt.Errorf("创建子组织%s失败: %s", groupPath, string(resp))
 }
 
 func CreateRepo(url, token, group, repoName string, private bool) (err error) {
@@ -480,85 +479,79 @@ type CreateReleaseRes struct {
 	Assets       interface{} `json:"assets"`
 }
 
-func CreateRelease(repoPath, name, desc, tagName, projectID string, preRelease bool) (releaseID string, exist bool, err error) {
-	defer logger.Logger.Debugw(util.GetFunctionName(), "repoPath", repoPath, "name", name, "body", desc, "tagName", tagName)
+// CreateRelease 在指定仓库中创建一个新的发布版本
+// 参数:
+//   - repoPath: 仓库路径
+//   - name: 发布版本名称
+//   - desc: 发布版本描述
+//   - tagName: 标签名称
+//   - projectID: 项目ID
+//   - preRelease: 是否为预发布版本
+//   - vcs: VCS接口实现
+//
+// 返回值:
+//   - releaseID: 发布版本的ID
+//   - exist: 是否已存在相同发布版本
+//   - err: 错误信息
+func CreateRelease(repoPath, projectID string, release vcs.Releases, vcs vcs.VCS) (releaseID string, exist bool, err error) {
+	// 记录函数调用信息
+	defer logger.Logger.Debugw(util.GetFunctionName(),
+		"repoPath", repoPath,
+		"name", release.Name,
+		"body", release.Body,
+		"tagName", release.TagName)
+
+	// 构建API端点
 	endpoint := fmt.Sprintf("/%s/%s/-/releases", RootOrganizationName, repoPath)
-	desc, err = convertDescLink(desc, repoPath, projectID)
+
+	// 获取发布版本中的附件信息
+	attachments, err := vcs.GetReleaseAttachments(release.Body, repoPath, projectID)
 	if err != nil {
-		logger.Logger.Errorf("%s:%s release 创建失败: %v", repoPath, name, err)
-		return "", exist, err
+		logger.Logger.Errorf("获取发布版本附件失败 [%s:%s]: %v", repoPath, release.Name, err)
+		return "", false, fmt.Errorf("获取发布版本附件失败: %w", err)
 	}
+
+	// 处理附件并更新描述内容
+	newDesc := release.Body
+	for _, attachment := range attachments {
+		// 上传附件到CNB平台
+		path, err := UploadReleaseDescImgAndAttachments(attachment)
+		if err != nil {
+			logger.Logger.Errorf("上传发布版本附件失败 [%s:%s]: %v", repoPath, release.Name, err)
+			return "", false, fmt.Errorf("上传发布版本附件失败: %w", err)
+		}
+		// 替换描述中的附件链接
+		newDesc = strings.ReplaceAll(newDesc, attachment.Url, path)
+	}
+
+	// 构建创建发布版本的请求体
 	body := &CreateReleaseReq{
-		Body:       desc,
-		Name:       name,
-		TagName:    tagName,
-		Prerelease: preRelease,
+		Body:       newDesc,
+		Name:       release.Name,
+		TagName:    release.TagName,
+		Prerelease: release.Prerelease,
+		Draft:      release.Draft,
 	}
+
+	// 发送创建发布版本的请求
 	res, _, statusCode, err := c.RequestV4(http.MethodPost, endpoint, body)
 	if err != nil {
 		if statusCode == http.StatusConflict {
-			logger.Logger.Warnf("%s:%s release 已存在", repoPath, name)
+			logger.Logger.Warnf("发布版本已存在 [%s:%s]", repoPath, release.Name)
 			return "", true, nil
 		}
-		logger.Logger.Errorf("%s:%s release 创建失败: %v", repoPath, name, err)
-		return "", exist, err
+		logger.Logger.Errorf("创建发布版本失败 [%s:%s]: %v", repoPath, release.Name, err)
+		return "", false, fmt.Errorf("创建发布版本失败: %v", err)
 	}
+
+	// 解析响应数据
 	var data CreateReleaseRes
-	err = json.Unmarshal(res, &data)
-	if err != nil {
-		logger.Logger.Errorf("%s:%s release 创建失败: %v", repoPath, name, err)
-		return "", exist, err
+	if err := json.Unmarshal(res, &data); err != nil {
+		logger.Logger.Errorf("解析发布版本响应失败 [%s:%s]: %v", repoPath, release.Name, err)
+		return "", false, fmt.Errorf("解析发布版本响应失败: %w", err)
 	}
-	return data.Id, exist, nil
-}
 
-// 转换release描述中的附件链接为cnb附件链接
-func convertDescLink(desc, repoPath, projectID string) (newDesc string, err error) {
-	attachments, images, exists := util.ExtractAttachments(desc)
-	if !exists {
-		return desc, nil
-	}
-	for attachmentName, attachmentUrl := range attachments {
-		uploadFiles, err := gitlab.ListUploads(projectID)
-		if err != nil {
-			return newDesc, err
-		}
-		fileID, ok := uploadFiles[attachmentName]
-		if !ok {
-			logger.Logger.Warnf("%s 附件 %s 不存在", repoPath, attachmentName)
-			continue
-		}
-		data, err := gitlab.DownloadFile(projectID, fileID)
-		if err != nil {
-			logger.Logger.Errorf("%s 下载release asset %s 失败: %s", attachmentUrl, attachmentName, err)
-			return newDesc, err
-		}
-
-		cnbPath, err := UploadReleaseDescImgAndAttachments(repoPath, attachmentName, data, "file")
-		newDesc = strings.Replace(desc, attachmentUrl, cnbPath, -1)
-		desc = newDesc
-	}
-	for imageName, imageUrl := range images {
-		uploadFiles, err := gitlab.ListUploads(projectID)
-		if err != nil {
-			return newDesc, err
-		}
-		fileID, ok := uploadFiles[imageName]
-		if !ok {
-			logger.Logger.Warnf("%s 附件 %s 不存在", repoPath, imageName)
-			continue
-		}
-		data, err := gitlab.DownloadFile(projectID, fileID)
-		if err != nil {
-			logger.Logger.Errorf("%s 下载release asset %s 失败: %s", imageUrl, imageName, err)
-			return newDesc, err
-		}
-
-		cnbPath, err := UploadReleaseDescImgAndAttachments(repoPath, imageName, data, "img")
-		newDesc = strings.Replace(desc, imageUrl, cnbPath, -1)
-		desc = newDesc
-	}
-	return newDesc, nil
+	return data.Id, false, nil
 }
 
 type UploadImgOrFileRes struct {
@@ -589,13 +582,13 @@ type UploadImgsReq struct {
 	Size int    `json:"size"`
 }
 
-func UploadReleaseDescImgAndAttachments(repoPath, fileName string, fileData []byte, fileType string) (path string, err error) {
-	res, err := GetCosUploadUrlAndForm(repoPath, fileName, fileType, len(fileData))
+func UploadReleaseDescImgAndAttachments(attachment vcs.Attachment) (path string, err error) {
+	res, err := GetCosUploadUrlAndForm(attachment)
 	if err != nil {
 		logger.Logger.Errorf("Get cos  upload form error: %v", err)
 		return "", err
 	}
-	err = UploadFileToCos(res.UploadUrl, fileName, res.Form, fileData)
+	err = UploadFileToCos(res.UploadUrl, res.Form, attachment)
 	if err != nil {
 		logger.Logger.Errorf("Upload file to cos error: %v", err)
 		return "", err
@@ -666,7 +659,7 @@ func GetReleaseAssetUploadUrl(repoPath, releaseID, assetName string) (uploadURL 
 	return uploadURL, nil
 }
 
-func UploadFileToCos(reqUrl, fileName string, form UploadImgForm, data []byte) (err error) {
+func UploadFileToCos(reqUrl string, form UploadImgForm, attachment vcs.Attachment) (err error) {
 	// 创建一个缓冲区以写入我们的表单数据
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -686,9 +679,9 @@ func UploadFileToCos(reqUrl, fileName string, form UploadImgForm, data []byte) (
 	//	return err
 	//}
 
-	writer, err := w.CreateFormFile("file", fileName)
+	writer, err := w.CreateFormFile("file", attachment.Name)
 
-	io.Copy(writer, bytes.NewReader(data))
+	io.Copy(writer, bytes.NewReader(attachment.Data))
 
 	if err != nil {
 		fmt.Println(err)
@@ -716,18 +709,18 @@ func PlatformConfirmUpload(repoPath, token string) (err error) {
 	return nil
 }
 
-func GetCosUploadUrlAndForm(repoPath, fileName, fileType string, fileSize int) (form UploadImgOrFileRes, err error) {
+func GetCosUploadUrlAndForm(attachment vcs.Attachment) (form UploadImgOrFileRes, err error) {
 	var reqPath string
-	repoPath = RootOrganizationName + "/" + repoPath
-	if fileType == "img" {
+	repoPath := RootOrganizationName + "/" + attachment.RepoPath
+	if attachment.Type == "img" {
 		reqPath = fmt.Sprintf(UploadImgEndPoint, repoPath)
 	} else {
 		reqPath = fmt.Sprintf(UploadFileEndPoint, repoPath)
 	}
 	// 如果上传图片，文件名必须是图片格式后缀
 	body := &UploadImgsReq{
-		Name: fileName,
-		Size: fileSize,
+		Name: attachment.Name,
+		Size: attachment.Size,
 	}
 	res, _, _, err := c.RequestV4(http.MethodPost, reqPath, body)
 	if err != nil {

@@ -112,3 +112,6 @@ ccrctl
 
 /ssh.key
 /*bak
+
+.vscode/*
+.vscode/settings.json

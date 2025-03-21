@@ -9,7 +9,7 @@ var (
 	allowIncompletePush = config.Cfg.GetBool("migrate.allow_incomplete_push")
 )
 
-type releases struct {
+type Releases struct {
 	Body            string  `json:"body"`
 	Draft           bool    `json:"draft"`
 	MakeLatest      string  `json:"make_latest"`
@@ -25,6 +25,15 @@ type Asset struct {
 	Url  string `json:"url"`
 }
 
+type Attachment struct {
+	Name     string
+	Data     []byte
+	Url      string
+	Type     string
+	RepoPath string
+	Size     int
+}
+
 type VCS interface {
 	GetRepoPath() string
 	GetRepoName() string
@@ -35,8 +44,9 @@ type VCS interface {
 	GetToken() string
 	Clone() error
 	GetRepoPrivate() bool
-	GetReleases() []releases
+	GetReleases() []Releases
 	GetProjectID() string
+	GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error)
 }
 
 func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {

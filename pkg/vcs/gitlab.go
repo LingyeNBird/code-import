@@ -4,10 +4,12 @@ import (
 	api "ccrctl/pkg/api/gitlab"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
+	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
-	"github.com/xanzy/go-gitlab"
 	"strconv"
 	"strings"
+
+	"github.com/xanzy/go-gitlab"
 )
 
 const (
@@ -75,7 +77,7 @@ func (g *GitlabVcs) GetRepoPrivate() bool {
 	return false
 }
 
-func (g *GitlabVcs) GetReleases() (cnbReleases []releases) {
+func (g *GitlabVcs) GetReleases() (cnbReleases []Releases) {
 	gitlabReleases, err := api.GetReleases(g.ProjectId)
 	if err != nil {
 		panic(err)
@@ -88,7 +90,7 @@ func (g *GitlabVcs) GetReleases() (cnbReleases []releases) {
 				Url:  link.URL,
 			})
 		}
-		cnbReleases = append(cnbReleases, releases{
+		cnbReleases = append(cnbReleases, Releases{
 			TagName:    gitlabRelease.TagName,
 			Name:       gitlabRelease.Name,
 			Body:       gitlabRelease.Description,
@@ -124,4 +126,63 @@ func GitlabCovertToVcs(repoList []*gitlab.Project) []VCS {
 		})
 	}
 	return VCS
+}
+
+func (g *GitlabVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+	// 转换release描述中的附件链接为cnb附件链接
+	attachments, images, exists := util.ExtractAttachments(desc)
+	if !exists {
+		return nil, nil
+	}
+	var attachmentsList []Attachment
+	for attachmentName, attachmentUrl := range attachments {
+		uploadFiles, err := api.ListUploads(projectID)
+		if err != nil {
+			return nil, err
+		}
+		fileID, ok := uploadFiles[attachmentName]
+		if !ok {
+			logger.Logger.Warnf("%s 附件 %s 不存在", repoPath, attachmentName)
+			continue
+		}
+		data, err := api.DownloadFile(projectID, fileID)
+		if err != nil {
+			logger.Logger.Errorf("%s 下载release asset %s 失败: %s", attachmentUrl, attachmentName, err)
+			return nil, err
+		}
+		attachmentsList = append(attachmentsList, Attachment{
+			Name:     attachmentName,
+			Data:     data,
+			Url:      attachmentUrl,
+			Type:     "file",
+			RepoPath: repoPath,
+			Size:     len(data),
+		})
+	}
+	for imageName, imageUrl := range images {
+		uploadFiles, err := api.ListUploads(projectID)
+		if err != nil {
+			return nil, err
+		}
+		fileID, ok := uploadFiles[imageName]
+		if !ok {
+			logger.Logger.Warnf("%s 附件 %s 不存在", repoPath, imageName)
+			continue
+		}
+		data, err := api.DownloadFile(projectID, fileID)
+		if err != nil {
+			logger.Logger.Errorf("%s 下载release asset %s 失败: %s", imageUrl, imageName, err)
+			return nil, err
+		}
+		attachmentsList = append(attachmentsList, Attachment{
+			Name:     imageName,
+			Data:     data,
+			Url:      imageUrl,
+			Type:     "img",
+			RepoPath: repoPath,
+			Size:     len(data),
+		})
+	}
+	return attachmentsList, nil
+
 }
