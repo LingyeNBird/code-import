@@ -283,16 +283,9 @@ func migrateDo(depot vcs.VCS) error {
 				return fmt.Errorf("备份仓库失败: %w", err)
 			}
 			log.Infof("%s 已备份仓库到 %s", repoPath, destPath)
-			branches, rebaseErr := git.Rebase(rebaseRepoPath, depot.GetCloneUrl())
+			rebaseErr := git.Rebase(rebaseRepoPath, depot.GetRepoPath())
 			if rebaseErr != nil {
 				return rebaseErr
-			}
-			// 将分支列表与仓库路径关联存储
-			if branches != nil {
-				log.Debugf("%s Goroutine %d: Setting rebaseSuccessBranches to %v", repoPath, util.GetGoroutineID(), branches)
-				rebaseBranchesMap.Store(repoPath, branches)
-			} else {
-				log.Debugf("%s 没有rebase成功的分支", repoPath)
 			}
 		}
 
@@ -310,21 +303,6 @@ func migrateDo(depot vcs.VCS) error {
 		}
 		if err != nil {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
-		}
-		if MigrateRebase {
-			// 从map中获取该仓库的分支列表
-			branches, ok := rebaseBranchesMap.Load(repoPath)
-			if !ok {
-				log.Infof("%s rebase成功的分支为空，不需要push", repoPath)
-			} else {
-				branchList := branches.([]string)
-				log.Debugf("%s Goroutine %d: Reading rebaseSuccessBranches: %v", repoPath, util.GetGoroutineID(), branchList)
-				log.Infof("%s 成功rebase的仓库列表 %s", repoPath, branchList)
-				err = git.RebasePush(rebaseRepoPath, branchList)
-				if err != nil {
-					return err
-				}
-			}
 		}
 	}
 	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {
