@@ -6,6 +6,7 @@ import (
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/system"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 )
@@ -19,6 +20,7 @@ const (
 	CNBYamlFileName                 = ".cnb.yml"
 	SetCheckOutDefaultRemoteCommand = " git config --global checkout.defaultRemote origin"
 	GetOriginBranchesCommand        = "git branch -r | grep '^  origin/'"
+	GitPushToLocalBareRepo          = "git push -f source"
 )
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
@@ -66,17 +68,23 @@ func RebasePush(rebaseRepoPath string, rebaseSuccessBranches []string) error {
 	return nil
 }
 
-func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
-	var rebaseSuccessBranches []string
+func Rebase(rebaseRepoPath, repoPath string) error {
 	logger.Logger.Infof("%s 开始rebase", rebaseRepoPath)
-	out, err := system.RunCommand("git", rebaseRepoPath, "remote", "add", SourceOriginName, cloneURL)
+	pwdDir, err := os.Getwd()
 	if err != nil {
-		return nil, fmt.Errorf("%s 添加source远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
+		return fmt.Errorf("%s 获取当前目录失败: %s", rebaseRepoPath, err)
+	}
+	logger.Logger.Debugf("pwd: %s", pwdDir)
+	bareRepoPath := path.Join(pwdDir, repoPath)
+	logger.Logger.Debugf("bareRepoPath: %s", bareRepoPath)
+	out, err := system.RunCommand("git", rebaseRepoPath, "remote", "add", SourceOriginName, bareRepoPath)
+	if err != nil {
+		return fmt.Errorf("%s 添加source远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
 	}
 	logger.Logger.Infof("%s 添加source远程仓库成功", rebaseRepoPath)
 	out, err = system.RunCommand("git", rebaseRepoPath, "fetch", SourceOriginName)
 	if err != nil {
-		return nil, fmt.Errorf("%s 拉取souce远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
+		return fmt.Errorf("%s 拉取souce远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
 	}
 	logger.Logger.Infof("%s 拉取souce远程仓库成功", rebaseRepoPath)
 	rebaseBranches := config.Cfg.GetStringSlice("migrate.rebase_branch")
@@ -85,7 +93,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 		// 获取所有远程分支
 		out, err := system.ExecCommand(GetOriginBranchesCommand, rebaseRepoPath)
 		if err != nil {
-			return nil, fmt.Errorf("%s 获取远程分支列表失败: %s\n %s", rebaseRepoPath, err, out)
+			return fmt.Errorf("%s 获取远程分支列表失败: %s\n %s", rebaseRepoPath, err, out)
 		}
 
 		// 解析分支列表，过滤掉 HEAD 和 origin/HEAD
@@ -108,7 +116,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 			checkBranchOut, CheckoutBranchErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), rebaseRepoPath)
 			if CheckoutBranchErr != nil {
 				logger.Logger.Errorf("%s 切换分支到%s失败: %s \n%s", rebaseRepoPath, branch, CheckoutBranchErr, checkBranchOut)
-				return nil, CheckoutBranchErr
+				return CheckoutBranchErr
 			}
 			// 检查 .cnb.yaml文件是否存在
 			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
@@ -121,10 +129,14 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 			// rebase指定分支
 			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
 			if rebaseErr != nil {
-				return nil, fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
+				return fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
 			}
 			logger.Logger.Infof("%s %s rebase成功", rebaseRepoPath, rebaseBranch)
-			rebaseSuccessBranches = append(rebaseSuccessBranches, branch)
+			rebasePushOut, rebasePushErr := system.ExecCommand(GitPushToLocalBareRepo, rebaseRepoPath)
+			if rebasePushErr != nil {
+				return fmt.Errorf("分支 %s rebase后push失败: %s\n %s", branch, rebasePushErr.Error(), rebasePushOut)
+			}
+			logger.Logger.Infof("%s %s rebase后push成功", rebaseRepoPath, rebaseBranch)
 		}
 	} else {
 		for _, branch := range rebaseBranches {
@@ -138,7 +150,7 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 			checkBranchOut, CheckoutBranchErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), rebaseRepoPath)
 			if CheckoutBranchErr != nil {
 				logger.Logger.Errorf("%s 切换分支到%s失败: %s \n%s", rebaseRepoPath, branch, CheckoutBranchErr, checkBranchOut)
-				return nil, CheckoutBranchErr
+				return CheckoutBranchErr
 			}
 			//检查 .cnb.yaml文件是否存在
 			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
@@ -151,14 +163,17 @@ func Rebase(rebaseRepoPath, cloneURL string) ([]string, error) {
 			// rebase指定分支
 			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
 			if rebaseErr != nil {
-				return nil, fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
+				return fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
 			}
 			logger.Logger.Infof("%s rebase %s 成功", rebaseRepoPath, rebaseBranch)
-			rebaseSuccessBranches = append(rebaseSuccessBranches, branch)
+			rebasePushOut, rebasePushErr := system.ExecCommand(GitPushToLocalBareRepo, rebaseRepoPath)
+			if rebasePushErr != nil {
+				return fmt.Errorf("分支 %s rebase后push失败: %s\n %s", branch, rebasePushErr.Error(), rebasePushOut)
+			}
+			logger.Logger.Infof("%s %s rebase后push成功", rebaseRepoPath, rebaseBranch)
 		}
 	}
-	logger.Logger.Infof("%s rebase成功的分支列表 %s", rebaseRepoPath, rebaseSuccessBranches)
-	return rebaseSuccessBranches, nil
+	return nil
 }
 
 func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
