@@ -113,10 +113,9 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 		// 遍历所有分支进行rebase
 		for _, branch := range branches {
 			// 切换到指定分支
-			checkBranchOut, CheckoutBranchErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), rebaseRepoPath)
-			if CheckoutBranchErr != nil {
-				logger.Logger.Errorf("%s 切换分支到%s失败: %s \n%s", rebaseRepoPath, branch, CheckoutBranchErr, checkBranchOut)
-				return CheckoutBranchErr
+			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
+			if checkBranchErr != nil {
+				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
 			}
 			// 检查 .cnb.yaml文件是否存在
 			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
@@ -147,10 +146,9 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 				continue
 			}
 			// 切换到指定分支
-			checkBranchOut, CheckoutBranchErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), rebaseRepoPath)
-			if CheckoutBranchErr != nil {
-				logger.Logger.Errorf("%s 切换分支到%s失败: %s \n%s", rebaseRepoPath, branch, CheckoutBranchErr, checkBranchOut)
-				return CheckoutBranchErr
+			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
+			if checkBranchErr != nil {
+				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
 			}
 			//检查 .cnb.yaml文件是否存在
 			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
@@ -288,6 +286,20 @@ func SetCheckOutDefaultRemote() error {
 	output, err := system.ExecCommand(SetCheckOutDefaultRemoteCommand, ".")
 	if err != nil {
 		return fmt.Errorf("git config remote.origin.fetch 失败: %s\n%s", err, output)
+	}
+	return nil
+}
+
+func checkoutBranch(repoPath, branch string) error {
+	_, err := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), repoPath)
+	if err != nil {
+		logger.Logger.Warnf(fmt.Sprintf("%s 切换分支 %s 失败,尝试指定ref切换", repoPath, branch))
+		branch = "refs/remotes/origin" + branch
+		out, refErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), repoPath)
+		if refErr != nil {
+			logger.Logger.Errorf(fmt.Sprintf("%s 指定ref切换分支 %s 失败: %s\n%s", repoPath, branch, refErr, out))
+			return refErr
+		}
 	}
 	return nil
 }
