@@ -294,11 +294,11 @@ func checkoutBranch(repoPath, branch string) error {
 	_, err := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), repoPath)
 	if err != nil {
 		logger.Logger.Warnf(fmt.Sprintf("%s 切换分支 %s 失败,尝试指定ref切换", repoPath, branch))
-		branch = "refs/remotes/origin/" + branch
+		refBranch = "refs/remotes/origin/" + branch
 		// 兼容分支名匹配到 tree object 问题
-		out, refErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, branch), repoPath)
+		out, refErr := system.ExecCommand(fmt.Sprintf(CheckoutBranch, refBranch), repoPath)
 		if refErr != nil {
-			logger.Logger.Errorf(fmt.Sprintf("%s 指定ref切换分支 %s 失败: %s\n%s", repoPath, branch, refErr, out))
+			logger.Logger.Errorf(fmt.Sprintf("%s 指定ref切换分支 %s 失败: %s\n%s", repoPath, refBranch, refErr, out))
 			return refErr
 		}
 	}
