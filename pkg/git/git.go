@@ -116,6 +116,9 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
 			if checkBranchErr != nil {
 				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
+			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
+			if checkBranchErr != nil {
+				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
 			}
 			// 检查 .cnb.yaml文件是否存在
 			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
@@ -146,6 +149,9 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 				continue
 			}
 			// 切换到指定分支
+			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
+			if checkBranchErr != nil {
+				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
 			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
 			if checkBranchErr != nil {
 				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
