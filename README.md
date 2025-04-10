@@ -13,11 +13,11 @@
 ## 在Docker上使用
 
 ### 注意事项
-1. ⚠️开始导入前，请确保CNB根组织已存在。  
+1. ⚠️开始迁移前，请确保CNB根组织已存在。  
 2. `xxx`为需要用户自行替换的字段，具体含义详见参数介绍-核心参数。  
 3. 云原生开发自带 docker 命令，内网运行更快速
 
-### 从 Coding 导入
+### 从 Coding 迁移
 
 ```shell
 docker run --rm  \
@@ -28,7 +28,7 @@ docker run --rm  \
   cnbcool/code-import
 ````
 
-### 从 Github 导入
+### 从 Github 迁移
 
 ```shell
 docker run --rm  \
@@ -41,7 +41,7 @@ docker run --rm  \
   cnbcool/code-import
 ````
 
-### 从 Gitlab 导入
+### 从 Gitlab 迁移
 
 ```shell
 docker run --rm  \
@@ -54,7 +54,7 @@ docker run --rm  \
   cnbcool/code-import
 ````
 
-### 从 Gitee 导入
+### 从 Gitee 迁移
 
 ```shell
 docker run --rm  \
@@ -67,7 +67,7 @@ docker run --rm  \
   cnbcool/code-import
 ````
 
-### 从阿里云导入
+### 从阿里云迁移
 
 ```shell
 docker run --rm  \
@@ -83,7 +83,7 @@ docker run --rm  \
   cnbcool/code-import
 ````
 
-### 从通用第三方代码平台导入
+### 从通用第三方代码平台迁移
 
 http协议
 ```shell
@@ -146,7 +146,7 @@ docker run --rm  \
     - 类型：字符串
     - 必填：是
     - 默认值：coding
-    - 说明：导入的平台名称，支持 coding/gitlab/github/gitee，其他通用平台填写 common
+    - 说明：迁移的平台名称，支持 coding/gitlab/github/gitee，其他通用平台填写 common
 
 - PLUGIN_SOURCE_REPO
     - 类型：字符串
