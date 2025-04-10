@@ -1,11 +1,11 @@
-# CNB Code Import(CNB代码仓库批量导入工具)
+# CNB Code Import(CNB代码仓库批量迁移工具)
 
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/pipeline-as-code)
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/git-clone-yyds)
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
 ## 功能介绍
-1. 支持CODING、Github、Gitlab、Gitee、阿里云以及通用第三方代码托管平台的代码仓库批量导入至CNB
+1. 支持CODING、Github、Gitlab、Gitee、阿里云以及通用第三方代码托管平台的代码仓库批量迁移至CNB
 2. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
 
 
