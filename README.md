@@ -282,7 +282,7 @@ docker run --rm  \
 - PLUGIN_MIGRATE_FILE_LIMIT_SIZE
     - 类型：数值
     - 必填：否
-    - 默认值：100
+    - 默认值：500
     - 说明：CNB最大文件大小限制，单位Mib
 
 - PLUGIN_MIGRATE_CODE
@@ -311,7 +311,7 @@ docker run --rm  \
     - 说明：要迁移的 CODING 项目名称 (当 source_platform 为 coding 且 migrate_type 为 project 时必填)，多个项目以英文逗号隔开
 
 ## 常见问题
-1. 单个文件超过100MB大小限制  
+1. 单个文件超过500MB大小限制  
 可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数
 
  
