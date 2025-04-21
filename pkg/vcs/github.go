@@ -5,17 +5,19 @@ import (
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"
-	"github.com/google/go-github/v66/github"
 	"strconv"
 	"strings"
+
+	"github.com/google/go-github/v66/github"
 )
 
 type GithubVcs struct {
-	httpURL  string
-	RepoPath string
-	RepoName string
-	RepoType string
-	Private  bool
+	httpURL   string
+	RepoPath  string
+	RepoName  string
+	RepoType  string
+	Private   bool
+	ProjectId int
 }
 
 func (g *GithubVcs) GetRepoPath() string {
@@ -63,12 +65,41 @@ func (g *GithubVcs) GetRepoPrivate() bool {
 	return g.Private
 }
 
-func (g *GithubVcs) GetReleases() (cnbReleases []releases) {
-	return nil
+func (g *GithubVcs) GetReleases() (cnbReleases []Releases) {
+	parts := strings.Split(g.RepoPath, "/")
+	if len(parts) != 2 {
+		return nil
+	}
+	owner := parts[0]
+	repo := parts[1]
+
+	githubReleases, err := api.GetReleases(owner, repo)
+	if err != nil {
+		panic(err)
+	}
+	for _, githubRelease := range githubReleases {
+		var assets []Asset
+		for _, asset := range githubRelease.Assets {
+			assets = append(assets, Asset{
+				Name: *asset.Name,
+				Url:  *asset.BrowserDownloadURL,
+			})
+		}
+		cnbReleases = append(cnbReleases, Releases{
+			TagName:    *githubRelease.TagName,
+			Name:       *githubRelease.Name,
+			Body:       *githubRelease.Body,
+			Assets:     assets,
+			Prerelease: *githubRelease.Prerelease,
+			Draft:      *githubRelease.Draft,
+			MakeLatest: strconv.FormatBool(*githubRelease.Draft),
+		})
+	}
+	return cnbReleases
 }
 
 func (g *GithubVcs) GetProjectID() string {
-	return strconv.Itoa(0)
+	return strconv.Itoa(g.ProjectId)
 }
 
 func newGithubRepo() []VCS {
@@ -83,12 +114,17 @@ func GithubCovertToVcs(repoList []*github.Repository) []VCS {
 	var VCS []VCS
 	for _, repo := range repoList {
 		VCS = append(VCS, &GithubVcs{
-			httpURL:  *repo.CloneURL,
-			RepoPath: *repo.FullName,
-			RepoName: *repo.Name,
-			RepoType: Git,
-			Private:  *repo.Private,
+			httpURL:   *repo.CloneURL,
+			RepoPath:  *repo.FullName,
+			RepoName:  *repo.Name,
+			RepoType:  Git,
+			Private:   *repo.Private,
+			ProjectId: int(*repo.ID),
 		})
 	}
 	return VCS
+}
+
+func (g *GithubVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+	return nil, nil
 }

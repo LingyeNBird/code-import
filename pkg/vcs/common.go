@@ -72,7 +72,7 @@ func (c *CommonVcs) GetRepoPrivate() bool {
 	return true
 }
 
-func (c *CommonVcs) GetReleases() []releases {
+func (c *CommonVcs) GetReleases() (cnbReleases []Releases) {
 	return nil
 }
 
@@ -98,4 +98,8 @@ func getRepos() ([]VCS, error) {
 	}
 	logger.Logger.Debugw("获取到的仓库列表", "VCS", VCS)
 	return VCS, nil
+}
+
+func (c *CommonVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+	return nil, nil
 }

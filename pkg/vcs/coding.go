@@ -60,7 +60,7 @@ func (r *CodingVcs) GetRepoPrivate() bool {
 	return true
 }
 
-func (r *CodingVcs) GetReleases() []releases {
+func (r *CodingVcs) GetReleases() []Releases {
 	return nil
 }
 
@@ -88,4 +88,8 @@ func CodingCovertToVcs(repoList []coding.Depots) []VCS {
 		})
 	}
 	return VCS
+}
+
+func (r *CodingVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+	return nil, nil
 }

@@ -63,7 +63,7 @@ func (r *GiteeVcs) GetRepoPrivate() bool {
 	return r.Private
 }
 
-func (r *GiteeVcs) GetReleases() []releases {
+func (g *GiteeVcs) GetReleases() (cnbReleases []Releases) {
 	return nil
 }
 
@@ -91,4 +91,8 @@ func GiteeCovertToVcs(repoList []api.Repo) []VCS {
 		})
 	}
 	return VCS
+}
+
+func (r *GiteeVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+	return nil, nil
 }
