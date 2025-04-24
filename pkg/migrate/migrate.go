@@ -1,7 +1,7 @@
 package migrate
 
 import (
-	"ccrctl/pkg/api/cnb"
+	"ccrctl/pkg/api/source"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/http_client"
@@ -149,6 +149,7 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
+	logger.Logger.Infof("仓库总数%d", len(depotList))
 	atomic.StoreInt64(&totalRepoNumber, int64(len(depotList)))
 	atomic.StoreInt64(&failedRepoNumber, int64(len(depotList)))
 	atomic.StoreInt64(&successfulRepoNumber, 0)
@@ -157,7 +158,7 @@ func Run() {
 	//if err != nil {
 	//	panic(err)
 	//}
-	exist, err := cnb.RootOrganizationExists(CnbApiURL, CnbToken)
+	exist, err := source.RootOrganizationExists(CnbApiURL, CnbToken)
 	if err != nil {
 		panic(err)
 	}
@@ -166,7 +167,7 @@ func Run() {
 		return
 	}
 	if organizationMappingLevel == 1 { // 如果组织映射级别为1，则创建子组织
-		err = cnb.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
+		err = source.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
 		if err != nil {
 			panic(err)
 		}
@@ -228,19 +229,19 @@ func migrateDo(depot vcs.VCS) error {
 		log.Infof("%s svn仓库，跳过同步", repoPath)
 		return nil
 	}
-	cnbRepoPath, cnbRepoGroup := cnb.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
+	cnbRepoPath, cnbRepoGroup := source.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
 	if MigrateCode {
 		err = depot.Clone()
 		if err != nil {
 			log.Errorf(err.Error())
 			return fmt.Errorf(err.Error())
 		}
-		has, err := cnb.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
+		has, err := source.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
 		if err != nil {
 			return err
 		}
 		if !has {
-			err = cnb.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, repoPrivate)
+			err = source.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, repoPrivate)
 			if err != nil {
 				return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
 			}
@@ -265,7 +266,7 @@ func migrateDo(depot vcs.VCS) error {
 			}
 		}(fullRepoDir)
 
-		pushURL := cnb.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
+		pushURL := source.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
 		rebaseRepoPath := filepath.Join(RebaseDirPrefix, repoPath)
 		isForcePush := config.Cfg.GetBool("migrate.force_push")
 		if MigrateRebase {
@@ -370,7 +371,7 @@ func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) err
 	log.Infof("%s 开始迁移release: %s", repoPath, release.Name)
 
 	// 在目标平台创建release
-	releaseID, exist, err := cnb.CreateRelease(repoPath, depot.GetProjectID(), release, depot)
+	releaseID, exist, err := source.CreateRelease(repoPath, depot.GetProjectID(), release, depot)
 	if err != nil {
 		log.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, err)
 		return err
@@ -426,7 +427,7 @@ func migrateReleaseAsset(repoPath, releaseID, fileName, downloadUrl string) (err
 		logger.Logger.Errorf("%s 下载release asset %s 失败: %s", downloadUrl, fileName, err)
 		return err
 	}
-	err = cnb.UploadReleaseAsset(repoPath, releaseID, fileName, data)
+	err = source.UploadReleaseAsset(repoPath, releaseID, fileName, data)
 	if err != nil {
 		logger.Logger.Errorf("%s 上传release asset %s 失败: %s", downloadUrl, fileName, err)
 		return err

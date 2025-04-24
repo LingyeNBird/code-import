@@ -108,14 +108,26 @@ docker run --rm  \
   -e PLUGIN_SOURCE_PLATFORM="common" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_MIGRATE_SSH="true" \
   -e GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' \  
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
 
+### 从 CNB 迁移
 
-
+迁移指定根组织下所有仓库
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_GROUP="xxx" \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_SOURCE_URL="https://cnb.example1.com" \
+  -e PLUGIN_SOURCE_PLATFORM="cnb" \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -e PLUGIN_CNB_URL="https://cnb.example2.com" \
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+````
 
 ## 参数介绍
 
@@ -141,6 +153,7 @@ docker run --rm  \
         - Github权限：repo:all、read:org https://github.com/settings/tokens
         - Gitlab权限：read_api https://gitlab.com/-/user_settings/personal_access_tokens
         - Gitee权限：user_info、projects https://gitee.com/profile/personal_access_tokens
+        - CNB权限：account-engage:r、group-resource:r https://cnb.cool/profile/token
 
 - PLUGIN_SOURCE_PLATFORM
     - 类型：字符串
@@ -204,7 +217,8 @@ docker run --rm  \
     - 类型：字符串
     - 必填：是
     - 默认值：-
-    - 说明：CNB 授权令牌，个人令牌-访问令牌创建。权限要求：
+    - 说明：CNB 授权令牌，个人令牌-访问令牌创建 https://cnb.cool/profile/token。
+    - 权限要求：
         - repo-code 读写
         - repo-basic-info 只读
         - account-profile 只读
@@ -222,6 +236,11 @@ docker run --rm  \
 
 
 ## 其他参数
+- PLUGIN_SOURCE_GROUP
+  - 类型：字符串
+  - 必填：否
+  - 说明：当从CNB迁移至CNB时，指定迁移根组织下仓库
+
 - PLUGIN_MIGRATE_TYPE
     - 类型：字符串
     - 必填：否

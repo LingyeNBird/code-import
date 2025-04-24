@@ -39,6 +39,15 @@ func NewClientV2() *Client {
 	}
 }
 
+// NewClientV3 创建一个新的 OpenAPI 客户端
+func NewCNBClient() *Client {
+	return &Client{
+		BaseURL:    config.ConvertToApiURL(config.Cfg.GetString("source.url")),
+		HTTPClient: &http.Client{},
+		Token:      config.Cfg.GetString("source.token"),
+	}
+}
+
 // Request 发送一个 HTTP 请求到 OpenAPI
 func (c *Client) Request(method, endpoint string, token string, body interface{}) ([]byte, error) {
 	defer logger.Logger.Debugw("Request", "body", body, "reqPath", endpoint, "url", c.BaseURL+endpoint)

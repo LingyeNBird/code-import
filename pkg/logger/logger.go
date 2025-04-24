@@ -18,7 +18,7 @@ var (
 
 const (
 	SuccessfulLog = "successful.log"
-	InfoLog       = "info.log"
+	InfoLog       = "migrate.log"
 )
 
 func init() {

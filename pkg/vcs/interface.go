@@ -63,6 +63,8 @@ func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 		return newCommonRepo(), nil
 	case "aliyun":
 		return newAliyunRepo(), nil
+	case "cnb":
+		return newCnbRepo(), nil
 	default:
 		return nil, fmt.Errorf("不支持的仓库平台: %s", sourceRepoPlatformName)
 	}

@@ -60,6 +60,7 @@ type Source struct {
 	UserName      string   `yaml:"username"`
 	Password      string   `yaml:"password"`
 	SshPrivateKey string   `yaml:"ssh_private_key"`
+	Group         string   `yaml:"group"`
 }
 
 type CNB struct {
@@ -97,8 +98,8 @@ func CheckConfig() error {
 	}
 
 	platform := config.Source.Platform
-	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" {
-		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun")
+	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" && platform != "cnb" {
+		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun、cnb")
 	}
 	if platform != "aliyun" {
 		// 检查 source 参数
@@ -118,6 +119,12 @@ func CheckConfig() error {
 			return fmt.Errorf("source.token is required")
 		}
 	}
+
+	//if platform == "cnb" {
+	//	if config.Source.Group == "" {
+	//		return fmt.Errorf("source.group is required")
+	//	}
+	//}
 
 	//common http迁移
 	if platform == "common" && !config.Migrate.Ssh {
@@ -291,6 +298,7 @@ func stringCovertToListAndSetConfigValue(v *viper.Viper, keys ...string) {
 
 func bindEnvVariables(config *viper.Viper) error {
 	envKeys := []string{
+		"source.group",
 		"source.url",
 		"source.token",
 		"source.platform",
@@ -342,7 +350,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.log_level":                  "info",
 		"source.platform":                    "coding",
 		"migrate.file_limit_size":            "500",
-		"migrate.skip_exists_repo":           "true",
+		"migrate.skip_exists_repo":           "false",
 		"migrate.release":                    "true",
 		"migrate.code":                       "true",
 		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
