@@ -149,7 +149,7 @@ docker run --rm  \
     - 必填：是
     - 默认值：-
     - 说明：调用源代码托管平台 API 的 token (当 source_platform 不为 common 时必填)
-        - CODING权限：用户信息-只读、项目信息-只读、代码仓库-只读 https://e.coding.net/user/account/setting/tokens
+        - CODING权限：**仅限团队所有者或团队管理员token**,用户信息-只读、项目信息-只读、代码仓库-只读 https://e.coding.net/user/account/setting/tokens
         - Github权限：repo:all、read:org https://github.com/settings/tokens
         - Gitlab权限：read_api https://gitlab.com/-/user_settings/personal_access_tokens
         - Gitee权限：user_info、projects https://gitee.com/profile/personal_access_tokens

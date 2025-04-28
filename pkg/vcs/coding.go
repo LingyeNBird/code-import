@@ -4,6 +4,7 @@ import (
 	"ccrctl/pkg/api/coding"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
+	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
 	"strconv"
 )
@@ -18,6 +19,7 @@ type CodingVcs struct {
 	SubGroupName string
 	RepoName     string
 	RepoType     string
+	Private      bool
 }
 
 func (r *CodingVcs) GetRepoPath() string {
@@ -57,7 +59,7 @@ func (r *CodingVcs) GetToken() string {
 }
 
 func (r *CodingVcs) GetRepoPrivate() bool {
-	return true
+	return r.Private
 }
 
 func (r *CodingVcs) GetReleases() []Releases {
@@ -71,6 +73,7 @@ func (r *CodingVcs) GetProjectID() string {
 func newCodingRepo() []VCS {
 	repoList, err := coding.GetDepotList(config.Cfg.GetString("migrate.type"))
 	if err != nil {
+		logger.Logger.Errorf(err.Error())
 		panic(err)
 	}
 	return CodingCovertToVcs(repoList)
@@ -85,6 +88,7 @@ func CodingCovertToVcs(repoList []coding.Depots) []VCS {
 			SubGroupName: repo.ProjectName,
 			RepoName:     repo.Name,
 			RepoType:     repo.RepoType,
+			Private:      !repo.IsShared,
 		})
 	}
 	return VCS
