@@ -166,6 +166,7 @@ type Depots struct {
 	GroupType     string `json:"GroupType"`
 	DefaultBranch string `json:"DefaultBranch"`
 	RepoType      string `json:"RepoType"`
+	IsShared      bool   `json:"IsShared"`
 }
 
 type DepotData struct {
@@ -301,6 +302,10 @@ func GetTeamRepoFetchPage(url, token string, pageNumber int) (DepotInfo, error) 
 		PageSize:   PageSize,
 	}
 	resp, err := c.Request("POST", endpoint, token, body)
+	if err != nil {
+		return DepotInfo{}, err
+	}
+	err = checkResponse(resp)
 	if err != nil {
 		return DepotInfo{}, err
 	}
