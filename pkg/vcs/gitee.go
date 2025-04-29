@@ -4,7 +4,10 @@ import (
 	api "ccrctl/pkg/api/gitee"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
+	"ccrctl/pkg/http_client"
+	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -17,16 +20,16 @@ type GiteeVcs struct {
 	Private  bool
 }
 
-func (r *GiteeVcs) GetRepoPath() string {
-	return r.RepoPath
+func (c *GiteeVcs) GetRepoPath() string {
+	return c.RepoPath
 }
 
-func (r *GiteeVcs) GetRepoName() string {
-	return r.RepoName
+func (c *GiteeVcs) GetRepoName() string {
+	return c.RepoName
 }
 
-func (r *GiteeVcs) GetSubGroupName() string {
-	parts := strings.Split(r.GetRepoPath(), "/")
+func (c *GiteeVcs) GetSubGroupName() string {
+	parts := strings.Split(c.GetRepoPath(), "/")
 	if len(parts) > 0 {
 		parts = parts[:len(parts)-1] // 去掉仓库名
 	}
@@ -34,40 +37,67 @@ func (r *GiteeVcs) GetSubGroupName() string {
 	return result
 }
 
-func (r *GiteeVcs) GetRepoType() string {
+func (c *GiteeVcs) GetRepoType() string {
 	return "Git"
 }
 
-func (r *GiteeVcs) GetCloneUrl() string {
-	return util.ConvertUrlWithAuth(r.httpURL, r.GetUserName(), r.GetToken())
+func (c *GiteeVcs) GetCloneUrl() string {
+	return util.ConvertUrlWithAuth(c.httpURL, c.GetUserName(), c.GetToken())
 }
 
-func (r *GiteeVcs) GetUserName() string {
+func (c *GiteeVcs) GetUserName() string {
 	name, _ := api.GetUserName()
 	return name
 }
 
-func (r *GiteeVcs) GetToken() string {
+func (c *GiteeVcs) GetToken() string {
 	return config.Cfg.GetString("source.token")
 }
 
-func (r *GiteeVcs) Clone() error {
-	err := git.Clone(r.GetCloneUrl(), r.GetRepoPath(), allowIncompletePush)
+func (c *GiteeVcs) Clone() error {
+	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *GiteeVcs) GetRepoPrivate() bool {
-	return r.Private
+func (c *GiteeVcs) GetRepoPrivate() bool {
+	return c.Private
 }
 
-func (g *GiteeVcs) GetReleases() (cnbReleases []Releases) {
-	return nil
+func (c *GiteeVcs) GetReleases() (cnbReleases []Releases) {
+	releases, err := api.GetReleases(c.RepoPath)
+	if err != nil {
+		panic(err)
+	}
+	for _, release := range releases {
+		var assets []Asset
+		// 私有仓库用户自定义上传的附件无法获取到，因此只在公开仓库获取附件
+		if !c.Private {
+			for index, asset := range release.Assets {
+				// 跳过最后2个gitee自带的附件
+				if index == len(release.Assets)-2 {
+					break
+				}
+				assets = append(assets, Asset{
+					Name: asset.Name,
+					Url:  asset.BrowserDownloadUrl,
+				})
+			}
+		}
+		cnbReleases = append(cnbReleases, Releases{
+			TagName:    release.TagName,
+			Name:       release.Name,
+			Body:       release.Body,
+			Assets:     assets,
+			Prerelease: release.Prerelease,
+		})
+	}
+	return cnbReleases
 }
 
-func (r *GiteeVcs) GetProjectID() string {
+func (c *GiteeVcs) GetProjectID() string {
 	return strconv.Itoa(0)
 }
 
@@ -93,6 +123,48 @@ func GiteeCovertToVcs(repoList []api.Repo) []VCS {
 	return VCS
 }
 
-func (r *GiteeVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
-	return nil, nil
+func (c *GiteeVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+	// 转换release描述中的附件链接为cnb附件链接
+	attachments, images, exists := util.GiteeExtractAttachments(desc)
+	if !exists {
+		return nil, nil
+	}
+
+	var attachmentsList []Attachment
+
+	// 统一处理附件和图片
+	processAsset := func(name, url, assetType string) error {
+		data, err := http_client.DownloadFromUrl(url)
+		if err != nil {
+			logger.Logger.Errorf("下载release资源失败 类型:%s 名称:%s URL:%s 错误:%v",
+				assetType, name, url, err)
+			return fmt.Errorf("下载%s资源'%s'失败: %w", assetType, name, err)
+		}
+
+		attachmentsList = append(attachmentsList, Attachment{
+			Name:     name,
+			Data:     data,
+			Url:      url,
+			Type:     assetType,
+			RepoPath: repoPath,
+			Size:     len(data),
+		})
+		return nil
+	}
+
+	// 处理普通附件
+	for name, url := range attachments {
+		if err := processAsset(name, url, "file"); err != nil {
+			return nil, err
+		}
+	}
+
+	// 处理图片附件
+	for name, url := range images {
+		if err := processAsset(name, url, "img"); err != nil {
+			return nil, err
+		}
+	}
+
+	return attachmentsList, nil
 }

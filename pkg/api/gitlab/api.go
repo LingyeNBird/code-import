@@ -66,6 +66,7 @@ func GetReleases(projectID int) (releases []*gitlab.Release, err error) {
 		if resp.NextPage == 0 {
 			break
 		}
+		page++
 	}
 	return releases, nil
 }

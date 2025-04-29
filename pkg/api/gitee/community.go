@@ -16,6 +16,11 @@ const (
 	host        = "https://gitee.com"
 	getRepoList = "/user/repos"
 	getUser     = "/user"
+	getReleases = "/repos/%s/releases"
+)
+
+var (
+	c = http_client.NewGiteeClient()
 )
 
 type Repo struct {
@@ -249,4 +254,88 @@ func GetUserName() (name string, err error) {
 	}
 	name = data.Login
 	return name, err
+}
+
+type Release struct {
+	Id              int    `json:"id"`
+	TagName         string `json:"tag_name"`
+	TargetCommitish string `json:"target_commitish"`
+	Prerelease      bool   `json:"prerelease"`
+	Name            string `json:"name"`
+	Body            string `json:"body"`
+	Author          struct {
+		Id                int    `json:"id"`
+		Login             string `json:"login"`
+		Name              string `json:"name"`
+		AvatarUrl         string `json:"avatar_url"`
+		Url               string `json:"url"`
+		HtmlUrl           string `json:"html_url"`
+		Remark            string `json:"remark"`
+		FollowersUrl      string `json:"followers_url"`
+		FollowingUrl      string `json:"following_url"`
+		GistsUrl          string `json:"gists_url"`
+		StarredUrl        string `json:"starred_url"`
+		SubscriptionsUrl  string `json:"subscriptions_url"`
+		OrganizationsUrl  string `json:"organizations_url"`
+		ReposUrl          string `json:"repos_url"`
+		EventsUrl         string `json:"events_url"`
+		ReceivedEventsUrl string `json:"received_events_url"`
+		Type              string `json:"type"`
+	} `json:"author"`
+	CreatedAt time.Time `json:"created_at"`
+	Assets    []struct {
+		BrowserDownloadUrl string `json:"browser_download_url"`
+		Name               string `json:"name"`
+	} `json:"assets"`
+}
+
+func GetReleasesFetchPage(repoPath string, pageInt int) ([]Release, string, error) {
+	page := strconv.Itoa(pageInt)
+	queryParams := url.Values{}
+	queryParams.Add("per_page", "100")
+	queryParams.Add("page", page)
+	endPoint := fmt.Sprintf(getReleases, repoPath)
+	resp, header, respCode, err := c.GiteeRequest(http.MethodGet, endPoint, nil, queryParams)
+	if err != nil {
+		logger.Logger.Error("Failed to get releases", err)
+		return nil, "", err
+	}
+	if respCode != http.StatusOK {
+		var e ErrorResp
+		err = c.Unmarshal(resp, &e)
+		if err != nil {
+			logger.Logger.Error("Failed to unmarshal releases err resp", err)
+			return nil, "", err
+		}
+		logger.Logger.Error("Failed to get releases", err)
+		return nil, "", fmt.Errorf("failed to get releases: %s", e.Message)
+	}
+	totalPage := header.Get("total_page")
+	data := make([]Release, 0)
+	err = c.Unmarshal(resp, &data)
+	if err != nil {
+		logger.Logger.Error("Failed to unmarshal releases", err)
+		return nil, "", err
+	}
+	if len(data) == 0 {
+		return data, totalPage, nil
+	}
+	return data, totalPage, nil
+}
+
+func GetReleases(repoPath string) ([]Release, error) {
+	page := 1
+	releases := make([]Release, 0)
+	for {
+		data, totalPage, err := GetReleasesFetchPage(repoPath, page)
+		if err != nil {
+			return nil, err
+		}
+		releases = append(releases, data...)
+		if strconv.Itoa(page) == totalPage || totalPage == "0" {
+			break
+		}
+		page++
+	}
+	return releases, nil
 }

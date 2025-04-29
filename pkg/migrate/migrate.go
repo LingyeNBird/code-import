@@ -306,7 +306,7 @@ func migrateDo(depot vcs.VCS) error {
 			return fmt.Errorf("%s push失败: %s\n %s", repoPath, err, output)
 		}
 	}
-	if MigrateRelease && depot.GetReleases() != nil && len(depot.GetReleases()) > 0 {
+	if MigrateRelease {
 		err = migrateRelease(depot)
 		if err != nil {
 			return err
@@ -342,6 +342,10 @@ func isMigrated(repoPath, filePath string) (error, bool) {
 //   - error: 迁移过程中的错误信息
 func migrateRelease(depot vcs.VCS) error {
 	releases := depot.GetReleases()
+	if releases == nil || 0 == len(releases) {
+		logger.Logger.Infof("%s 无release需要迁移", depot.GetRepoPath())
+		return nil
+	}
 	repoPath := depot.GetRepoPath()
 	log := logger.Logger
 

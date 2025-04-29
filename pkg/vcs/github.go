@@ -79,11 +79,14 @@ func (g *GithubVcs) GetReleases() (cnbReleases []Releases) {
 	}
 	for _, githubRelease := range githubReleases {
 		var assets []Asset
-		for _, asset := range githubRelease.Assets {
-			assets = append(assets, Asset{
-				Name: *asset.Name,
-				Url:  *asset.BrowserDownloadURL,
-			})
+		// 私有仓库用户自定义上传的附件无法获取到，因此只在公开仓库获取附件
+		if !g.Private {
+			for _, asset := range githubRelease.Assets {
+				assets = append(assets, Asset{
+					Name: *asset.Name,
+					Url:  *asset.BrowserDownloadURL,
+				})
+			}
 		}
 		cnbReleases = append(cnbReleases, Releases{
 			TagName:    *githubRelease.TagName,
@@ -92,7 +95,7 @@ func (g *GithubVcs) GetReleases() (cnbReleases []Releases) {
 			Assets:     assets,
 			Prerelease: *githubRelease.Prerelease,
 			Draft:      *githubRelease.Draft,
-			MakeLatest: strconv.FormatBool(*githubRelease.Draft),
+			MakeLatest: *githubRelease.MakeLatest,
 		})
 	}
 	return cnbReleases
@@ -125,6 +128,7 @@ func GithubCovertToVcs(repoList []*github.Repository) []VCS {
 	return VCS
 }
 
+// GetReleaseAttachments Github release 描述里的普通附件需要鉴权，且未提供相关openAPI,因此无法迁移
 func (g *GithubVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	return nil, nil
 }

@@ -579,6 +579,10 @@ func UploadReleaseAsset(repoPath, releaseID, assetName string, data []byte) (err
 		return nil
 	}
 	uploadURL, err := GetReleaseAssetUploadUrl(repoPath, releaseID, assetName)
+	if err != nil {
+		logger.Logger.Errorf("Get upload url error: %v", err)
+		return err
+	}
 	err = c.UploadData(uploadURL.UploadUrl, data)
 	if err != nil {
 		logger.Logger.Errorf("Upload data error: %v", err)
@@ -586,7 +590,6 @@ func UploadReleaseAsset(repoPath, releaseID, assetName string, data []byte) (err
 	}
 	err = ConfirmUpload(uploadURL.VerifyUrl)
 	if err != nil {
-		logger.Logger.Errorf("Confirm upload error: %v", err)
 		return err
 	}
 	return nil

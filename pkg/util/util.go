@@ -111,6 +111,43 @@ func ExtractAttachments(markdown string) (attachments map[string]string, images 
 	return attachments, images, exists
 }
 
+// GiteeExtractAttachments  从 Markdown 内容中提取附件和图片的名称和 URL
+func GiteeExtractAttachments(markdown string) (attachments map[string]string, images map[string]string, exists bool) {
+	// 正则表达式匹配 Markdown 链接（附件）
+	linkRe := regexp.MustCompile(`\[(.*?)\]\((.*?) \"(.*?)\"\)`)
+	linkMatches := linkRe.FindAllStringSubmatch(markdown, -1)
+	attachments = make(map[string]string)
+	// 遍历链接匹配项并填充附件 map
+	for _, match := range linkMatches {
+		if len(match) == 4 {
+			attachmentName := match[1] // 附件名
+			attachmentURL := match[2]  // 附件 URL
+			// 排除图片URL
+			if !isImageURL(attachmentURL) {
+				attachments[attachmentName] = attachmentURL
+			}
+		}
+	}
+
+	// 正则表达式匹配 Markdown 图片，包括文件扩展名
+	imageRe := regexp.MustCompile(`!\[(.*?)\]\((.*?)(\.[^.]+)? \"(.*?)\"\)`)
+	imageMatches := imageRe.FindAllStringSubmatch(markdown, -1)
+	images = make(map[string]string)
+	// 遍历图片匹配项并填充图片 map
+	for _, match := range imageMatches {
+		if len(match) == 5 {
+			imageName := match[1] + match[3] // 图片名加上文件扩展名
+			imageURL := match[2] + match[3]  // 图片 URL
+			images[imageName] = imageURL
+		}
+	}
+
+	// 检查是否找到任何附件或图片
+	exists = len(attachments) > 0 || len(images) > 0
+
+	return attachments, images, exists
+}
+
 // 检查 URL 是否以图片格式结尾
 func isImageURL(url string) bool {
 	imageExts := []string{".png", ".jpg", ".jpeg", ".gif", ".bmp"}
