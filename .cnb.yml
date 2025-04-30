@@ -19,3 +19,12 @@ main:
           script: docker build -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest .
         - name: docker push
           script: docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
+        # 自动打标签
+        - name: auto tag
+          image: cnbcool/git-auto-tag:latest
+          settings:
+            tagFormat: 'v${version}'
+            branch: $CNB_BRANCH
+            repoUrlHttps: $CNB_REPO_URL_HTTPS
+          exports:
+            tag: NEW_TAG
