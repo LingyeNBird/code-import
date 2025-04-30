@@ -23,7 +23,7 @@ main:
         - name: auto tag
           image: cnbcool/git-auto-tag:latest
           settings:
-            tagFormat: 'v${version}'
+            tagFormat: v\${version}
             branch: $CNB_BRANCH
             repoUrlHttps: $CNB_REPO_URL_HTTPS
           exports:
