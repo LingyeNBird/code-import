@@ -28,3 +28,8 @@ main:
             repoUrlHttps: $CNB_REPO_URL_HTTPS
           exports:
             tag: NEW_TAG
+        # 同名镜像构建&推送
+        - name: docker build
+          script: docker tag  ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest  ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${NEW_TAG}
+        - name: docker push
+          script: docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${NEW_TAG}
