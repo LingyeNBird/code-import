@@ -18,6 +18,7 @@ type GiteeVcs struct {
 	RepoName string
 	RepoType string
 	Private  bool
+	Desc     string
 }
 
 func (c *GiteeVcs) GetRepoPath() string {
@@ -28,13 +29,17 @@ func (c *GiteeVcs) GetRepoName() string {
 	return c.RepoName
 }
 
-func (c *GiteeVcs) GetSubGroupName() string {
+func (c *GiteeVcs) GetSubGroup() *SubGroup {
 	parts := strings.Split(c.GetRepoPath(), "/")
 	if len(parts) > 0 {
 		parts = parts[:len(parts)-1] // 去掉仓库名
 	}
 	result := strings.Join(parts, "/")
-	return result
+	return &SubGroup{
+		Name:   result,
+		Desc:   "",
+		Remark: "",
+	}
 }
 
 func (c *GiteeVcs) GetRepoType() string {
@@ -118,6 +123,7 @@ func GiteeCovertToVcs(repoList []api.Repo) []VCS {
 			RepoName: repo.Name,
 			RepoType: Git,
 			Private:  repo.Private,
+			Desc:     repo.Description,
 		})
 	}
 	return VCS
@@ -167,4 +173,7 @@ func (c *GiteeVcs) GetReleaseAttachments(desc string, repoPath string, projectID
 	}
 
 	return attachmentsList, nil
+}
+func (c *GiteeVcs) GetRepoDescription() string {
+	return c.Desc
 }

@@ -22,13 +22,17 @@ func (c *AliyunVcs) GetRepoPath() string {
 	return c.PathWithNamespace
 }
 
-func (c *AliyunVcs) GetSubGroupName() string {
+func (c *AliyunVcs) GetSubGroup() *SubGroup {
 	parts := strings.Split(c.PathWithNamespace, "/")
 	if len(parts) > 0 {
 		parts = parts[1 : len(parts)-1] // 去掉仓库名
 	}
 	result := strings.Join(parts, "/")
-	return result
+	return &SubGroup{
+		Name:   result,
+		Desc:   "",
+		Remark: "",
+	}
 }
 
 func (c *AliyunVcs) GetRepoName() string {
@@ -90,6 +94,10 @@ func aliyunCovertToVcs(repoList []*devops20210625.ListRepositoriesResponseBodyRe
 	return VCS
 }
 
-func (C *AliyunVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+func (c *AliyunVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	return nil, nil
+}
+
+func (c *AliyunVcs) GetRepoDescription() string {
+	return ""
 }

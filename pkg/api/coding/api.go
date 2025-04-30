@@ -48,27 +48,29 @@ type UserInfo struct {
 
 type DescribeProjectByNameResponse struct {
 	Response struct {
-		Project struct {
-			Name        string `json:"Name"`
-			Id          int    `json:"Id"`
-			Type        int    `json:"Type"`
-			DisplayName string `json:"DisplayName"`
-			Icon        string `json:"Icon"`
-			Description string `json:"Description"`
-			CreatedAt   int64  `json:"CreatedAt"`
-			MaxMember   int    `json:"MaxMember"`
-			TeamId      int    `json:"TeamId"`
-			UserOwnerId int    `json:"UserOwnerId"`
-			IsDemo      bool   `json:"IsDemo"`
-			Archived    bool   `json:"Archived"`
-			StartDate   int    `json:"StartDate"`
-			UpdatedAt   int64  `json:"UpdatedAt"`
-			TeamOwnerId int    `json:"TeamOwnerId"`
-			EndDate     int    `json:"EndDate"`
-			Status      int    `json:"Status"`
-		} `json:"Project"`
-		RequestId string `json:"RequestId"`
+		Project   Project `json:"Project"`
+		RequestId string  `json:"RequestId"`
 	} `json:"Response"`
+}
+
+type Project struct {
+	Name        string `json:"Name"`
+	Id          int    `json:"Id"`
+	Type        int    `json:"Type"`
+	DisplayName string `json:"DisplayName"`
+	Icon        string `json:"Icon"`
+	Description string `json:"Description"`
+	CreatedAt   int64  `json:"CreatedAt"`
+	MaxMember   int    `json:"MaxMember"`
+	TeamId      int    `json:"TeamId"`
+	UserOwnerId int    `json:"UserOwnerId"`
+	IsDemo      bool   `json:"IsDemo"`
+	Archived    bool   `json:"Archived"`
+	StartDate   int    `json:"StartDate"`
+	UpdatedAt   int64  `json:"UpdatedAt"`
+	TeamOwnerId int    `json:"TeamOwnerId"`
+	EndDate     int    `json:"EndDate"`
+	Status      int    `json:"Status"`
 }
 
 type RepoList struct {
@@ -240,7 +242,7 @@ func GetCurrentUserName(url, token string) (userName string, err error) {
 	return userInfo.Response.User.Name, nil
 }
 
-func GetProjectIdByName(url, token, projectName string) (projectId int, err error) {
+func GetProjectByName(url, token, projectName string) (project Project, err error) {
 	c := http_client.NewClient(url)
 	body := &DescribeProjectByNameRequest{
 		Action:      "DescribeProjectByName",
@@ -248,28 +250,28 @@ func GetProjectIdByName(url, token, projectName string) (projectId int, err erro
 	}
 	resp, err := c.Request("POST", endpoint, token, body)
 	if err != nil {
-		return 0, err
+		return project, err
 	}
 	err = checkResponse(resp)
 	if err != nil {
-		return 0, err
+		return project, err
 	}
 	var projectInfo DescribeProjectByNameResponse
 	err = c.Unmarshal(resp, &projectInfo)
 	if err != nil {
-		return 0, err
+		return project, err
 	}
 	logger.Logger.Debugf("%s项目ID: %d", projectName, projectInfo.Response.Project.Id)
-	return projectInfo.Response.Project.Id, nil
+	return projectInfo.Response.Project, nil
 }
 
 func GetProjectIdsByNames(projects []string, url, token string) (projectIds []int, err error) {
 	for _, projectName := range projects {
-		id, err := GetProjectIdByName(url, token, projectName)
+		project, err := GetProjectByName(url, token, projectName)
 		if err != nil {
 			return nil, err
 		}
-		projectIds = append(projectIds, id)
+		projectIds = append(projectIds, project.Id)
 	}
 	return projectIds, nil
 }

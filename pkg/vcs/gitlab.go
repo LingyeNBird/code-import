@@ -24,51 +24,56 @@ type GitlabVcs struct {
 	RepoType  string
 	Private   string
 	ProjectId int
+	Desc      string
 }
 
-func (g *GitlabVcs) GetRepoPath() string {
-	return g.RepoPath
+func (c *GitlabVcs) GetRepoPath() string {
+	return c.RepoPath
 }
 
-func (g *GitlabVcs) GetSubGroupName() string {
-	parts := strings.Split(g.RepoPath, "/")
+func (c *GitlabVcs) GetSubGroup() *SubGroup {
+	parts := strings.Split(c.RepoPath, "/")
 	if len(parts) > 0 {
 		parts = parts[:len(parts)-1] // 去掉仓库名
 	}
 	result := strings.Join(parts, "/")
-	return result
+	return &SubGroup{
+		Name:   result,
+		Desc:   "",
+		Remark: "",
+	}
 }
 
-func (g *GitlabVcs) GetRepoName() string {
-	return g.RepoName
+func (c *GitlabVcs) GetRepoName() string {
+	return c.RepoName
 }
 
-func (g *GitlabVcs) GetRepoType() string {
-	return g.RepoType
+func (c *GitlabVcs) GetRepoType() string {
+	return c.RepoType
 }
 
-func (g *GitlabVcs) GetCloneUrl() string {
-	return util.ConvertUrlWithAuth(g.httpURL, GitlabUserName, g.GetToken())
+func (c *GitlabVcs) GetCloneUrl() string {
+	return util.ConvertUrlWithAuth(c.httpURL, GitlabUserName, c.GetToken())
 }
 
-func (g *GitlabVcs) GetUserName() string {
+func (c *GitlabVcs) GetUserName() string {
 	return GitlabUserName
 }
 
-func (g *GitlabVcs) GetToken() string {
+func (c *GitlabVcs) GetToken() string {
 	return config.Cfg.GetString("source.token")
 }
 
-func (g *GitlabVcs) Clone() error {
-	err := git.Clone(g.GetCloneUrl(), g.GetRepoPath(), allowIncompletePush)
+func (c *GitlabVcs) Clone() error {
+	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g *GitlabVcs) GetRepoPrivate() bool {
-	switch g.Private {
+func (c *GitlabVcs) GetRepoPrivate() bool {
+	switch c.Private {
 	case "private":
 		return true
 	case "internal":
@@ -77,8 +82,8 @@ func (g *GitlabVcs) GetRepoPrivate() bool {
 	return false
 }
 
-func (g *GitlabVcs) GetReleases() (cnbReleases []Releases) {
-	gitlabReleases, err := api.GetReleases(g.ProjectId)
+func (c *GitlabVcs) GetReleases() (cnbReleases []Releases) {
+	gitlabReleases, err := api.GetReleases(c.ProjectId)
 	if err != nil {
 		panic(err)
 	}
@@ -101,8 +106,8 @@ func (g *GitlabVcs) GetReleases() (cnbReleases []Releases) {
 	return cnbReleases
 }
 
-func (g *GitlabVcs) GetProjectID() string {
-	return strconv.Itoa(g.ProjectId)
+func (c *GitlabVcs) GetProjectID() string {
+	return strconv.Itoa(c.ProjectId)
 }
 
 func newGitlabRepo() []VCS {
@@ -123,12 +128,13 @@ func GitlabCovertToVcs(repoList []*gitlab.Project) []VCS {
 			RepoType:  Git,
 			Private:   string(repo.Visibility),
 			ProjectId: repo.ID,
+			Desc:      repo.Description,
 		})
 	}
 	return VCS
 }
 
-func (g *GitlabVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+func (c *GitlabVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	// 转换release描述中的附件链接为cnb附件链接
 	attachments, images, exists := util.ExtractAttachments(desc)
 	if !exists {
@@ -185,4 +191,8 @@ func (g *GitlabVcs) GetReleaseAttachments(desc string, repoPath string, projectI
 	}
 	return attachmentsList, nil
 
+}
+
+func (c *GitlabVcs) GetRepoDescription() string {
+	return c.Desc
 }

@@ -157,7 +157,8 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 		return err
 	}
 	for _, depot := range depotList {
-		subGroupName := depot.GetSubGroupName()
+		subGroup := depot.GetSubGroup()
+		subGroupName := subGroup.Name
 		parts := strings.Split(subGroupName, "/")
 		tmpPath := ""
 		if len(parts) > 1 {
@@ -167,7 +168,7 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 				} else {
 					tmpPath = path.Join(tmpPath, parts[i])
 				}
-				err := CreateSubOrganization(url, token, tmpPath)
+				err := CreateSubOrganization(url, token, tmpPath, *subGroup)
 				if err != nil {
 					return err
 				}
@@ -175,7 +176,7 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 		} else {
 			_, exists := subGroups[subGroupName]
 			if !exists {
-				err := CreateSubOrganization(url, token, subGroupName)
+				err := CreateSubOrganization(url, token, subGroupName, *subGroup)
 				if err != nil {
 					return err
 				}
@@ -188,12 +189,14 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 	return nil
 }
 
-func CreateSubOrganization(url, token, subGroupName string) (err error) {
+func CreateSubOrganization(url, token, subGroupName string, subGroup vcs.SubGroup) (err error) {
 	c := http_client.NewClient(url)
 	groupPath := path.Join(RootOrganizationName, subGroupName)
 	logger.Logger.Infof("开始创建子组织%s", groupPath)
 	body := &CreateOrganization{
-		Path: groupPath,
+		Path:        groupPath,
+		Remark:      subGroup.Remark,
+		Description: subGroup.Desc,
 	}
 	resp, _, statusCode, err := c.RequestV3("POST", createSubOrganizationEndPoint, token, body)
 
@@ -212,7 +215,7 @@ func CreateSubOrganization(url, token, subGroupName string) (err error) {
 	return fmt.Errorf("创建子组织%s失败: %s", groupPath, string(resp))
 }
 
-func CreateRepo(url, token, group, repoName string, private bool) (err error) {
+func CreateRepo(url, token, group, repoName, repoDesc string, private bool) (err error) {
 	c := http_client.NewClient(url)
 	var visibility string
 	endpoint := group + "/-/repos"
@@ -222,8 +225,9 @@ func CreateRepo(url, token, group, repoName string, private bool) (err error) {
 		visibility = "public"
 	}
 	body := &CreateRepoBody{
-		Name:       repoName,
-		Visibility: visibility,
+		Name:        repoName,
+		Visibility:  visibility,
+		Description: repoDesc,
 	}
 	_, err = c.Request("POST", endpoint, token, body)
 	if err != nil {

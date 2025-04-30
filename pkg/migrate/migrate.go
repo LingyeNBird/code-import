@@ -204,8 +204,8 @@ func Run() {
 
 func migrateDo(depot vcs.VCS) error {
 	var err error
-	repoName, subGroupName, repoPath, repoPrivate := depot.GetRepoName(), depot.GetSubGroupName(), depot.GetRepoPath(), depot.GetRepoPrivate()
-
+	repoName, subGroup, repoPath, repoPrivate := depot.GetRepoName(), depot.GetSubGroup(), depot.GetRepoPath(), depot.GetRepoPrivate()
+	subGroupName := subGroup.Name
 	// 使用zap的With方法添加repo字段
 	log := logger.Logger.With(zap.String("repo", repoPath))
 
@@ -241,7 +241,7 @@ func migrateDo(depot vcs.VCS) error {
 			return err
 		}
 		if !has {
-			err = source.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, repoPrivate)
+			err = source.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, depot.GetRepoDescription(), repoPrivate)
 			if err != nil {
 				return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
 			}

@@ -20,53 +20,63 @@ type CodingVcs struct {
 	RepoName     string
 	RepoType     string
 	Private      bool
+	Desc         string
 }
 
-func (r *CodingVcs) GetRepoPath() string {
-	return r.RepoPath
+func (c *CodingVcs) GetRepoPath() string {
+	return c.RepoPath
 }
 
-func (r *CodingVcs) GetRepoName() string {
-	return r.RepoName
+func (c *CodingVcs) GetRepoName() string {
+	return c.RepoName
 }
 
-func (r *CodingVcs) GetSubGroupName() string {
-	return r.SubGroupName
+func (c *CodingVcs) GetSubGroup() *SubGroup {
+	project, err := coding.GetProjectByName(config.Cfg.GetString("source.url"), c.GetToken(), c.SubGroupName)
+	if err != nil {
+		logger.Logger.Errorf(err.Error())
+		panic(err)
+	}
+	return &SubGroup{
+		Name:   c.SubGroupName,
+		Desc:   project.Description,
+		Remark: project.DisplayName,
+	}
 }
 
-func (r *CodingVcs) GetRepoType() string {
-	return r.RepoType
+func (c *CodingVcs) GetRepoType() string {
+	return c.RepoType
 }
 
-func (r *CodingVcs) GetCloneUrl() string {
-	return util.ConvertUrlWithAuth(r.httpURL, CodingUserName, r.GetToken())
+func (c *CodingVcs) GetCloneUrl() string {
+	return util.ConvertUrlWithAuth(c.httpURL, CodingUserName, c.GetToken())
 }
 
-func (r *CodingVcs) GetUserName() string {
+func (c *CodingVcs) GetUserName() string {
 	return CodingUserName
 }
 
-func (r *CodingVcs) Clone() error {
-	err := git.Clone(r.GetCloneUrl(), r.GetRepoPath(), allowIncompletePush)
+func (c *CodingVcs) Clone() error {
+	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *CodingVcs) GetToken() string {
+func (c *CodingVcs) GetToken() string {
 	return config.Cfg.GetString("source.token")
 }
 
-func (r *CodingVcs) GetRepoPrivate() bool {
-	return r.Private
+func (c *CodingVcs) GetRepoPrivate() bool {
+	return c.Private
 }
 
-func (r *CodingVcs) GetReleases() []Releases {
+func (c *CodingVcs) GetReleases() []Releases {
 	return nil
 }
 
-func (r *CodingVcs) GetProjectID() string {
+func (c *CodingVcs) GetProjectID() string {
 	return strconv.Itoa(0)
 }
 
@@ -89,11 +99,16 @@ func CodingCovertToVcs(repoList []coding.Depots) []VCS {
 			RepoName:     repo.Name,
 			RepoType:     repo.RepoType,
 			Private:      !repo.IsShared,
+			Desc:         repo.Description,
 		})
 	}
 	return VCS
 }
 
-func (r *CodingVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+func (c *CodingVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	return nil, nil
+}
+
+func (c *CodingVcs) GetRepoDescription() string {
+	return c.Desc
 }

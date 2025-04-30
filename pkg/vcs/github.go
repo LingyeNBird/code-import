@@ -18,55 +18,60 @@ type GithubVcs struct {
 	RepoType  string
 	Private   bool
 	ProjectId int
+	Desc      string
 }
 
-func (g *GithubVcs) GetRepoPath() string {
-	return g.RepoPath
+func (c *GithubVcs) GetRepoPath() string {
+	return c.RepoPath
 }
 
-func (g *GithubVcs) GetSubGroupName() string {
-	parts := strings.Split(g.RepoPath, "/")
+func (c *GithubVcs) GetSubGroup() *SubGroup {
+	parts := strings.Split(c.RepoPath, "/")
 	if len(parts) > 0 {
 		parts = parts[:len(parts)-1] // 去掉仓库名
 	}
 	result := strings.Join(parts, "/")
-	return result
+	return &SubGroup{
+		Name:   result,
+		Desc:   "",
+		Remark: "",
+	}
 }
 
-func (g *GithubVcs) GetRepoName() string {
-	return g.RepoName
+func (c *GithubVcs) GetRepoName() string {
+	return c.RepoName
 }
 
-func (g *GithubVcs) GetRepoType() string {
-	return g.RepoType
+func (c *GithubVcs) GetRepoType() string {
+	return c.RepoType
 }
 
-func (g *GithubVcs) GetCloneUrl() string {
-	return util.ConvertUrlWithAuth(g.httpURL, g.GetUserName(), g.GetToken())
+func (c *GithubVcs) GetCloneUrl() string {
+	return util.ConvertUrlWithAuth(c.httpURL, c.GetUserName(), c.GetToken())
 }
 
-func (g *GithubVcs) GetUserName() string {
+func (c *GithubVcs) GetUserName() string {
 	return api.GetUserName()
 }
 
-func (g *GithubVcs) GetToken() string {
+func (c *GithubVcs) GetToken() string {
 	return config.Cfg.GetString("source.token")
 }
 
-func (g *GithubVcs) Clone() error {
-	err := git.Clone(g.GetCloneUrl(), g.GetRepoPath(), allowIncompletePush)
+func (c *GithubVcs) Clone() error {
+	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath(), allowIncompletePush)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g *GithubVcs) GetRepoPrivate() bool {
-	return g.Private
+func (c *GithubVcs) GetRepoPrivate() bool {
+	return c.Private
 }
 
-func (g *GithubVcs) GetReleases() (cnbReleases []Releases) {
-	parts := strings.Split(g.RepoPath, "/")
+func (c *GithubVcs) GetReleases() (cnbReleases []Releases) {
+	parts := strings.Split(c.RepoPath, "/")
 	if len(parts) != 2 {
 		return nil
 	}
@@ -79,30 +84,53 @@ func (g *GithubVcs) GetReleases() (cnbReleases []Releases) {
 	}
 	for _, githubRelease := range githubReleases {
 		var assets []Asset
-		// 私有仓库用户自定义上传的附件无法获取到，因此只在公开仓库获取附件
-		if !g.Private {
+		if !c.Private {
 			for _, asset := range githubRelease.Assets {
+				assetName := ""
+				if asset.Name != nil {
+					assetName = *asset.Name
+				}
+				assetURL := ""
+				if asset.BrowserDownloadURL != nil {
+					assetURL = *asset.BrowserDownloadURL
+				}
 				assets = append(assets, Asset{
-					Name: *asset.Name,
-					Url:  *asset.BrowserDownloadURL,
+					Name: assetName,
+					Url:  assetURL,
 				})
 			}
 		}
+		tagName := ""
+		if githubRelease.TagName != nil {
+			tagName = *githubRelease.TagName
+		}
+		name := ""
+		if githubRelease.Name != nil {
+			name = *githubRelease.Name
+		}
+		body := ""
+		if githubRelease.Body != nil {
+			body = *githubRelease.Body
+		}
+		makeLatest := ""
+		if githubRelease.MakeLatest != nil {
+			makeLatest = *githubRelease.MakeLatest
+		}
 		cnbReleases = append(cnbReleases, Releases{
-			TagName:    *githubRelease.TagName,
-			Name:       *githubRelease.Name,
-			Body:       *githubRelease.Body,
+			TagName:    tagName,
+			Name:       name,
+			Body:       body,
 			Assets:     assets,
-			Prerelease: *githubRelease.Prerelease,
-			Draft:      *githubRelease.Draft,
-			MakeLatest: *githubRelease.MakeLatest,
+			Prerelease: githubRelease.Prerelease != nil && *githubRelease.Prerelease,
+			Draft:      githubRelease.Draft != nil && *githubRelease.Draft,
+			MakeLatest: makeLatest,
 		})
 	}
 	return cnbReleases
 }
 
-func (g *GithubVcs) GetProjectID() string {
-	return strconv.Itoa(g.ProjectId)
+func (c *GithubVcs) GetProjectID() string {
+	return strconv.Itoa(c.ProjectId)
 }
 
 func newGithubRepo() []VCS {
@@ -116,6 +144,10 @@ func newGithubRepo() []VCS {
 func GithubCovertToVcs(repoList []*github.Repository) []VCS {
 	var VCS []VCS
 	for _, repo := range repoList {
+		desc := ""
+		if repo.Description != nil {
+			desc = *repo.Description
+		}
 		VCS = append(VCS, &GithubVcs{
 			httpURL:   *repo.CloneURL,
 			RepoPath:  *repo.FullName,
@@ -123,12 +155,16 @@ func GithubCovertToVcs(repoList []*github.Repository) []VCS {
 			RepoType:  Git,
 			Private:   *repo.Private,
 			ProjectId: int(*repo.ID),
+			Desc:      desc,
 		})
 	}
 	return VCS
 }
 
 // GetReleaseAttachments Github release 描述里的普通附件需要鉴权，且未提供相关openAPI,因此无法迁移
-func (g *GithubVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
+func (c *GithubVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	return nil, nil
+}
+func (c *GithubVcs) GetRepoDescription() string {
+	return c.Desc
 }

@@ -41,6 +41,7 @@ func CNBCovertToVcs(repoList []api.Repos) []VCS {
 			RepoPath: repo.Path,
 			RepoName: repo.Name,
 			Private:  isPrivate(repo.VisibilityLevel),
+			Desc:     repo.Description,
 		})
 	}
 	return VCS
@@ -61,6 +62,7 @@ type CNBVcs struct {
 	RepoPath string
 	RepoName string
 	Private  bool
+	Desc     string
 }
 
 func (c *CNBVcs) GetRepoPath() string {
@@ -74,7 +76,7 @@ func (c *CNBVcs) GetRepoName() string {
 	return c.RepoName
 }
 
-func (c *CNBVcs) GetSubGroupName() string {
+func (c *CNBVcs) GetSubGroup() *SubGroup {
 	var result string
 	parts := strings.Split(c.GetRepoPath(), "/")
 	if len(parts) > 0 {
@@ -83,7 +85,11 @@ func (c *CNBVcs) GetSubGroupName() string {
 	} else {
 		result = ""
 	}
-	return result
+	return &SubGroup{
+		Name:   result,
+		Desc:   "",
+		Remark: "",
+	}
 }
 
 func (c *CNBVcs) GetRepoType() string {
@@ -124,4 +130,8 @@ func (c *CNBVcs) GetProjectID() string {
 
 func (c *CNBVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	return nil, nil
+}
+
+func (c *CNBVcs) GetRepoDescription() string {
+	return c.Desc
 }

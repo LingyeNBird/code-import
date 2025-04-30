@@ -21,13 +21,17 @@ func (c *CommonVcs) GetRepoPath() string {
 	return c.RepoPath
 }
 
-func (c *CommonVcs) GetSubGroupName() string {
+func (c *CommonVcs) GetSubGroup() *SubGroup {
 	parts := strings.Split(c.RepoPath, "/")
 	if len(parts) > 0 {
 		parts = parts[:len(parts)-1] // 去掉仓库名
 	}
 	result := strings.Join(parts, "/")
-	return result
+	return &SubGroup{
+		Name:   result,
+		Desc:   "",
+		Remark: "",
+	}
 }
 
 func (c *CommonVcs) GetRepoName() string {
@@ -102,4 +106,8 @@ func getRepos() ([]VCS, error) {
 
 func (c *CommonVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	return nil, nil
+}
+
+func (c *CommonVcs) GetRepoDescription() string {
+	return ""
 }

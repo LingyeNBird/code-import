@@ -34,10 +34,16 @@ type Attachment struct {
 	Size     int
 }
 
+type SubGroup struct {
+	Name   string
+	Desc   string
+	Remark string
+}
+
 type VCS interface {
 	GetRepoPath() string
 	GetRepoName() string
-	GetSubGroupName() string
+	GetSubGroup() *SubGroup
 	GetRepoType() string
 	GetCloneUrl() string
 	GetUserName() string
@@ -47,6 +53,7 @@ type VCS interface {
 	GetReleases() []Releases
 	GetProjectID() string
 	GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error)
+	GetRepoDescription() string
 }
 
 func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
