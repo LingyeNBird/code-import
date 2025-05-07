@@ -38,19 +38,21 @@ func NewClient(baseURL string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
 		HTTPClient: &http.Client{},
+		Limiter:    rate.NewLimiter(rate.Every(time.Second), 10),
 	}
 }
 
-// NewClient 创建一个新的 OpenAPI 客户端
+// NewClientV2 NewClient 创建一个新的 OpenAPI 客户端
 func NewClientV2() *Client {
 	return &Client{
 		BaseURL:    config.ConvertToApiURL(CnbURL),
 		HTTPClient: &http.Client{},
 		Token:      config.Cfg.GetString("cnb.token"),
+		Limiter:    rate.NewLimiter(rate.Every(time.Second), 10),
 	}
 }
 
-// NewClientV3 创建一个新的 OpenAPI 客户端
+// NewCNBClient NewClientV3 创建一个新的 OpenAPI 客户端
 func NewCNBClient() *Client {
 	return &Client{
 		BaseURL:    config.ConvertToApiURL(config.Cfg.GetString("source.url")),
@@ -72,6 +74,9 @@ func NewGiteeClient() *Client {
 // Request 发送一个 HTTP 请求到 OpenAPI
 func (c *Client) Request(method, endpoint string, token string, body interface{}) ([]byte, error) {
 	defer logger.Logger.Debugw("Request", "body", body, "reqPath", endpoint, "url", c.BaseURL+endpoint)
+	if err := c.Limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
 	// 将 body 转换为 JSON 格式
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -110,6 +115,9 @@ func (c *Client) Request(method, endpoint string, token string, body interface{}
 }
 
 func (c *Client) RequestV2(method, endpoint string, token string, body interface{}) ([]byte, http.Header, error) {
+	if err := c.Limiter.Wait(context.Background()); err != nil {
+		return nil, nil, err
+	}
 	// 将 body 转换为 JSON 格式
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -149,6 +157,9 @@ func (c *Client) RequestV2(method, endpoint string, token string, body interface
 }
 
 func (c *Client) RequestV3(method, endpoint string, token string, body interface{}) ([]byte, http.Header, int, error) {
+	if err := c.Limiter.Wait(context.Background()); err != nil {
+		return nil, nil, 0, err
+	}
 	// 将 body 转换为 JSON 格式
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -182,6 +193,9 @@ func (c *Client) RequestV3(method, endpoint string, token string, body interface
 }
 
 func (c *Client) RequestV4(method, endpoint string, body interface{}) ([]byte, http.Header, int, error) {
+	if err := c.Limiter.Wait(context.Background()); err != nil {
+		return nil, nil, 0, err
+	}
 	// 将 body 转换为 JSON 格式
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -220,6 +234,9 @@ func (c *Client) RequestV4(method, endpoint string, body interface{}) ([]byte, h
 }
 
 func (c *Client) RequestWithURL(method, url string, body interface{}) ([]byte, http.Header, int, error) {
+	if err := c.Limiter.Wait(context.Background()); err != nil {
+		return nil, nil, 0, err
+	}
 	// 将 body 转换为 JSON 格式
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
@@ -258,6 +275,9 @@ func (c *Client) RequestWithURL(method, url string, body interface{}) ([]byte, h
 }
 
 func (c *Client) GiteeClient(method, endpoint string, body interface{}) ([]byte, http.Header, int, error) {
+	if err := c.Limiter.Wait(context.Background()); err != nil {
+		return nil, nil, 0, err
+	}
 	// 将 body 转换为 JSON 格式
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
