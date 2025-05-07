@@ -246,6 +246,7 @@ func migrateDo(depot vcs.VCS) error {
 				return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
 			}
 			log.Infof("%s 仓库创建成功", repoPath)
+			time.Sleep(500 * time.Millisecond) // 添加0.5秒延迟，避免push操作太快导致报错找不到仓库
 		} else if has && SkipExistsRepo {
 			atomic.AddInt64(&skipRepoNumber, 1)
 			atomic.AddInt64(&failedRepoNumber, -1)
