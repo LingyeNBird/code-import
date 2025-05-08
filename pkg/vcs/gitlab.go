@@ -110,12 +110,12 @@ func (c *GitlabVcs) GetProjectID() string {
 	return strconv.Itoa(c.ProjectId)
 }
 
-func newGitlabRepo() []VCS {
+func newGitlabRepo() ([]VCS, error) {
 	repoList, err := api.GetProjects()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return GitlabCovertToVcs(repoList)
+	return GitlabCovertToVcs(repoList), nil
 }
 
 func GitlabCovertToVcs(repoList []*gitlab.Project) []VCS {

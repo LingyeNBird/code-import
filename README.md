@@ -257,7 +257,7 @@ docker run --rm  \
     - 类型：布尔值
     - 必填：否
     - 默认值：false
-    - 说明：强制push到CNB仓库
+    - 说明：⚠️强制push到CNB仓库,CNB侧仓库会被强制覆盖
 
 - PLUGIN_MIGRATE_SKIP_EXISTS_REPO
     - 类型：布尔值
@@ -284,7 +284,7 @@ docker run --rm  \
     - 类型：字符串
     - 必填：否
     - 默认值：false
-    - 说明：针对LFS源文件丢失的仓库，忽略LFS文件下载报错，LFS推送时忽略丢失的对象报错，继续推送
+    - 说明：⚠️针对LFS源文件丢失的仓库，忽略LFS文件下载报错，LFS推送时忽略丢失的对象报错，继续推送
 
 - PLUGIN_MIGRATE_LOG_LEVEL
     - 类型：字符串
@@ -330,7 +330,11 @@ docker run --rm  \
     - 说明：要迁移的 CODING 项目名称 (当 source_platform 为 coding 且 migrate_type 为 project 时必填)，多个项目以英文逗号隔开
 
 ## 常见问题
-1. 单个文件超过500MB大小限制  
-可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数
-
- 
+1. 超过了单个文件大小限制 500 MiB
+可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数，详见参数介绍
+2. 获取仓库列表失败: The current scope does not support access to this API
+检查PLUGIN_SOURCE_TOKEN权限是否符合要求，如源平台为 CODING，确保token属于团队所有者或团队管理员。
+3. LFS: Repository or object not found
+可以开`PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH`详见参数介绍
+4. push失败：git pull before pushing again
+可根据实际情况开启`PLUGIN_MIGRATE_FORCE_PUSH`，详见参数介绍

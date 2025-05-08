@@ -106,7 +106,7 @@ func init() {
 	}
 }
 
-func ListRepository(organizationId string) []*devops20210625.ListRepositoriesResponseBodyResult {
+func ListRepository(organizationId string) ([]*devops20210625.ListRepositoriesResponseBodyResult, error) {
 	var repos []*devops20210625.ListRepositoriesResponseBodyResult
 	page := 1
 	for {
@@ -116,7 +116,7 @@ func ListRepository(organizationId string) []*devops20210625.ListRepositoriesRes
 			Page:           tea.Int64(int64(page)),
 		})
 		if err != nil {
-			logger.Logger.Fatalf("Failed to list repositories: %v", err)
+			return nil, err
 		}
 		repos = append(repos, res.Body.Result...)
 		if *res.Body.Total <= int64(page)*100 {
@@ -124,5 +124,5 @@ func ListRepository(organizationId string) []*devops20210625.ListRepositoriesRes
 		}
 		page++
 	}
-	return repos
+	return repos, nil
 }

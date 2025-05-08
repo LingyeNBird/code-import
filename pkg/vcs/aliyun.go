@@ -75,9 +75,12 @@ func (c *AliyunVcs) GetProjectID() string {
 	return ""
 }
 
-func newAliyunRepo() []VCS {
-	repoList := api.ListRepository(config.Cfg.GetString("source.organizationId"))
-	return aliyunCovertToVcs(repoList)
+func newAliyunRepo() ([]VCS, error) {
+	repoList, err := api.ListRepository(config.Cfg.GetString("source.organizationId"))
+	if err != nil {
+		return nil, err
+	}
+	return aliyunCovertToVcs(repoList), nil
 }
 
 func aliyunCovertToVcs(repoList []*devops20210625.ListRepositoriesResponseBodyResult) []VCS {

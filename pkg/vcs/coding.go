@@ -80,13 +80,12 @@ func (c *CodingVcs) GetProjectID() string {
 	return strconv.Itoa(0)
 }
 
-func newCodingRepo() []VCS {
+func newCodingRepo() ([]VCS, error) {
 	repoList, err := coding.GetDepotList(config.Cfg.GetString("migrate.type"))
 	if err != nil {
-		logger.Logger.Errorf(err.Error())
-		panic(err)
+		return nil, err
 	}
-	return CodingCovertToVcs(repoList)
+	return CodingCovertToVcs(repoList), nil
 }
 
 func CodingCovertToVcs(repoList []coding.Depots) []VCS {

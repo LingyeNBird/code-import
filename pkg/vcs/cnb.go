@@ -4,7 +4,6 @@ import (
 	api "ccrctl/pkg/api/cnb"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
-	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
 	"strconv"
 	"strings"
@@ -14,22 +13,20 @@ const (
 	CNBUserName = "cnb"
 )
 
-func newCnbRepo() []VCS {
+func newCnbRepo() ([]VCS, error) {
 	sourceGroup := config.Cfg.GetString("source.group")
 	if sourceGroup != "" {
 		repos, err := api.GetReposByGroup(config.Cfg.GetString("source.group"))
 		if err != nil {
-			logger.Logger.Errorf("Failed to fetch repos from CNB: %v", err)
-			panic(err)
+			return nil, err
 		}
-		return CNBCovertToVcs(repos)
+		return CNBCovertToVcs(repos), nil
 	} else {
 		repos, err := api.GetUserRepos()
 		if err != nil {
-			logger.Logger.Errorf("Failed to fetch repos from CNB: %v", err)
-			panic(err)
+			return nil, err
 		}
-		return CNBCovertToVcs(repos)
+		return CNBCovertToVcs(repos), nil
 	}
 }
 
