@@ -190,7 +190,6 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 }
 
 func CreateSubOrganization(url, token, subGroupName string, subGroup vcs.SubGroup) (err error) {
-	c := http_client.NewClient(url)
 	groupPath := path.Join(RootOrganizationName, subGroupName)
 	logger.Logger.Infof("开始创建子组织%s", groupPath)
 	body := &CreateOrganization{
@@ -216,7 +215,6 @@ func CreateSubOrganization(url, token, subGroupName string, subGroup vcs.SubGrou
 }
 
 func CreateRepo(url, token, group, repoName, repoDesc string, private bool) (err error) {
-	c := http_client.NewClient(url)
 	var visibility string
 	endpoint := group + "/-/repos"
 	if private {
@@ -264,7 +262,6 @@ func GetCnbRepoPathAndGroup(subgroupName, repoName string, organizationMappingLe
 //}
 
 func HasRepoV2(url, token, repoPath string) (has bool, err error) {
-	c := http_client.NewClient(url)
 	endpoint := repoPath
 	_, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
@@ -280,7 +277,6 @@ func HasRepoV2(url, token, repoPath string) (has bool, err error) {
 }
 
 func GetSubGroupsByGroupFetchPage(url, token string, page int) (subGroups []subGroups, totalRow, pageSize int, err error) {
-	c := http_client.NewClient(url)
 	endpoint := fmt.Sprintf(listRootSubOrganizationEndPoint, strconv.Itoa(page))
 	resp, header, err := c.RequestV2("GET", endpoint, token, nil)
 	if err != nil {
@@ -302,7 +298,6 @@ func GetSubGroupsByGroupFetchPage(url, token string, page int) (subGroups []subG
 }
 
 func GetSubGroupsFetchPage(url, token, subGroupPath string, page int) (subGroups []subGroups, totalRow, pageSize int, err error) {
-	c := http_client.NewClient(url)
 	endpoint := fmt.Sprintf(listSubOrganizationEndPoint, subGroupPath, strconv.Itoa(page))
 	resp, header, err := c.RequestV2("GET", endpoint, token, nil)
 	if err != nil {
@@ -363,7 +358,6 @@ func GetSubGroupsByRootGroup(url, token string) (Data map[string]bool, err error
 
 func CreateRootOrganizationIfNotExists(url, token string) (err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token)
-	c := http_client.NewClient(url)
 	endpoint := "/" + RootOrganizationName
 	_, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
@@ -387,7 +381,6 @@ func CreateRootOrganizationIfNotExists(url, token string) (err error) {
 
 func RootOrganizationExists(url, token string) (exists bool, err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token)
-	c := http_client.NewClient(url)
 	endpoint := "/" + RootOrganizationName
 	_, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
@@ -404,7 +397,6 @@ func RootOrganizationExists(url, token string) (exists bool, err error) {
 
 func CreateRootOrganization(url, token string) (err error) {
 	logger.Logger.Infof("开始创建根组织%s", RootOrganizationName)
-	c := http_client.NewClient(url)
 	path := RootOrganizationName
 	body := &CreateOrganization{
 		Path: path,

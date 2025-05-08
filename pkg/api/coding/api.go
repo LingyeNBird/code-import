@@ -24,6 +24,7 @@ var (
 	SourceURL   = config.Cfg.GetString("source.url")
 	Projects    = config.Cfg.GetStringSlice("source.project")
 	Repos       = config.Cfg.GetStringSlice("source.repo")
+	c           = http_client.NewClient(SourceURL)
 )
 
 type UserInfo struct {
@@ -204,7 +205,7 @@ type DescribeGitDepotResponse struct {
 }
 
 func GetDepotByRepoPath(url, token, repoPath string) (depot Depots, err error) {
-	c := http_client.NewClient(url)
+
 	body := &DescribeGitDepotRequest{
 		Action:    "DescribeGitDepot",
 		DepotPath: repoPath,
@@ -226,7 +227,7 @@ func GetDepotByRepoPath(url, token, repoPath string) (depot Depots, err error) {
 }
 
 func GetCurrentUserName(url, token string) (userName string, err error) {
-	c := http_client.NewClient(url)
+
 	body := &DescribeCodingCurrentUser{
 		Action: "DescribeCodingCurrentUser",
 	}
@@ -243,7 +244,7 @@ func GetCurrentUserName(url, token string) (userName string, err error) {
 }
 
 func GetProjectByName(url, token, projectName string) (project Project, err error) {
-	c := http_client.NewClient(url)
+
 	body := &DescribeProjectByNameRequest{
 		Action:      "DescribeProjectByName",
 		ProjectName: projectName,
@@ -277,7 +278,7 @@ func GetProjectIdsByNames(projects []string, url, token string) (projectIds []in
 }
 
 func GetRepoByProjectIdFetchPage(url, token string, projectId, pageNumber int) (DepotInfo, error) {
-	c := http_client.NewClient(url)
+
 	body := &DescribeProjectDepotInfoListRequest{
 		Action:     "DescribeProjectDepotInfoList",
 		ProjectId:  int64(projectId),
@@ -297,7 +298,7 @@ func GetRepoByProjectIdFetchPage(url, token string, projectId, pageNumber int) (
 }
 
 func GetTeamRepoFetchPage(url, token string, pageNumber int) (DepotInfo, error) {
-	c := http_client.NewClient(url)
+
 	body := &DescribeTeamDepotInfoListRequest{
 		Action:     "DescribeTeamDepotInfoList",
 		PageNumber: pageNumber,
