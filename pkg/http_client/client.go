@@ -33,7 +33,7 @@ type Client struct {
 	Limiter    *rate.Limiter
 }
 
-// NewClientV2 创建一个新的 OpenAPI 客户端
+// NewClient 创建一个新的 OpenAPI 客户端
 func NewClient(baseURL string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
@@ -42,7 +42,7 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
-// NewClientV2 NewClient 创建一个新的 OpenAPI 客户端
+// NewClientV2 NewClientV2 创建一个新的 OpenAPI 客户端
 func NewClientV2() *Client {
 	return &Client{
 		BaseURL:    config.ConvertToApiURL(CnbURL),
