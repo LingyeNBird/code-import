@@ -574,7 +574,7 @@ func UploadReleaseAsset(repoPath, releaseID, assetName string, data []byte) (err
 		logger.Logger.Warnf("%s附件大小超过5GiB，跳过上传", assetName)
 		return nil
 	}
-	uploadURL, err := GetReleaseAssetUploadUrl(repoPath, releaseID, assetName)
+	uploadURL, err := GetReleaseAssetUploadUrl(repoPath, releaseID, assetName, len(data))
 	if err != nil {
 		logger.Logger.Errorf("Get upload url error: %v", err)
 		return err
@@ -608,14 +608,14 @@ type UploadUrl struct {
 
 type GetReleaseUploadUrlReq struct {
 	AssetName string `json:"asset_name"`
-	Overwrite bool   `json:"overwrite"`
+	Size      int    `json:"size"`
 }
 
-func GetReleaseAssetUploadUrl(repoPath, releaseID, assetName string) (uploadURL UploadUrl, err error) {
+func GetReleaseAssetUploadUrl(repoPath, releaseID, assetName string, size int) (uploadURL UploadUrl, err error) {
 	reqPath := fmt.Sprintf("/%s/%s/-/releases/%s/asset-upload-url", RootOrganizationName, repoPath, releaseID)
 	body := &GetReleaseUploadUrlReq{
 		AssetName: assetName,
-		Overwrite: true,
+		Size:      size,
 	}
 	res, _, _, err := c.RequestV4(http.MethodPost, reqPath, body)
 	if err != nil {

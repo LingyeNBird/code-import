@@ -407,7 +407,7 @@ func (c *Client) UploadData(url string, data []byte) (err error) {
 		return fmt.Errorf("error reading response body: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
 	}
 
