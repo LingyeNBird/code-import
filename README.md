@@ -19,6 +19,7 @@
 
 ### 从 Coding 迁移
 
+迁移团队下所有仓库
 ```shell
 docker run --rm  \
   -e PLUGIN_SOURCE_TOKEN="xxx"  \
@@ -27,6 +28,32 @@ docker run --rm  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ````
+
+迁移指定项目仓库  
+PLUGIN_SOURCE_PROJECT 字段根据需要自行替换，详见参数介绍
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_SOURCE_PROJECT="project1,project2"
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -e PLUGIN_MIGRATE_TYPE="project"
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+```
+
+
+迁移指定仓库  
+PLUGIN_SOURCE_REPO 字段根据需要自行替换，详见参数介绍
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_SOURCE_REPO="project1/repoA,project1/repoB,project2/repoC" 
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -e PLUGIN_MIGRATE_TYPE="project"
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
 
 ### 从 Github 迁移
 
@@ -166,7 +193,7 @@ docker run --rm  \
     - 必填：否
     - 默认值：-
     - 说明：仓库路径，需要与source_url拼接成完整的源仓库http克隆地址,如https://common.com/group1/repo1  
-  当source_platform 为 common 或者 source_platform 为 coding 且 migrate_type 为 repo 时必填，多个代码仓库以英文逗号隔开
+  当source_platform 为 common 或者 source_platform 为 coding 且 **migrate_type 为 repo** 时必填，多个代码仓库以英文逗号隔开
     - Ex: group1/repo1,group1/repo2,group2/repo3
 
 - PLUGIN_SOURCE_USERNAME
@@ -327,7 +354,7 @@ docker run --rm  \
     - 类型：字符串
     - 必填：否
     - 默认值：-
-    - 说明：要迁移的 CODING 项目名称 (当 source_platform 为 coding 且 migrate_type 为 project 时必填)，多个项目以英文逗号隔开
+    - 说明：要迁移的 CODING 项目名称 (当 source_platform 为 coding 且 **migrate_type 为 project** 时必填)，多个项目以英文逗号隔开
 
 ## 常见问题
 1. 单个文件超过500MB大小限制  
