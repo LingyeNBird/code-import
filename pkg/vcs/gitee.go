@@ -106,12 +106,12 @@ func (c *GiteeVcs) GetProjectID() string {
 	return strconv.Itoa(0)
 }
 
-func newGiteeRepo() []VCS {
+func newGiteeRepo() ([]VCS, error) {
 	repoList, err := api.GetRepoList()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return GiteeCovertToVcs(repoList)
+	return GiteeCovertToVcs(repoList), nil
 }
 
 func GiteeCovertToVcs(repoList []api.Repo) []VCS {

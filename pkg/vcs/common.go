@@ -84,9 +84,12 @@ func (c *CommonVcs) GetProjectID() string {
 	return strconv.Itoa(0)
 }
 
-func newCommonRepo() []VCS {
-	VCS, _ := getRepos()
-	return VCS
+func newCommonRepo() ([]VCS, error) {
+	VCS, err := getRepos()
+	if err != nil {
+		return nil, err
+	}
+	return VCS, nil
 }
 
 func getRepos() ([]VCS, error) {

@@ -133,12 +133,12 @@ func (c *GithubVcs) GetProjectID() string {
 	return strconv.Itoa(c.ProjectId)
 }
 
-func newGithubRepo() []VCS {
+func newGithubRepo() ([]VCS, error) {
 	repoList, err := api.GetRepos()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return GithubCovertToVcs(repoList)
+	return GithubCovertToVcs(repoList), nil
 }
 
 func GithubCovertToVcs(repoList []*github.Repository) []VCS {

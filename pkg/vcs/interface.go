@@ -59,19 +59,19 @@ type VCS interface {
 func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 	switch sourceRepoPlatformName {
 	case "coding":
-		return newCodingRepo(), nil
+		return newCodingRepo()
 	case "gitlab":
-		return newGitlabRepo(), nil
+		return newGitlabRepo()
 	case "github":
-		return newGithubRepo(), nil
+		return newGithubRepo()
 	case "gitee":
-		return newGiteeRepo(), nil
+		return newGiteeRepo()
 	case "common":
-		return newCommonRepo(), nil
+		return newCommonRepo()
 	case "aliyun":
-		return newAliyunRepo(), nil
+		return newAliyunRepo()
 	case "cnb":
-		return newCnbRepo(), nil
+		return newCnbRepo()
 	default:
 		return nil, fmt.Errorf("不支持的仓库平台: %s", sourceRepoPlatformName)
 	}

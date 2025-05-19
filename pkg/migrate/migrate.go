@@ -60,7 +60,39 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-
+	depotList, err := vcs.NewVcs(SourcePlatformName) // 获取仓库列表
+	if err != nil {
+		logger.Logger.Errorf("获取仓库列表失败: %s", err)
+		return
+	}
+	logger.Logger.Infof("仓库总数%d", len(depotList))
+	atomic.StoreInt64(&totalRepoNumber, int64(len(depotList)))
+	atomic.StoreInt64(&failedRepoNumber, int64(len(depotList)))
+	atomic.StoreInt64(&successfulRepoNumber, 0)
+	atomic.StoreInt64(&skipRepoNumber, 0)
+	//err = cnb.CreateRootOrganizationIfNotExists(CnbApiURL, CnbToken) // 创建根组织
+	//if err != nil {
+	//	panic(err)
+	//}
+	exist, err := source.RootOrganizationExists(CnbApiURL, CnbToken)
+	if err != nil {
+		logger.Logger.Errorf("判断根组织是否存在失败: %s", err)
+		return
+	}
+	if !exist {
+		logger.Logger.Errorf("根组织%s不存在，请先创建根组织", config.Cfg.GetString("cnb.root_organization"))
+		return
+	}
+	if organizationMappingLevel == 1 { // 如果组织映射级别为1，则创建子组织
+		err = source.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
+		if err != nil {
+			logger.Logger.Errorf("创建子组织失败: %s", err)
+			return
+		}
+	}
+	if Concurrency > MaxConcurrency { // 限制并发数不超过最大值
+		Concurrency = MaxConcurrency
+	}
 	if config.Cfg.GetBool("migrate.ssh") {
 		// 处理SSH私钥文件
 		sourceKeyPath := "ssh.key" // 当前目录下的私钥文件
@@ -107,12 +139,14 @@ func Run() {
 
 	err = os.Mkdir(GitDirName, 0755) // 创建Git工作目录
 	if err != nil {
-		panic(err)
+		logger.Logger.Errorf("创建Git工作目录失败: %s", err)
+		return
 	}
 	logger.Logger.Infof("创建仓库工作目录%s成功", GitDirName)
 	pwdDir, err := os.Getwd() // 获取当前工作目录
 	if err != nil {
-		panic(err)
+		logger.Logger.Errorf("获取当前工作目录失败: %s", err)
+		return
 	}
 	gitDirABSPath := filepath.Join(pwdDir, GitDirName) // 构建Git目录的绝对路径
 	defer func(path string) {                          // 延迟删除Git目录
@@ -125,57 +159,29 @@ func Run() {
 	if MigrateRebase {
 		err = system.SetGlobalGitUser()
 		if err != nil {
-			panic(err)
+			logger.Logger.Errorf("设置全局Git用户失败: %s", err)
+			return
 		}
 		err = git.SetCheckOutDefaultRemote()
 		if err != nil {
-			panic(err)
+			logger.Logger.Errorf("设置默认远程仓库失败: %s", err)
+			return
 		}
 		// 创建rebase备份目录
 		rebaseBackDirPath = filepath.Join(pwdDir, time.Now().Format("200601021504")+"bak")
 		err := os.Mkdir(rebaseBackDirPath, 0755)
 		if err != nil {
 			logger.Logger.Errorf("创建rebase备份目录失败: %s", err)
-			panic(err)
+			return
 		}
 		logger.Logger.Infof("创建rebase备份目录%s成功", rebaseBackDirPath)
 
 	}
 	err = os.Chdir(GitDirName) // 切换到Git工作目录
 	if err != nil {
-		panic(err)
-	}
-	depotList, err := vcs.NewVcs(SourcePlatformName) // 获取仓库列表
-	if err != nil {
-		panic(err)
-	}
-	logger.Logger.Infof("仓库总数%d", len(depotList))
-	atomic.StoreInt64(&totalRepoNumber, int64(len(depotList)))
-	atomic.StoreInt64(&failedRepoNumber, int64(len(depotList)))
-	atomic.StoreInt64(&successfulRepoNumber, 0)
-	atomic.StoreInt64(&skipRepoNumber, 0)
-	//err = cnb.CreateRootOrganizationIfNotExists(CnbApiURL, CnbToken) // 创建根组织
-	//if err != nil {
-	//	panic(err)
-	//}
-	exist, err := source.RootOrganizationExists(CnbApiURL, CnbToken)
-	if err != nil {
-		panic(err)
-	}
-	if !exist {
-		logger.Logger.Errorf("根组织%s不存在，请先创建根组织", config.Cfg.GetString("cnb.root_organization"))
+		logger.Logger.Errorf("切换到Git工作目录失败: %s", err)
 		return
 	}
-	if organizationMappingLevel == 1 { // 如果组织映射级别为1，则创建子组织
-		err = source.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
-		if err != nil {
-			panic(err)
-		}
-	}
-	if Concurrency > MaxConcurrency { // 限制并发数不超过最大值
-		Concurrency = MaxConcurrency
-	}
-
 	logger.Logger.Infof("开始迁移仓库，当前并发数:%d", Concurrency)
 	sem := semaphore.NewWeighted(int64(Concurrency)) // 创建信号量控制并发
 	var wg sync.WaitGroup                            // 创建WaitGroup等待所有goroutine完成
