@@ -174,6 +174,11 @@ func (c *GiteeVcs) GetReleaseAttachments(desc string, repoPath string, projectID
 
 	return attachmentsList, nil
 }
+
 func (c *GiteeVcs) GetRepoDescription() string {
 	return c.Desc
+}
+
+func (c *GiteeVcs) ListRepos() ([]VCS, error) {
+	return newGiteeRepo()
 }

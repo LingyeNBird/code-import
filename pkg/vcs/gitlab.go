@@ -196,3 +196,7 @@ func (c *GitlabVcs) GetReleaseAttachments(desc string, repoPath string, projectI
 func (c *GitlabVcs) GetRepoDescription() string {
 	return c.Desc
 }
+
+func (c *GitlabVcs) ListRepos() ([]VCS, error) {
+	return newGitlabRepo()
+}

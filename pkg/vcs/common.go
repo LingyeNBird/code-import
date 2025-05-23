@@ -114,3 +114,7 @@ func (c *CommonVcs) GetReleaseAttachments(desc string, repoPath string, projectI
 func (c *CommonVcs) GetRepoDescription() string {
 	return ""
 }
+
+func (c *CommonVcs) ListRepos() ([]VCS, error) {
+	return newCommonRepo()
+}

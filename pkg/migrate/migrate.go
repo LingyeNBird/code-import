@@ -12,9 +12,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,6 +28,7 @@ const (
 	CnbUserName     = "cnb"
 	MaxConcurrency  = 10
 	RebaseDirPrefix = "rebase"
+	RepoPathFile    = "repo-path.txt"
 )
 
 var (
@@ -50,6 +51,57 @@ var (
 	rebaseBranchesMap        sync.Map
 )
 
+// checkAndGetRepoList 检查并获取仓库列表
+// 如果启用了仓库选择功能且 repo-path.txt 不存在，则获取仓库列表并写入文件
+// 返回是否需要继续执行迁移
+func checkAndGetRepoList(source vcs.VCS) (bool, error) {
+	if !config.Cfg.GetBool("migrate.allow_select_repos") {
+		return true, nil
+	}
+
+	if _, err := os.Stat(RepoPathFile); err == nil {
+		return true, nil
+	}
+
+	logger.Logger.Info("已启用仓库选择功能，正在获取仓库列表...")
+	_, err := GetRepoList(source)
+	if err != nil {
+		return false, fmt.Errorf("获取仓库列表失败: %s", err)
+	}
+	logger.Logger.Infof("仓库列表已写入 %s，请编辑该文件保留需要迁移的仓库，然后重新运行迁移工具", RepoPathFile)
+	return false, nil
+}
+
+// filterReposBySelection 根据 repo-path.txt 过滤仓库列表
+func filterReposBySelection(depotList []vcs.VCS) ([]vcs.VCS, error) {
+	if !config.Cfg.GetBool("migrate.allow_select_repos") {
+		return depotList, nil
+	}
+
+	selectedRepos, err := ReadSelectedRepos()
+	if err != nil {
+		return nil, fmt.Errorf("读取仓库列表文件失败: %s", err)
+	}
+
+	filteredDepotList := make([]vcs.VCS, 0, len(depotList))
+	for _, depot := range depotList {
+		if selectedRepos[depot.GetRepoPath()] {
+			filteredDepotList = append(filteredDepotList, depot)
+		} else {
+			logger.Logger.Infof("跳过仓库 %s（未在 %s 中选择）", depot.GetRepoPath(), RepoPathFile)
+		}
+	}
+	return filteredDepotList, nil
+}
+
+// initMigrationStats 初始化迁移统计信息
+func initMigrationStats(depotList []vcs.VCS) {
+	atomic.StoreInt64(&totalRepoNumber, int64(len(depotList)))
+	atomic.StoreInt64(&failedRepoNumber, int64(len(depotList)))
+	atomic.StoreInt64(&successfulRepoNumber, 0)
+	atomic.StoreInt64(&skipRepoNumber, 0)
+}
+
 func Run() {
 	startTime := time.Now()     // 记录迁移开始时间
 	err := config.CheckConfig() // 检查配置文件
@@ -60,20 +112,41 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
-	depotList, err := vcs.NewVcs(SourcePlatformName) // 获取仓库列表
+
+	// 获取源平台的 VCS 实例列表
+	sourceVcsList, err := vcs.NewVcs(SourcePlatformName)
 	if err != nil {
-		logger.Logger.Errorf("获取仓库列表失败: %s", err)
+		logger.Logger.Errorf("获取源平台 VCS 实例失败: %s", err)
 		return
 	}
+	if len(sourceVcsList) == 0 {
+		logger.Logger.Errorf("源平台 VCS 实例列表为空")
+		return
+	}
+	sourceVcs := sourceVcsList[0] // 使用第一个实例
+
+	// 检查是否需要获取仓库列表
+	shouldContinue, err := checkAndGetRepoList(sourceVcs)
+	if err != nil {
+		logger.Logger.Errorf("%s", err)
+		return
+	}
+	if !shouldContinue {
+		return
+	}
+
+	// 获取并过滤仓库列表
+	depotList := sourceVcsList
+	depotList, err = filterReposBySelection(depotList)
+	if err != nil {
+		logger.Logger.Errorf("%s", err)
+		return
+	}
+
 	logger.Logger.Infof("仓库总数%d", len(depotList))
-	atomic.StoreInt64(&totalRepoNumber, int64(len(depotList)))
-	atomic.StoreInt64(&failedRepoNumber, int64(len(depotList)))
-	atomic.StoreInt64(&successfulRepoNumber, 0)
-	atomic.StoreInt64(&skipRepoNumber, 0)
-	//err = cnb.CreateRootOrganizationIfNotExists(CnbApiURL, CnbToken) // 创建根组织
-	//if err != nil {
-	//	panic(err)
-	//}
+	initMigrationStats(depotList)
+
+	// 检查根组织
 	exist, err := source.RootOrganizationExists(CnbApiURL, CnbToken)
 	if err != nil {
 		logger.Logger.Errorf("判断根组织是否存在失败: %s", err)
@@ -83,129 +156,147 @@ func Run() {
 		logger.Logger.Errorf("根组织%s不存在，请先创建根组织", config.Cfg.GetString("cnb.root_organization"))
 		return
 	}
-	if organizationMappingLevel == 1 { // 如果组织映射级别为1，则创建子组织
+
+	// 创建子组织（如果需要）
+	if organizationMappingLevel == 1 {
 		err = source.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
 		if err != nil {
 			logger.Logger.Errorf("创建子组织失败: %s", err)
 			return
 		}
 	}
-	if Concurrency > MaxConcurrency { // 限制并发数不超过最大值
+
+	// 设置并发数
+	if Concurrency > MaxConcurrency {
 		Concurrency = MaxConcurrency
 	}
+
+	// 处理 SSH 配置
 	if config.Cfg.GetBool("migrate.ssh") {
-		// 处理SSH私钥文件
-		sourceKeyPath := "ssh.key" // 当前目录下的私钥文件
-		sshDir := filepath.Join(os.Getenv("HOME"), ".ssh")
-
-		// 创建.ssh目录
-		if err := os.MkdirAll(sshDir, 0700); err != nil {
-			panic(fmt.Sprintf("创建.ssh目录失败: %v", err))
-		}
-
-		// 检查源文件是否存在
-		if _, err := os.Stat(sourceKeyPath); os.IsNotExist(err) {
-			panic(fmt.Sprintf("SSH私钥文件 %s 不存在于当前目录", sourceKeyPath))
-		}
-
-		// 设置目标路径
-		privateKeyPath := filepath.Join(sshDir, "id_rsa")
-
-		// 复制文件内容
-		keyData, err := os.ReadFile(sourceKeyPath)
-		if err != nil {
-			panic(fmt.Sprintf("读取SSH私钥文件失败: %v", err))
-		}
-		logger.Logger.Debugf("SSH私钥内容: \n %s", keyData)
-		// 写入目标文件
-		if err := os.WriteFile(privateKeyPath, keyData, 0600); err != nil {
-			panic(fmt.Sprintf("复制SSH私钥文件失败: %v", err))
-		}
-
-		privateKeyData, err := os.ReadFile(privateKeyPath)
-		if err != nil {
-			panic(fmt.Sprintf("读取SSH私钥文件失败: %v", err))
-		}
-		logger.Logger.Debugf("SSH私钥内容: \n %s", privateKeyData)
-
-		output, err := exec.Command("sh", "-c", "ls -l ~/.ssh/").CombinedOutput()
-		if err != nil {
-			panic(fmt.Sprintf("ls -l 失败: %v\n命令输出: %s", err, string(output)))
-		}
-		logger.Logger.Debug("ls -l: %s", string(output))
-
-		logger.Logger.Infof("已成功复制SSH私钥文件从 %s 到 %s", sourceKeyPath, privateKeyPath)
-	}
-
-	err = os.Mkdir(GitDirName, 0755) // 创建Git工作目录
-	if err != nil {
-		logger.Logger.Errorf("创建Git工作目录失败: %s", err)
-		return
-	}
-	logger.Logger.Infof("创建仓库工作目录%s成功", GitDirName)
-	pwdDir, err := os.Getwd() // 获取当前工作目录
-	if err != nil {
-		logger.Logger.Errorf("获取当前工作目录失败: %s", err)
-		return
-	}
-	gitDirABSPath := filepath.Join(pwdDir, GitDirName) // 构建Git目录的绝对路径
-	defer func(path string) {                          // 延迟删除Git目录
-		err := os.RemoveAll(path)
-		if err != nil {
+		if err := setupSSH(); err != nil {
 			panic(err)
 		}
-	}(gitDirABSPath)
-	system.HandleInterrupt(gitDirABSPath) // 处理中断信号
-	if MigrateRebase {
-		err = system.SetGlobalGitUser()
-		if err != nil {
-			logger.Logger.Errorf("设置全局Git用户失败: %s", err)
-			return
-		}
-		err = git.SetCheckOutDefaultRemote()
-		if err != nil {
-			logger.Logger.Errorf("设置默认远程仓库失败: %s", err)
-			return
-		}
-		// 创建rebase备份目录
-		rebaseBackDirPath = filepath.Join(pwdDir, time.Now().Format("200601021504")+"bak")
-		err := os.Mkdir(rebaseBackDirPath, 0755)
-		if err != nil {
-			logger.Logger.Errorf("创建rebase备份目录失败: %s", err)
-			return
-		}
-		logger.Logger.Infof("创建rebase备份目录%s成功", rebaseBackDirPath)
-
 	}
-	err = os.Chdir(GitDirName) // 切换到Git工作目录
-	if err != nil {
-		logger.Logger.Errorf("切换到Git工作目录失败: %s", err)
+
+	// 设置工作目录
+	if err := setupWorkDir(); err != nil {
+		logger.Logger.Errorf("%s", err)
 		return
 	}
+
+	// defer 删除 source_git_dir 目录，确保所有迁移操作完成后再清理
+	pwdDir, err := os.Getwd()
+	if err == nil { // 获取当前工作目录成功才注册 defer
+		gitDirABSPath := filepath.Join(pwdDir, "..", GitDirName)
+		defer func(path string) {
+			_ = os.RemoveAll(path)
+		}(gitDirABSPath)
+	}
+
+	// 执行迁移
+	executeMigration(depotList, startTime)
+}
+
+// setupSSH 设置 SSH 配置
+func setupSSH() error {
+	sourceKeyPath := "ssh.key"
+	sshDir := filepath.Join(os.Getenv("HOME"), ".ssh")
+
+	if err := os.MkdirAll(sshDir, 0700); err != nil {
+		return fmt.Errorf("创建.ssh目录失败: %v", err)
+	}
+
+	if _, err := os.Stat(sourceKeyPath); os.IsNotExist(err) {
+		return fmt.Errorf("SSH私钥文件 %s 不存在于当前目录", sourceKeyPath)
+	}
+
+	privateKeyPath := filepath.Join(sshDir, "id_rsa")
+	keyData, err := os.ReadFile(sourceKeyPath)
+	if err != nil {
+		return fmt.Errorf("读取SSH私钥文件失败: %v", err)
+	}
+
+	if err := os.WriteFile(privateKeyPath, keyData, 0600); err != nil {
+		return fmt.Errorf("复制SSH私钥文件失败: %v", err)
+	}
+
+	logger.Logger.Infof("已成功复制SSH私钥文件从 %s 到 %s", sourceKeyPath, privateKeyPath)
+	return nil
+}
+
+// setupWorkDir 设置工作目录
+func setupWorkDir() error {
+	if err := os.Mkdir(GitDirName, 0755); err != nil {
+		return fmt.Errorf("创建Git工作目录失败: %s", err)
+	}
+	logger.Logger.Infof("创建仓库工作目录%s成功", GitDirName)
+
+	pwdDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("获取当前工作目录失败: %s", err)
+	}
+
+	gitDirABSPath := filepath.Join(pwdDir, GitDirName)
+
+	system.HandleInterrupt(gitDirABSPath)
+
+	if MigrateRebase {
+		if err := setupRebase(pwdDir); err != nil {
+			return err
+		}
+	}
+
+	if err := os.Chdir(GitDirName); err != nil {
+		return fmt.Errorf("切换到Git工作目录失败: %s", err)
+	}
+
+	return nil
+}
+
+// setupRebase 设置 rebase 相关配置
+func setupRebase(pwdDir string) error {
+	if err := system.SetGlobalGitUser(); err != nil {
+		return fmt.Errorf("设置全局Git用户失败: %s", err)
+	}
+
+	if err := git.SetCheckOutDefaultRemote(); err != nil {
+		return fmt.Errorf("设置默认远程仓库失败: %s", err)
+	}
+
+	rebaseBackDirPath = filepath.Join(pwdDir, time.Now().Format("200601021504")+"bak")
+	if err := os.Mkdir(rebaseBackDirPath, 0755); err != nil {
+		return fmt.Errorf("创建rebase备份目录失败: %s", err)
+	}
+	logger.Logger.Infof("创建rebase备份目录%s成功", rebaseBackDirPath)
+
+	return nil
+}
+
+// executeMigration 执行迁移操作
+func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 	logger.Logger.Infof("开始迁移仓库，当前并发数:%d", Concurrency)
-	sem := semaphore.NewWeighted(int64(Concurrency)) // 创建信号量控制并发
-	var wg sync.WaitGroup                            // 创建WaitGroup等待所有goroutine完成
+	sem := semaphore.NewWeighted(int64(Concurrency))
+	var wg sync.WaitGroup
 
-	for _, depot := range depotList { // 遍历仓库列表
-		wg.Add(1) // 增加WaitGroup计数
-		// 创建depot的副本
+	for _, depot := range depotList {
+		wg.Add(1)
 		depotCopy := depot
-		go func(depot vcs.VCS) { // 启动goroutine进行迁移
-			defer wg.Done() // 完成后减少WaitGroup计数
-
-			if err := sem.Acquire(context.Background(), 1); err != nil { // 获取信号量
+		go func(depot vcs.VCS) {
+			defer wg.Done()
+			if err := sem.Acquire(context.Background(), 1); err != nil {
 				panic(err)
 			}
-			defer sem.Release(1)    // 释放信号量
-			err := migrateDo(depot) // 执行迁移操作
-			if err != nil {
-				logger.Logger.Errorf("%s 仓库迁移失败: %s", depot.GetRepoPath(), err) // 记录迁移失败信息
+			defer sem.Release(1)
+			if err := migrateDo(depot); err != nil {
+				logger.Logger.Errorf("%s 仓库迁移失败: %s", depot.GetRepoPath(), err)
 			}
 		}(depotCopy)
 	}
-	wg.Wait()                                                                                                                                                  // 等待所有goroutine完成
-	duration := time.Since(startTime)                                                                                                                          // 计算迁移耗时
-	logger.Logger.Infof("代码仓库迁移完成，耗时%s。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d", duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber) // 记录迁移完成信息
+
+	wg.Wait()
+	duration := time.Since(startTime)
+	logger.Logger.Infof("代码仓库迁移完成，耗时%s。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
+		duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
 }
 
 func migrateDo(depot vcs.VCS) error {
@@ -444,4 +535,45 @@ func migrateReleaseAsset(repoPath, releaseID, fileName, downloadUrl string) (err
 		return err
 	}
 	return nil
+}
+
+// GetRepoList 获取源平台仓库列表
+func GetRepoList(source vcs.VCS) ([]string, error) {
+	repos, err := source.ListRepos()
+	if err != nil {
+		return nil, fmt.Errorf("获取仓库列表失败: %v", err)
+	}
+
+	var repoPaths []string
+	for _, repo := range repos {
+		repoPaths = append(repoPaths, repo.GetRepoPath())
+	}
+
+	// 将仓库列表写入文件
+	if err := os.WriteFile(RepoPathFile, []byte(strings.Join(repoPaths, "\n")), 0644); err != nil {
+		return nil, fmt.Errorf("写入仓库列表文件失败: %v", err)
+	}
+
+	return repoPaths, nil
+}
+
+// ReadSelectedRepos 读取用户选择的仓库列表
+func ReadSelectedRepos() (map[string]bool, error) {
+	content, err := os.ReadFile(RepoPathFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("仓库列表文件 %s 不存在，请先运行工具获取仓库列表", RepoPathFile)
+		}
+		return nil, fmt.Errorf("读取仓库列表文件失败: %v", err)
+	}
+
+	selectedRepos := make(map[string]bool)
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			selectedRepos[line] = true
+		}
+	}
+
+	return selectedRepos, nil
 }

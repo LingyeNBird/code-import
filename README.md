@@ -9,7 +9,6 @@
 2. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
 
 
-
 ## 在Docker上使用
 
 ### 注意事项
@@ -27,7 +26,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 
 迁移指定项目仓库  
 PLUGIN_SOURCE_PROJECT 字段根据需要自行替换，详见参数介绍
@@ -66,7 +65,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 
 ### 从 Gitlab 迁移
 
@@ -79,7 +78,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 
 ### 从 Gitee 迁移
 
@@ -92,7 +91,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 
 ### 从阿里云迁移
 
@@ -108,7 +107,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 
 ### 从通用第三方代码平台迁移
 
@@ -124,7 +123,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 ssh协议
 
 ⚠️使用ssh协议时请在当前工作目录确保有对应的私钥文件，文件名固定为`ssh.key`
@@ -138,7 +137,7 @@ docker run --rm  \
   -e GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' \  
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 
 ### 从 CNB 迁移
 
@@ -154,7 +153,40 @@ docker run --rm  \
   -e PLUGIN_CNB_URL="https://cnb.example2.com" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
+
+### 只迁移部分仓库（仓库选择功能）
+
+首次运行，生成仓库列表文件 `repo-path.txt`  
+
+
+这里以CODING为例，其他平台只需在原有迁移命令基础上增加`-e PLUGIN_MIGRATE_ALLOW_SELECT_REPOS="true" \`参数即可：
+
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -e PLUGIN_MIGRATE_ALLOW_SELECT_REPOS="true" \
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+```
+
+**首次运行后，工具会在当前目录生成 `repo-path.txt`，请手动编辑该文件，仅保留需要迁移的仓库路径。**
+
+编辑完成后，再次运行同样的命令即可只迁移你选择的仓库：
+
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -e PLUGIN_MIGRATE_ALLOW_SELECT_REPOS="true" \
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+```
+
+**如需重新选择仓库，只需删除 `repo-path.txt`，重新运行上述命令即可。**
 
 ## 参数介绍
 
@@ -356,6 +388,12 @@ docker run --rm  \
     - 默认值：-
     - 说明：要迁移的 CODING 项目名称 (当 source_platform 为 coding 且 **migrate_type 为 project** 时必填)，多个项目以英文逗号隔开
 
+- PLUGIN_MIGRATE_ALLOW_SELECT_REPOS
+    - 类型：布尔值
+    - 必填：否
+    - 默认值：false
+    - 说明：是否允许用户选择迁移仓库。为 true 时启用 repo-path.txt 选择功能。
+
 ## 常见问题
 1. 超过了单个文件大小限制 500 MiB
 可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数，详见参数介绍
@@ -365,3 +403,9 @@ docker run --rm  \
 可以开`PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH`详见参数介绍
 4. push失败：git pull before pushing again
 可根据实际情况开启`PLUGIN_MIGRATE_FORCE_PUSH`，详见参数介绍
+5. 只迁移部分仓库怎么操作？  
+设置 `PLUGIN_MIGRATE_ALLOW_SELECT_REPOS=true`，首次运行后编辑 `repo-path.txt`，只保留需要迁移的仓库路径即可。
+6. 如何重新选择迁移仓库？  
+删除 `repo-path.txt` 文件，重新运行迁移命令即可。
+7. repo-path.txt 没有生成？  
+   请确认 `PLUGIN_MIGRATE_ALLOW_SELECT_REPOS=true`，并确保有写入权限。
