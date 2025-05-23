@@ -158,8 +158,7 @@ docker run --rm  \
 
 
 ### 迁移完成后，增量更新原平台最新内容
-1. 清空原工作目录下的 successful.log
-2. PLUGIN_MIGRATE_SKIP_EXISTS_REPO 参数设置为 false
+清空原工作目录下的 successful.log
 
 效果：重新同步原平台的所有仓库，已迁移至 CNB 的仓库，如在原平台有更新，会将内容增量同步至 CNB 平台。
 
