@@ -54,6 +54,7 @@ docker run --rm  \
   -e PLUGIN_MIGRATE_TYPE="repo"
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
+```
 
 ### 从 Github 迁移
 
@@ -66,7 +67,7 @@ docker run --rm  \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
-````
+```
 
 ### 从 Gitlab 迁移
 
