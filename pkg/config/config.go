@@ -113,8 +113,8 @@ func CheckConfig() error {
 		}
 	}
 
-	//非阿里云平台和通用第三方平台迁移，检查 source.token 参数
-	if platform != "common" && platform != "aliyun" {
+	//非通用第三方平台迁移，检查 source.token 参数
+	if platform != "common" { {
 		if config.Source.Token == "" {
 			return fmt.Errorf("source.token is required")
 		}
@@ -171,6 +171,10 @@ func CheckConfig() error {
 
 	if config.CNB.RootOrganization == "" {
 		return fmt.Errorf("cnb.RootOrganization is required")
+	}
+	
+	if strings.HasPrefix(config.CNB.RootOrganization, "/") {
+		return fmt.Errorf("cnb.RootOrganization 不能以 / 开头")
 	}
 
 	if config.Migrate.Concurrency < 1 {
@@ -353,7 +357,6 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.skip_exists_repo":           "false",
 		"migrate.release":                    "true",
 		"migrate.code":                       "true",
-		"source.endpoint":                    "devops.cn-hangzhou.aliyuncs.com",
 		"migrate.ssh":                        "false",
 		"migrate.rebase":                     "false",
 		"cnb.url":                            "https://cnb.cool",
