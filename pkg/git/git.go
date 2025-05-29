@@ -128,6 +128,11 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 			// rebase指定分支
 			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
 			if rebaseErr != nil {
+				// 检查是否是分支不存在的情况
+				if strings.Contains(rebaseErr.Error(), "fatal: invalid upstream") {
+					logger.Logger.Warnf("%s 分支 %s 在源仓库中不存在，跳过 rebase", rebaseRepoPath, branch)
+					continue
+				}
 				return fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
 			}
 			logger.Logger.Infof("%s %s rebase成功", rebaseRepoPath, rebaseBranch)
@@ -161,6 +166,11 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 			// rebase指定分支
 			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
 			if rebaseErr != nil {
+				// 检查是否是分支不存在的情况
+				if strings.Contains(rebaseErr.Error(), "fatal: invalid upstream") {
+					logger.Logger.Warnf("%s 分支 %s 在源仓库中不存在，跳过 rebase", rebaseRepoPath, branch)
+					continue
+				}
 				return fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
 			}
 			logger.Logger.Infof("%s rebase %s 成功", rebaseRepoPath, rebaseBranch)
