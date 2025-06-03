@@ -165,6 +165,11 @@ func GithubCovertToVcs(repoList []*github.Repository) []VCS {
 func (c *GithubVcs) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) {
 	return nil, nil
 }
+
 func (c *GithubVcs) GetRepoDescription() string {
 	return c.Desc
+}
+
+func (c *GithubVcs) ListRepos() ([]VCS, error) {
+	return newGithubRepo()
 }

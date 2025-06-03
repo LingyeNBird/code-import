@@ -111,3 +111,7 @@ func (c *CodingVcs) GetReleaseAttachments(desc string, repoPath string, projectI
 func (c *CodingVcs) GetRepoDescription() string {
 	return c.Desc
 }
+
+func (c *CodingVcs) ListRepos() ([]VCS, error) {
+	return newCodingRepo()
+}

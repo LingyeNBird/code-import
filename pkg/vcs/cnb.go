@@ -132,3 +132,7 @@ func (c *CNBVcs) GetReleaseAttachments(desc string, repoPath string, projectID s
 func (c *CNBVcs) GetRepoDescription() string {
 	return c.Desc
 }
+
+func (c *CNBVcs) ListRepos() ([]VCS, error) {
+	return newCnbRepo()
+}

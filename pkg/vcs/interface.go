@@ -54,6 +54,7 @@ type VCS interface {
 	GetProjectID() string
 	GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error)
 	GetRepoDescription() string
+	ListRepos() ([]VCS, error)
 }
 
 func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {

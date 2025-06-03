@@ -104,3 +104,7 @@ func (c *AliyunVcs) GetReleaseAttachments(desc string, repoPath string, projectI
 func (c *AliyunVcs) GetRepoDescription() string {
 	return ""
 }
+
+func (c *AliyunVcs) ListRepos() ([]VCS, error) {
+	return newAliyunRepo()
+}
