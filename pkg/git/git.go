@@ -21,6 +21,8 @@ const (
 	SetCheckOutDefaultRemoteCommand = " git config --global checkout.defaultRemote origin"
 	GetOriginBranchesCommand        = "git branch -r | grep '^  origin/'"
 	GitPushToLocalBareRepo          = "git push -f source"
+	ErrInvalidUpstreamEN            = "fatal: invalid upstream"
+	ErrInvalidUpstreamZH            = "致命错误：无效的上游"
 )
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
@@ -129,7 +131,7 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
 			if rebaseErr != nil {
 				// 检查是否是分支不存在的情况
-				if strings.Contains(rebaseErr.Error(), "fatal: invalid upstream") {
+				if isInvalidUpstreamError(rebaseOut) {
 					logger.Logger.Warnf("%s 分支 %s 在源仓库中不存在，跳过 rebase", rebaseRepoPath, branch)
 					continue
 				}
@@ -167,7 +169,7 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
 			if rebaseErr != nil {
 				// 检查是否是分支不存在的情况
-				if strings.Contains(rebaseErr.Error(), "fatal: invalid upstream") {
+				if isInvalidUpstreamError(rebaseOut) {
 					logger.Logger.Warnf("%s 分支 %s 在源仓库中不存在，跳过 rebase", rebaseRepoPath, branch)
 					continue
 				}
@@ -313,4 +315,10 @@ func checkoutBranch(repoPath, branch string) error {
 		}
 	}
 	return nil
+}
+
+// isInvalidUpstreamError 检查是否是分支不存在的错误（同时处理英文和中文环境）
+func isInvalidUpstreamError(output string) bool {
+	return strings.Contains(output, ErrInvalidUpstreamEN) ||
+		strings.Contains(output, ErrInvalidUpstreamZH)
 }
