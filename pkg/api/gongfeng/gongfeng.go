@@ -13,8 +13,8 @@ const (
 	DefaultPerPage = 100 // 每页最大数量
 
 	// 项目可见度级别
-	VisibilityLevelPrivate = 0  // 私有项目，必须显式授予每个用户访问权限
-	VisibilityLevelPublic  = 10 // 公共项目，任何登录用户都可以访问
+	VisibilityLevelPrivate  = 0  // 私有项目，必须显式授予每个用户访问权限
+	VisibilityLevelInternal = 10 // 内部公开项目，任何登录用户都可以访问
 )
 
 // Project 工蜂项目结构
@@ -24,16 +24,16 @@ type Project struct {
 	Path            string `json:"path"`
 	PathWithNS      string `json:"path_with_namespace"`
 	Description     string `json:"description"`
-	VisibilityLevel int    `json:"visibility_level"` // 0: 私有, 10: 公共
+	VisibilityLevel int    `json:"visibility_level"` // 0: 私有, 10: 内部公开
 	WebURL          string `json:"web_url"`
 	HTTPURL         string `json:"http_url_to_repo"`
 }
 
 // IsPrivate 判断项目是否为私有
 // visibility_level = 0: 私有项目，必须显式授予每个用户访问权限
-// visibility_level = 10: 公共项目，任何登录用户都可以访问
+// visibility_level = 10: 内部公开项目，任何登录用户都可以访问
 func (p *Project) IsPrivate() bool {
-	return p.VisibilityLevel == VisibilityLevelPrivate
+	return p.VisibilityLevel == VisibilityLevelPrivate || p.VisibilityLevel == VisibilityLevelInternal
 }
 
 // GetProjects 获取工蜂平台的所有项目列表
