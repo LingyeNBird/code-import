@@ -100,8 +100,8 @@ func CheckConfig() error {
 	}
 
 	platform := config.Source.Platform
-	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" && platform != "cnb" {
-		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun、cnb")
+	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" && platform != "cnb" && platform != "gongfeng" {
+		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun、cnb、gongfeng")
 	}
 	if platform != "aliyun" {
 		// 检查 source 参数

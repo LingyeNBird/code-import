@@ -140,6 +140,19 @@ docker run --rm  \
   cnbcool/code-import
 ```
 
+### 从工蜂迁移
+
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_SOURCE_URL="https://git.woa.com" \
+  -e PLUGIN_SOURCE_PLATFORM="gongfeng" \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+  -e PLUGIN_CNB_TOKEN="xxx"  \
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+```
+
 ### 从 CNB 迁移
 
 迁移指定根组织下所有仓库
@@ -222,6 +235,7 @@ docker run --rm  \
         - Gitlab权限：read_api https://gitlab.com/-/user_settings/personal_access_tokens
         - Gitee权限：user_info、projects https://gitee.com/profile/personal_access_tokens
         - CNB权限：account-engage:r、group-resource:r https://cnb.cool/profile/token
+        - 工蜂权限: api、read_repository https://git.woa.com/profile/account
 
 - PLUGIN_SOURCE_PLATFORM
     - 类型：字符串
