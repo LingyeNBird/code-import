@@ -33,3 +33,13 @@ main:
           script: docker tag  ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest  ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${NEW_TAG}
         - name: docker push
           script: docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${NEW_TAG}
+$:
+  vscode:
+    - docker:
+        image: docker.cnb.cool/examples/language/golang-1.24
+      services:
+        - vscode
+        - docker
+      stages:
+        - name: ls
+          script: ls          
