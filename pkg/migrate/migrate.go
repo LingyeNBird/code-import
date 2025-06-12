@@ -440,6 +440,9 @@ func isMigrated(repoPath, filePath string) (error, bool) {
 // 返回:
 //   - error: 迁移过程中的错误信息
 func migrateRelease(depot vcs.VCS) error {
+	if SourcePlatformName == "common" {
+		return nil
+	}
 	releases := depot.GetReleases()
 	if releases == nil || 0 == len(releases) {
 		logger.Logger.Infof("%s 无release需要迁移", depot.GetRepoPath())
