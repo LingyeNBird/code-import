@@ -18,6 +18,8 @@
 
 ### 从 Coding 迁移
 
+迁移之后的效果：原 CODING 项目会在 CNB 中创建一个同名的子组织，并将原项目下的仓库迁移至该子组织下面
+
 迁移团队下所有仓库
 ```shell
 docker run --rm  \
@@ -57,6 +59,9 @@ docker run --rm  \
 
 ### 从 Github 迁移
 
+迁移之后的效果：原 Github 账号下有权限的所有组织，会在 CNB 中创建同名的子组织，并将原组织下的仓库迁移至该子组织下面
+
+
 ```shell
 docker run --rm  \
   -e PLUGIN_SOURCE_TOKEN="xxx"  \
@@ -69,6 +74,8 @@ docker run --rm  \
 ```
 
 ### 从 Gitlab 迁移
+
+迁移之后的效果：原 GitLab 账号下有权限的所有 group，会在 CNB 中创建同名的子组织，并将原group下的仓库迁移至该子组织下面（如果 gitlab 是多级的group，迁移至 CNB 子组织和仓库仍会保留原有的多层级结构）
 
 ```shell
 docker run --rm  \
@@ -83,6 +90,8 @@ docker run --rm  \
 
 ### 从 Gitee 迁移
 
+迁移之后的效果：原 Gitee 账号下有权限的所有组织，会在 CNB 中创建同名的子组织，并将原组织下的仓库迁移至该子组织下面（如果 Gitee 是多级的组织/仓库组，迁移至 CNB 子组织和仓库仍会保留原有的多层级结构）
+
 ```shell
 docker run --rm  \
   -e PLUGIN_SOURCE_TOKEN="xxx"  \
@@ -95,6 +104,8 @@ docker run --rm  \
 ```
 
 ### 从阿里云迁移
+
+迁移之后的效果：原云效账号下有权限的所有组织，会在 CNB 中创建同名的子组织，并将原仓库组下的仓库迁移至该子组织下面（如果云效是多级的仓库组，迁移至 CNB 子组织和仓库仍会保留原有的多层级结构）
 
 ```shell
 docker run --rm  \
@@ -111,6 +122,8 @@ docker run --rm  \
 ```
 
 ### 从通用第三方代码平台迁移
+
+PLUGIN_SOURCE_REPO 字段中，group字段会映射为子组织，如果 cnb 的根组织下，没有该命名的子组织将会自动创建，如果有该命名的子组织会将仓库创建在已有的同名子组织下面
 
 http协议
 ```shell
