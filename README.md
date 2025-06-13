@@ -38,7 +38,7 @@ docker run --rm  \
   -e PLUGIN_SOURCE_PROJECT="project1,project2" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_MIGRATE_TYPE="project"
+  -e PLUGIN_MIGRATE_TYPE="project" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ```
@@ -52,7 +52,7 @@ docker run --rm  \
   -e PLUGIN_SOURCE_REPO="project1/repoA,project1/repoB,project2/repoC" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
-  -e PLUGIN_MIGRATE_TYPE="repo"
+  -e PLUGIN_MIGRATE_TYPE="repo" \
   -v $(pwd):$(pwd) -w $(pwd) \
   cnbcool/code-import
 ```
