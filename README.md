@@ -49,7 +49,7 @@ PLUGIN_SOURCE_REPO 字段根据需要自行替换，详见参数介绍
 ```shell
 docker run --rm  \
   -e PLUGIN_SOURCE_TOKEN="xxx"  \
-  -e PLUGIN_SOURCE_REPO="project1/repoA,project1/repoB,project2/repoC" \
+  -e PLUGIN_SOURCE_REPO="<TEAM-NAME>/<PROJECT-NAME>/<REPO-NAME>,test-team/project1/repoA,test-team/project2/repoB" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
   -e PLUGIN_MIGRATE_TYPE="repo" \
