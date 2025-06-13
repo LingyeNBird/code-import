@@ -84,6 +84,7 @@ type Migrate struct {
 	SkipExistsRepo      bool   `yaml:"skip_exists_repo"`
 	Ssh                 bool   `yaml:"ssh"`
 	AllowSelectRepos    bool   `yaml:"allow_select_repos"`
+	DownloadOnly        bool   `yaml:"download_only"`
 }
 
 func CheckConfig() error {
@@ -214,7 +215,7 @@ func init() {
 
 	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo", "migrate.rebase_branch")
 
-	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh", "migrate.rebase", "migrate.allow_select_repos")
+	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh", "migrate.rebase", "migrate.allow_select_repos", "migrate.download_only")
 	if err != nil {
 		panic(err)
 	}
@@ -330,6 +331,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"source.ssh_private_key",
 		"migrate.rebase_branch",
 		"migrate.allow_select_repos",
+		"migrate.download_only",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -362,6 +364,7 @@ func setDefaultValues(config *viper.Viper) {
 		"cnb.url":                            "https://cnb.cool",
 		"source.url":                         "https://e.coding.net",
 		"migrate.allow_select_repos":         "false",
+		"migrate.download_only":              "false",
 	}
 
 	// 使用循环来设置默认值

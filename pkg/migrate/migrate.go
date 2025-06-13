@@ -47,6 +47,7 @@ var (
 	MigrateRelease           = config.Cfg.GetBool("migrate.release")
 	MigrateCode              = config.Cfg.GetBool("migrate.code")
 	MigrateRebase            = config.Cfg.GetBool("migrate.rebase")
+	DownloadOnly             = config.Cfg.GetBool("migrate.download_only")
 	rebaseBackDirPath        string
 	rebaseBranchesMap        sync.Map
 )
@@ -307,17 +308,21 @@ func migrateDo(depot vcs.VCS) error {
 	// 使用zap的With方法添加repo字段
 	log := logger.Logger.With(zap.String("repo", repoPath))
 
-	err, migrated := isMigrated(repoPath, logger.SuccessfulLogFilePath)
-	if err != nil {
-		log.Errorf("判断是否迁移失败: %s", err)
-		return fmt.Errorf("%s 判断是否迁移失败%s", repoPath, err)
+	// 如果不是只下载模式，则检查是否已迁移
+	if !DownloadOnly {
+		err, migrated := isMigrated(repoPath, logger.SuccessfulLogFilePath)
+		if err != nil {
+			log.Errorf("判断是否迁移失败: %s", err)
+			return fmt.Errorf("%s 判断是否迁移失败%s", repoPath, err)
+		}
+		if migrated {
+			atomic.AddInt64(&skipRepoNumber, 1)
+			atomic.AddInt64(&failedRepoNumber, -1)
+			log.Infof("%s 已迁移，跳过同步", repoPath)
+			return nil
+		}
 	}
-	if migrated {
-		atomic.AddInt64(&skipRepoNumber, 1)
-		atomic.AddInt64(&failedRepoNumber, -1)
-		log.Infof("%s 已迁移，跳过同步", repoPath)
-		return nil
-	}
+
 	log.Infof("%s 开始迁移", repoPath)
 	startTime := time.Now()
 	isSvn := git.IsSvnRepo(depot.GetRepoType())
@@ -327,13 +332,26 @@ func migrateDo(depot vcs.VCS) error {
 		log.Infof("%s svn仓库，跳过同步", repoPath)
 		return nil
 	}
+
+	// 执行 clone 操作
+	err = depot.Clone()
+	if err != nil {
+		log.Errorf(err.Error())
+		return fmt.Errorf(err.Error())
+	}
+
+	// 如果是只下载模式，则直接返回
+	if DownloadOnly {
+		atomic.AddInt64(&successfulRepoNumber, 1)
+		atomic.AddInt64(&failedRepoNumber, -1)
+		duration := time.Since(startTime)
+		log.Infof("%s 下载完成，耗时%s", repoPath, duration)
+		return nil
+	}
+
+	// 以下是原有的迁移逻辑
 	cnbRepoPath, cnbRepoGroup := source.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
 	if MigrateCode {
-		err = depot.Clone()
-		if err != nil {
-			log.Errorf(err.Error())
-			return fmt.Errorf(err.Error())
-		}
 		has, err := source.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
 		if err != nil {
 			return err
