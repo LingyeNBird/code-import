@@ -216,6 +216,26 @@ docker run --rm  \
 **如需重新选择仓库，只需删除 `repo-path.txt`，重新运行上述命令即可。**
 
 
+### 仅下载仓库模式
+
+如果只需要将仓库下载到本地而不推送到 CNB 平台，可以使用仅下载模式。该模式下会跳过所有 CNB 相关操作，仅执行仓库克隆，无需提供 CNB 相关配置信息。
+
+这里以 CODING 为例，其他平台只需在原有迁移命令基础上增加 `-e PLUGIN_MIGRATE_DOWNLOAD_ONLY="true"` 参数即可：
+
+```shell
+docker run --rm  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
+  -e PLUGIN_MIGRATE_DOWNLOAD_ONLY="true" \
+  -v $(pwd):$(pwd) -w $(pwd) \
+  cnbcool/code-import
+```
+
+**仅下载模式特点：**
+- 仅执行仓库克隆操作，不推送到 CNB 平台
+- 无需提供 CNB 相关配置信息（如 CNB_TOKEN、CNB_ROOT_ORGANIZATION 等）
+- 跳过所有 CNB 相关操作（如创建子组织、创建仓库等）
+- 下载完成后保留工作目录（格式：`source_git_dir_时间戳`）
+
 ### 迁移完成后，增量更新原平台最新内容
 清空原工作目录下的 successful.log
 
@@ -430,6 +450,12 @@ docker run --rm  \
     - 默认值：false
     - 说明：是否允许用户选择迁移仓库。为 true 时启用 repo-path.txt 选择功能。
 
+- PLUGIN_MIGRATE_DOWNLOAD_ONLY
+    - 类型：布尔值
+    - 必填：否
+    - 默认值：false
+    - 说明：是否只执行仓库下载操作，不执行迁移。为 true 时仅克隆仓库到本地，不推送到 CNB 平台。该模式下无需提供 CNB 相关配置信息。
+
 ## 常见问题
 1. 超过了单个文件大小限制 500 MiB
 可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数，详见参数介绍
@@ -445,3 +471,5 @@ docker run --rm  \
 删除 `repo-path.txt` 文件，重新运行迁移命令即可。
 7. repo-path.txt 没有生成？  
    请确认 `PLUGIN_MIGRATE_ALLOW_SELECT_REPOS=true`，并确保有写入权限。
+8. 如何只下载仓库而不推送到 CNB？  
+   设置 `PLUGIN_MIGRATE_DOWNLOAD_ONLY=true`，该模式下仅执行仓库克隆操作，无需提供 CNB 相关配置，下载完成后会保留工作目录。

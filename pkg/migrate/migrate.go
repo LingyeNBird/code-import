@@ -148,23 +148,26 @@ func Run() {
 	logger.Logger.Infof("仓库总数%d", len(depotList))
 	initMigrationStats(depotList)
 
-	// 检查根组织
-	exist, err := source.RootOrganizationExists(CnbApiURL, CnbToken)
-	if err != nil {
-		logger.Logger.Errorf("判断根组织是否存在失败: %s", err)
-		return
-	}
-	if !exist {
-		logger.Logger.Errorf("根组织%s不存在，请先创建根组织", config.Cfg.GetString("cnb.root_organization"))
-		return
-	}
-
-	// 创建子组织（如果需要）
-	if organizationMappingLevel == 1 {
-		err = source.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
+	// 如果不是只下载模式，则执行 CNB 相关操作
+	if !DownloadOnly {
+		// 检查根组织
+		exist, err := source.RootOrganizationExists(CnbApiURL, CnbToken)
 		if err != nil {
-			logger.Logger.Errorf("创建子组织失败: %s", err)
+			logger.Logger.Errorf("判断根组织是否存在失败: %s", err)
 			return
+		}
+		if !exist {
+			logger.Logger.Errorf("根组织%s不存在，请先创建根组织", config.Cfg.GetString("cnb.root_organization"))
+			return
+		}
+
+		// 创建子组织（如果需要）
+		if organizationMappingLevel == 1 {
+			err = source.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
+			if err != nil {
+				logger.Logger.Errorf("创建子组织失败: %s", err)
+				return
+			}
 		}
 	}
 
@@ -188,7 +191,7 @@ func Run() {
 
 	// defer 删除 source_git_dir 目录，确保所有迁移操作完成后再清理
 	pwdDir, err := os.Getwd()
-	if err == nil { // 获取当前工作目录成功才注册 defer
+	if err == nil && !DownloadOnly { // 只在非只下载模式下删除目录
 		gitDirABSPath := filepath.Join(pwdDir, "..", GitDirName)
 		defer func(path string) {
 			_ = os.RemoveAll(path)
@@ -228,17 +231,26 @@ func setupSSH() error {
 
 // setupWorkDir 设置工作目录
 func setupWorkDir() error {
-	if err := os.Mkdir(GitDirName, 0755); err != nil {
+	var workDirName string
+	if DownloadOnly {
+		// 在只下载模式下，使用带时间戳的目录名
+		timestamp := time.Now().Format("20060102150405")
+		workDirName = fmt.Sprintf("%s_%s", GitDirName, timestamp)
+	} else {
+		workDirName = GitDirName
+	}
+
+	if err := os.Mkdir(workDirName, 0755); err != nil {
 		return fmt.Errorf("创建Git工作目录失败: %s", err)
 	}
-	logger.Logger.Infof("创建仓库工作目录%s成功", GitDirName)
+	logger.Logger.Infof("创建仓库工作目录%s成功", workDirName)
 
 	pwdDir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("获取当前工作目录失败: %s", err)
 	}
 
-	gitDirABSPath := filepath.Join(pwdDir, GitDirName)
+	gitDirABSPath := filepath.Join(pwdDir, workDirName)
 
 	system.HandleInterrupt(gitDirABSPath)
 
@@ -248,7 +260,7 @@ func setupWorkDir() error {
 		}
 	}
 
-	if err := os.Chdir(GitDirName); err != nil {
+	if err := os.Chdir(workDirName); err != nil {
 		return fmt.Errorf("切换到Git工作目录失败: %s", err)
 	}
 
@@ -276,7 +288,11 @@ func setupRebase(pwdDir string) error {
 
 // executeMigration 执行迁移操作
 func executeMigration(depotList []vcs.VCS, startTime time.Time) {
-	logger.Logger.Infof("开始迁移仓库，当前并发数:%d", Concurrency)
+	if DownloadOnly {
+		logger.Logger.Infof("开始下载仓库，当前并发数:%d", Concurrency)
+	} else {
+		logger.Logger.Infof("开始迁移仓库，当前并发数:%d", Concurrency)
+	}
 	sem := semaphore.NewWeighted(int64(Concurrency))
 	var wg sync.WaitGroup
 
@@ -290,15 +306,28 @@ func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 			}
 			defer sem.Release(1)
 			if err := migrateDo(depot); err != nil {
-				logger.Logger.Errorf("%s 仓库迁移失败: %s", depot.GetRepoPath(), err)
+				logger.Logger.Errorf("%s 仓库%s失败: %s", depot.GetRepoPath(), getOperationType(), err)
 			}
 		}(depotCopy)
 	}
 
 	wg.Wait()
 	duration := time.Since(startTime)
-	logger.Logger.Infof("代码仓库迁移完成，耗时%s。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
-		duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
+	if DownloadOnly {
+		logger.Logger.Infof("代码仓库下载完成，耗时%s。\n【仓库总数】%d【成功下载】%d【忽略下载】%d【下载失败】%d",
+			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
+	} else {
+		logger.Logger.Infof("代码仓库迁移完成，耗时%s。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
+			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
+	}
+}
+
+// getOperationType 根据当前模式返回操作类型
+func getOperationType() string {
+	if DownloadOnly {
+		return "下载"
+	}
+	return "迁移"
 }
 
 func migrateDo(depot vcs.VCS) error {
