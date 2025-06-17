@@ -200,6 +200,10 @@ func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
 		}
 	}
 	logger.Logger.Infof("%s 裸仓push成功", repoPath)
+	out, err := PushLFS(repoPath, pushURL)
+	if err != nil {
+		return out, err
+	}
 	return output, nil
 }
 
@@ -256,14 +260,14 @@ func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
 }
 
 func PushLFS(repoPath, pushUrl string) (string, error) {
-	logger.Logger.Infof("%s 上传LFS文件", repoPath)
+	logger.Logger.Infof("%s 开始推送LFS文件", repoPath)
 	workDir := repoPath
 	output, err := system.RunCommand("git", workDir, "lfs", "push", "--all", pushUrl)
 	if err != nil {
-		logger.Logger.Errorf("%s 上传LFS文件失败", repoPath)
+		logger.Logger.Errorf("%s LFS文件推送失败", repoPath)
 		return output, err
 	}
-	logger.Logger.Infof("%s 上传LFS文件成功", repoPath)
+	logger.Logger.Infof("%s LFS文件推送成功", repoPath)
 	return output, err
 }
 
