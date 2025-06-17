@@ -102,6 +102,7 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 source_git_dir
+source_git_dir_*
 /*.log
 config.yaml
 ccrctl

@@ -84,6 +84,7 @@ type Migrate struct {
 	SkipExistsRepo      bool   `yaml:"skip_exists_repo"`
 	Ssh                 bool   `yaml:"ssh"`
 	AllowSelectRepos    bool   `yaml:"allow_select_repos"`
+	DownloadOnly        bool   `yaml:"download_only"`
 }
 
 func CheckConfig() error {
@@ -98,6 +99,9 @@ func CheckConfig() error {
 	if err != nil {
 		log.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
+
+	// 检查是否为只下载模式
+	downloadOnly := config.Migrate.DownloadOnly
 
 	platform := config.Source.Platform
 	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" && platform != "cnb" && platform != "gongfeng" {
@@ -121,12 +125,6 @@ func CheckConfig() error {
 			return fmt.Errorf("source.token is required")
 		}
 	}
-
-	//if platform == "cnb" {
-	//	if config.Source.Group == "" {
-	//		return fmt.Errorf("source.group is required")
-	//	}
-	//}
 
 	//common http迁移
 	if platform == "common" && !config.Migrate.Ssh {
@@ -157,33 +155,35 @@ func CheckConfig() error {
 		return fmt.Errorf("coding.repo is required")
 	}
 
-	// 检查 cnb 参数
-	if config.CNB.URL == "" {
-		return fmt.Errorf("cnb.url is required")
-	}
+	// 如果不是只下载模式，则检查 CNB 相关配置
+	if !downloadOnly {
+		// 检查 cnb 参数
+		if config.CNB.URL == "" {
+			return fmt.Errorf("cnb.url is required")
+		}
 
-	// 检查 cnb.url 前缀
-	if !strings.HasPrefix(config.CNB.URL, "http://") && !strings.HasPrefix(config.CNB.URL, "https://") {
-		return fmt.Errorf("cnb.url must start with 'http://' or 'https://'")
-	}
+		// 检查 cnb.url 前缀
+		if !strings.HasPrefix(config.CNB.URL, "http://") && !strings.HasPrefix(config.CNB.URL, "https://") {
+			return fmt.Errorf("cnb.url must start with 'http://' or 'https://'")
+		}
 
-	if config.CNB.Token == "" {
-		return fmt.Errorf("cnb.token is required")
-	}
+		if config.CNB.Token == "" {
+			return fmt.Errorf("cnb.token is required")
+		}
 
-	if config.CNB.RootOrganization == "" {
-		return fmt.Errorf("cnb.RootOrganization is required")
+		if config.CNB.RootOrganization == "" {
+			return fmt.Errorf("cnb.RootOrganization is required")
+		}
+
+		if config.Migrate.organizationMappingLevel > 2 {
+			return fmt.Errorf("organization_mapping_level error only support 1 or 2 ")
+		}
 	}
 
 	if config.Migrate.Concurrency < 1 {
 		return fmt.Errorf("migrate.concurrency must be greater than 0")
 	}
 
-	if config.Migrate.organizationMappingLevel > 2 {
-		return fmt.Errorf("organization_mapping_level error only support 1 or 2 ")
-	}
-
-	//logger.Logger.Infof("配置检查通过")
 	return nil
 }
 
@@ -214,7 +214,7 @@ func init() {
 
 	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo", "migrate.rebase_branch")
 
-	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh", "migrate.rebase", "migrate.allow_select_repos")
+	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh", "migrate.rebase", "migrate.allow_select_repos", "migrate.download_only")
 	if err != nil {
 		panic(err)
 	}
@@ -330,6 +330,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"source.ssh_private_key",
 		"migrate.rebase_branch",
 		"migrate.allow_select_repos",
+		"migrate.download_only",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -362,6 +363,7 @@ func setDefaultValues(config *viper.Viper) {
 		"cnb.url":                            "https://cnb.cool",
 		"source.url":                         "https://e.coding.net",
 		"migrate.allow_select_repos":         "false",
+		"migrate.download_only":              "false",
 	}
 
 	// 使用循环来设置默认值
