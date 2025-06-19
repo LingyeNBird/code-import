@@ -52,7 +52,7 @@ type VCS interface {
 	GetRepoPrivate() bool
 	GetReleases() []Releases
 	GetProjectID() string
-	GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error)
+	GetReleaseAttachments(desc string, repoPath string, projectID string) ([]Attachment, error) // 获取 release 描述中的附件
 	GetRepoDescription() string
 	ListRepos() ([]VCS, error)
 }

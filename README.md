@@ -410,8 +410,8 @@ docker run --rm  \
 - PLUGIN_MIGRATE_RELEASE
     - 类型：布尔值
     - 必填：否
-    - 默认值：true
-    - 说明：迁移release（暂时只支持 gitlab/github/gitee release迁移）
+    - 默认值：false
+    - 说明：迁移release（暂时只支持 gitlab/github/gitee/coding release迁移）
 
 - PLUGIN_MIGRATE_FILE_LIMIT_SIZE
     - 类型：数值

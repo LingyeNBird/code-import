@@ -205,3 +205,35 @@ func GetGoroutineID() int {
 	n, _ := strconv.Atoi(string(b))
 	return n
 }
+
+// CodingExtractAttachments  从 Markdown 内容中提取附件和图片的名称和 URL
+func CodingExtractAttachments(markdown string) (images map[string]string, exists bool) {
+	// 正则表达式匹配 Markdown 图片，包括文件扩展名
+	imageRe := regexp.MustCompile(`https?://[^/]+(/api/project/(\d+)/files/(\d+)/imagePreview)`)
+	imageMatches := imageRe.FindAllStringSubmatch(markdown, -1)
+	images = make(map[string]string)
+	// 遍历图片匹配项并填充图片 map
+	for _, match := range imageMatches {
+		if len(match) == 4 {
+			imgName := match[2] + "-" + match[3] + ".jpg"
+			images[imgName] = match[0]
+		}
+	}
+
+	// 检查是否找到任何附件或图片
+	exists = len(images) > 0
+
+	return images, exists
+}
+
+func GetReleaseAttachmentMarkdownURL(desc string) []string {
+	var path []string
+	re := regexp.MustCompile(`/api/project/(\d+)/files/(\d+)/imagePreview`)
+	matches := re.FindAllStringSubmatch(desc, -1)
+	for _, match := range matches {
+		if len(match) == 3 {
+			path = append(path, match[0]) // 完整路径: /api/project/12388441/files/44753257/imagePreview
+		}
+	}
+	return path
+}

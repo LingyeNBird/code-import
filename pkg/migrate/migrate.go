@@ -1,7 +1,7 @@
 package migrate
 
 import (
-	"ccrctl/pkg/api/source"
+	"ccrctl/pkg/api/target"
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/http_client"
@@ -386,7 +386,7 @@ func migrateDo(depot vcs.VCS) error {
 			return err
 		}
 		if !has {
-			err = source.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, depot.GetRepoDescription(), repoPrivate)
+			err = target.CreateRepo(CnbApiURL, CnbToken, cnbRepoGroup, repoName, depot.GetRepoDescription(), repoPrivate)
 			if err != nil {
 				return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
 			}
@@ -412,7 +412,7 @@ func migrateDo(depot vcs.VCS) error {
 			}
 		}(fullRepoDir)
 
-		pushURL := source.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
+		pushURL := target.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
 		rebaseRepoPath := filepath.Join(RebaseDirPrefix, repoPath)
 		isForcePush := config.Cfg.GetBool("migrate.force_push")
 		if MigrateRebase {
@@ -524,7 +524,7 @@ func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) err
 	log.Infof("%s 开始迁移release: %s", repoPath, release.Name)
 
 	// 在目标平台创建release
-	releaseID, exist, err := source.CreateRelease(repoPath, depot.GetProjectID(), release, depot)
+	releaseID, exist, err := target.CreateRelease(repoPath, depot.GetProjectID(), release, depot)
 	if err != nil {
 		log.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, err)
 		return err
@@ -559,13 +559,8 @@ func migrateReleaseAssets(repoPath, releaseID string, release vcs.Releases) erro
 	log := logger.Logger
 	// 遍历处理每个资源文件
 	for _, asset := range release.Assets {
-		fileName, err := util.GetFileNameFromURL(asset.Url)
-		if err != nil {
-			log.Errorf("%s 获取release asset 文件名失败: %s", asset.Url, err)
-			return err
-		}
 
-		if err := migrateReleaseAsset(repoPath, releaseID, fileName, asset.Url); err != nil {
+		if err := migrateReleaseAsset(repoPath, releaseID, asset.Name, asset.Url); err != nil {
 			log.Errorf("%s 迁移 release %s asset %s 失败: %s",
 				repoPath, release.Name, asset.Name, err)
 			return err
@@ -580,7 +575,7 @@ func migrateReleaseAsset(repoPath, releaseID, fileName, downloadUrl string) (err
 		logger.Logger.Errorf("%s 下载release asset %s 失败: %s", downloadUrl, fileName, err)
 		return err
 	}
-	err = source.UploadReleaseAsset(repoPath, releaseID, fileName, data)
+	err = target.UploadReleaseAsset(repoPath, releaseID, fileName, data)
 	if err != nil {
 		logger.Logger.Errorf("%s 上传release asset %s 失败: %s", downloadUrl, fileName, err)
 		return err

@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	giteeApiPath = "/api/v5"
-	giteeApiHost = "https://gitee.com"
+	giteeApiPath          = "/api/v5"
+	giteeApiHost          = "https://gitee.com"
+	codingOpenAPIEndpoint = "/open-api"
 )
 
 var (
@@ -68,6 +69,15 @@ func NewGiteeClient() *Client {
 		HTTPClient: &http.Client{},
 		Token:      config.Cfg.GetString("source.token"),
 		Limiter:    rate.NewLimiter(rate.Every(time.Second), 1),
+	}
+}
+
+func NewCodingClient() *Client {
+	return &Client{
+		BaseURL:    config.Cfg.GetString("source.url") + codingOpenAPIEndpoint,
+		HTTPClient: &http.Client{},
+		Token:      config.Cfg.GetString("source.token"),
+		Limiter:    rate.NewLimiter(rate.Every(time.Second), 10),
 	}
 }
 

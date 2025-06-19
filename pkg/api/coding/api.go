@@ -6,6 +6,8 @@ import (
 	"ccrctl/pkg/logger"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -25,6 +27,7 @@ var (
 	Projects    = config.Cfg.GetStringSlice("source.project")
 	Repos       = config.Cfg.GetStringSlice("source.repo")
 	c           = http_client.NewClient(SourceURL)
+	c2          = http_client.NewCodingClient()
 )
 
 type UserInfo struct {
@@ -448,4 +451,97 @@ func GetDepotList(migrateType string) ([]Depots, error) {
 	logger.Logger.Debugw("仓库列表清单", "depotList", depotList)
 	logger.Logger.Infof("获取仓库列表完成，共%d个仓库", len(depotList))
 	return depotList, err
+}
+
+type GetReleasesListResp struct {
+	Response struct {
+		ReleasePageList struct {
+			Releases   []Releases `json:"Releases"`
+			TotalCount int        `json:"TotalCount"`
+		} `json:"ReleasePageList"`
+		RequestId string `json:"RequestId"`
+	} `json:"Response"`
+}
+
+type Releases struct {
+	Body               string   `json:"Body"`
+	CommitSha          string   `json:"CommitSha"`
+	CreatedAt          int64    `json:"CreatedAt"`
+	CreatorId          int      `json:"CreatorId"`
+	DepotId            int      `json:"DepotId"`
+	Html               string   `json:"Html"`
+	Id                 int      `json:"Id"`
+	Pre                bool     `json:"Pre"`
+	ProjectId          int      `json:"ProjectId"`
+	ReleaseId          int      `json:"ReleaseId"`
+	TagName            string   `json:"TagName"`
+	TargetCommitBranch string   `json:"TargetCommitBranch"`
+	Title              string   `json:"Title"`
+	UpdatedAt          int64    `json:"UpdatedAt"`
+	Iid                int      `json:"iid"`
+	ImageDownloadUrl   []string `json:"ImageDownloadUrl"`
+	ReleaseAttachment  []struct {
+		AttachmentName        string `json:"AttachmentName"`
+		AttachmentDownloadUrl string `json:"AttachmentDownloadUrl"`
+		AttachmentSize        int    `json:"AttachmentSize"`
+	} `json:"ReleaseAttachment"`
+}
+
+type GetReleasesListReq struct {
+	Action          string `json:"Action"`
+	DepotId         int    `json:"DepotId"`
+	DepotPath       string `json:"DepotPath"`
+	FromDate        string `json:"FromDate"`
+	PageNumber      int    `json:"PageNumber"`
+	PageSize        int    `json:"PageSize"`
+	Status          string `json:"Status"`
+	TagName         string `json:"TagName"`
+	ToDate          string `json:"ToDate"`
+	ShowResourceUrl bool   `json:"ShowResourceUrl"`
+}
+
+func GetReleasesFetchPage(repoID, page int) (GetReleasesListResp, error) {
+	var getReleasesListResp GetReleasesListResp
+	body := GetReleasesListReq{
+		Action:          "DescribeGitReleases",
+		DepotId:         repoID,
+		PageNumber:      page,
+		PageSize:        100,
+		ShowResourceUrl: true,
+	}
+	resp, _, _, err := c2.RequestV4(http.MethodPost, "", body)
+	if err != nil {
+		return getReleasesListResp, err
+	}
+	logger.Logger.Debugw("获取仓库Release列表", "resp", string(resp))
+	err = checkResponse(resp)
+	if err != nil {
+		return getReleasesListResp, err
+	}
+	err = json.Unmarshal(resp, &getReleasesListResp)
+	if err != nil {
+		return getReleasesListResp, err
+	}
+	return getReleasesListResp, nil
+}
+
+func GetReleasesList(repoID int) ([]Releases, error) {
+	var releases []Releases
+	page := 1
+	for {
+		resp, err := GetReleasesFetchPage(repoID, page)
+		if err != nil {
+			return releases, err
+		}
+		releases = append(releases, resp.Response.ReleasePageList.Releases...)
+		if len(releases) < resp.Response.ReleasePageList.TotalCount {
+			page++
+		} else {
+			break
+		}
+	}
+	sort.Slice(releases, func(i, j int) bool {
+		return releases[i].Iid < releases[j].Iid
+	})
+	return releases, nil
 }
