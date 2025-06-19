@@ -52,5 +52,4 @@ $:
         - name: upload release
           type: git:release
           options:
-            title: release
             description: ${LATEST_CHANGE_LOG}      
