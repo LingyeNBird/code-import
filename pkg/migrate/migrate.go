@@ -151,7 +151,7 @@ func Run() {
 	// 如果不是只下载模式，则执行 CNB 相关操作
 	if !DownloadOnly {
 		// 检查根组织
-		exist, err := source.RootOrganizationExists(CnbApiURL, CnbToken)
+		exist, err := target.RootOrganizationExists(CnbApiURL, CnbToken)
 		if err != nil {
 			logger.Logger.Errorf("判断根组织是否存在失败: %s", err)
 			return
@@ -163,7 +163,7 @@ func Run() {
 
 		// 创建子组织（如果需要）
 		if organizationMappingLevel == 1 {
-			err = source.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
+			err = target.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
 			if err != nil {
 				logger.Logger.Errorf("创建子组织失败: %s", err)
 				return
@@ -379,9 +379,9 @@ func migrateDo(depot vcs.VCS) error {
 	}
 
 	// 以下是原有的迁移逻辑
-	cnbRepoPath, cnbRepoGroup := source.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
+	cnbRepoPath, cnbRepoGroup := target.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
 	if MigrateCode {
-		has, err := source.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
+		has, err := target.HasRepoV2(CnbApiURL, CnbToken, cnbRepoPath)
 		if err != nil {
 			return err
 		}
