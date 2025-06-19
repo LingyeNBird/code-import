@@ -32,18 +32,7 @@ main:
         - name: docker tag
           script: docker tag  ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest  ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${NEW_TAG}
         - name: docker push
-          script: docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${NEW_TAG}
-  tag_push:
-    - stages:
-        - name: changelog
-          image: cnbcool/changelog
-          exports:
-            latestChangeLog: LATEST_CHANGE_LOG
-        - name: upload release
-          type: git:release
-          options:
-            title: release
-            description: ${LATEST_CHANGE_LOG}          
+          script: docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${NEW_TAG}          
 $:
   vscode:
     - docker:
@@ -54,3 +43,14 @@ $:
       stages:
         - name: ls
           script: ls          
+  tag_push:
+    - stages:
+        - name: changelog
+          image: cnbcool/changelog
+          exports:
+            latestChangeLog: LATEST_CHANGE_LOG
+        - name: upload release
+          type: git:release
+          options:
+            title: release
+            description: ${LATEST_CHANGE_LOG}      
