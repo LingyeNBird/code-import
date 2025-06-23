@@ -5,7 +5,7 @@
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
 ## 功能介绍
-1. 支持CODING、Github、Gitlab、Gitee、阿里云以及通用第三方代码托管平台的代码仓库批量迁移至CNB
+1. 支持CODING、Github、Gitlab、Gitee、阿里云云效、腾讯工蜂以及通用第三方代码托管平台的代码仓库批量迁移至CNB
 2. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
 
 
@@ -109,11 +109,8 @@ docker run --rm  \
 
 ```shell
 docker run --rm  \
-  -e PLUGIN_SOURCE_USERNAME="xxx"  \
-  -e PLUGIN_SOURCE_PASSWORD="xxx"  \
+  -e PLUGIN_SOURCE_TOKEN="xxx"  \
   -e PLUGIN_SOURCE_PLATFORM="aliyun" \
-  -e PLUGIN_SOURCE_AK="xxx" \
-  -e PLUGIN_SOURCE_AS="xxx" \
   -e PLUGIN_SOURCE_ORGANIZATIONID="xxx" \
   -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
   -e PLUGIN_CNB_TOKEN="xxx"  \
@@ -267,6 +264,7 @@ docker run --rm  \
         - Github权限：repo:all、read:org https://github.com/settings/tokens
         - Gitlab权限：read_api https://gitlab.com/-/user_settings/personal_access_tokens
         - Gitee权限：user_info、projects https://gitee.com/profile/personal_access_tokens
+        - 阿里云云效权限：代码仓库:只读 https://account-devops.aliyun.com/settings/personalAccessToken
         - CNB权限：account-engage:r、group-resource:r https://cnb.cool/profile/token
         - 工蜂权限: api、read_repository https://git.woa.com/profile/account
 
@@ -288,33 +286,15 @@ docker run --rm  \
     - 类型：字符串
     - 必填：否
     - 默认值：-
-    - 说明：当 source_platform 为 aliyun或common 时必填，clone 代码仓库时要用到的用户名，需要确保能够clone所有仓库。
-      [阿里云帮助文档](https://help.aliyun.com/zh/yunxiao/user-guide/configure-https-clone-account-password?spm=a2c4g.11186623.0.0.78b240cdASV98n)
+    - 说明：当 source_platform 为 common 时必填，clone 代码仓库时要用到的用户名，需要确保能够clone所有仓库。
+
 
 - PLUGIN_SOURCE_PASSWORD
     - 类型：字符串
     - 必填：否
     - 默认值：-
-    - 说明：当 source_platform 为 aliyun或common 时必填，clone 代码仓库时要用到的密码
+    - 说明：当 source_platform 为 common 时必填，clone 代码仓库时要用到的密码
 
-- PLUGIN_SOURCE_AK
-    - 类型：字符串
-    - 必填：否
-    - 默认值：-
-    - 说明：AccessKey ID,当 source_platform 为 aliyun时必填，需要有AliyunRDCReadOnlyAccess权限，如果是RAM用户，需要关联至云效账号，并授权管理员角色。
-      [阿里云帮助文档](https://help.aliyun.com/zh/yunxiao/user-guide/add-a-ram-user?spm=5176.28366559.console-base_help.dexternal.211e336a7R37d8&scm=20140722.S_help%40%40%E6%96%87%E6%A1%A3%40%40203014.S_RQW%40ag0%2BBB2%40ag0%2BBB1%40ag0%2Bos0.ID_203014-RL_ram%E7%94%A8%E6%88%B7%E5%A6%82%E4%BD%95%E5%85%B3%E8%81%94%E8%87%B3%E4%BA%91%E6%95%88-LOC_console~UND~help-OR_ser-V_4-P0_0-P1_0)
-
-- PLUGIN_SOURCE_AS
-    - 类型：字符串
-    - 必填：否
-    - 默认值：-
-    - 说明：AccessKey Secret,当 source_platform 为 aliyun时必填。
-
-- PLUGIN_SOURCE_ENDPOINT
-    - 类型：字符串
-    - 必填：否
-    - 默认值：devops.cn-hangzhou.aliyuncs.com
-    - 说明：AccessKey 请求的地址。
 
 - PLUGIN_SOURCE_ORGANIZATIONID
     - 类型：字符串

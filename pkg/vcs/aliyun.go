@@ -6,8 +6,6 @@ import (
 	"ccrctl/pkg/git"
 	"ccrctl/pkg/util"
 	"strings"
-
-	devops20210625 "github.com/alibabacloud-go/devops-20210625/v5/client"
 )
 
 type AliyunVcs struct {
@@ -48,11 +46,11 @@ func (c *AliyunVcs) GetCloneUrl() string {
 }
 
 func (c *AliyunVcs) GetUserName() string {
-	return config.Cfg.GetString("source.username")
+	return "aliyun"
 }
 
 func (c *AliyunVcs) GetToken() string {
-	return config.Cfg.GetString("source.password")
+	return config.Cfg.GetString("source.token")
 }
 
 func (c *AliyunVcs) Clone() error {
@@ -76,22 +74,22 @@ func (c *AliyunVcs) GetProjectID() string {
 }
 
 func newAliyunRepo() ([]VCS, error) {
-	repoList, err := api.ListRepository(config.Cfg.GetString("source.organizationId"))
+	repoList, err := api.GetAllRepositories()
 	if err != nil {
 		return nil, err
 	}
 	return aliyunCovertToVcs(repoList), nil
 }
 
-func aliyunCovertToVcs(repoList []*devops20210625.ListRepositoriesResponseBodyResult) []VCS {
+func aliyunCovertToVcs(repoList []api.Repository) []VCS {
 	var VCS []VCS
 	for _, repo := range repoList {
 		VCS = append(VCS, &AliyunVcs{
-			httpURL:           *repo.WebUrl,
-			PathWithNamespace: *repo.PathWithNamespace,
-			RepoName:          *repo.Name,
+			httpURL:           repo.WebUrl,
+			PathWithNamespace: repo.PathWithNamespace,
+			RepoName:          repo.Name,
 			RepoType:          Git,
-			Private:           *repo.VisibilityLevel,
+			Private:           repo.Visibility,
 		})
 	}
 	return VCS

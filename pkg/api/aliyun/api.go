@@ -1,128 +1,111 @@
 package aliyun
 
 import (
-	C "ccrctl/pkg/config"
-	"ccrctl/pkg/git"
-	"ccrctl/pkg/logger"
-	"ccrctl/pkg/util"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	devops20210625 "github.com/alibabacloud-go/devops-20210625/v5/client"
-	"github.com/alibabacloud-go/tea/tea"
-	"strings"
+	"ccrctl/pkg/config"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 )
 
-var (
-	allowIncompletePush = C.Cfg.GetBool("migrate.allow_incomplete_push")
+const (
+	aliyunEndpoint  = "https://openapi-rdc.aliyuncs.com"
+	defaultPageSize = 100
 )
 
-type releases struct {
-	Body            string  `json:"body"`
-	Draft           bool    `json:"draft"`
-	MakeLatest      string  `json:"make_latest"`
-	Name            string  `json:"name"`
-	Prerelease      bool    `json:"prerelease"`
-	TagName         string  `json:"tag_name"`
-	TargetCommitish string  `json:"target_commitish"`
-	Assets          []Asset `json:"assets"`
+// Repository 表示代码仓库信息
+type Repository struct {
+	AccessLevel       int    `json:"accessLevel"`
+	Archived          bool   `json:"archived"`
+	CreatedAt         string `json:"createdAt"`
+	CreatorId         int    `json:"creatorId"`
+	DemoProject       bool   `json:"demoProject"`
+	Encrypted         bool   `json:"encrypted"`
+	Id                int    `json:"id"`
+	LastActivityAt    string `json:"lastActivityAt"`
+	Name              string `json:"name"`
+	NameWithNamespace string `json:"nameWithNamespace"`
+	NamespaceId       int    `json:"namespaceId"`
+	Path              string `json:"path"`
+	PathWithNamespace string `json:"pathWithNamespace"`
+	StarCount         int    `json:"starCount"`
+	Starred           bool   `json:"starred"`
+	UpdatedAt         string `json:"updatedAt"`
+	Visibility        string `json:"visibility"`
+	WebUrl            string `json:"webUrl"`
 }
 
-type Asset struct {
-	Name string `json:"name"`
-	Url  string `json:"url"`
+// RepositoryListResponse 表示获取仓库列表的响应
+type RepositoryListResponse struct {
+	Success bool `json:"success"`
+	Data    struct {
+		Total    int          `json:"total"`
+		Page     int          `json:"page"`
+		PageSize int          `json:"pageSize"`
+		List     []Repository `json:"list"`
+	} `json:"data"`
 }
 
-var client *devops20210625.Client
+// GetRepositories 获取仓库列表
+// page: 页码，从1开始
+func GetRepositories(page int) ([]Repository, int, error) {
+	organizationID := config.Cfg.GetString("source.organizationId")
+	token := config.Cfg.GetString("source.token")
 
-type repo devops20210625.ListRepositoriesResponseBodyResult
+	url := fmt.Sprintf("%s/oapi/v1/codeup/organizations/%s/repositories?page=%d&perPage=%d",
+		aliyunEndpoint, organizationID, page, defaultPageSize)
 
-func (c *repo) GetRepoPath() string {
-	return *c.PathWithNamespace
-}
-
-func (c *repo) GetSubGroupName() string {
-	parts := strings.Split(*c.PathWithNamespace, "/")
-	if len(parts) > 0 {
-		parts = parts[1 : len(parts)-1] // 去掉仓库名
-	}
-	result := strings.Join(parts, "/")
-	return result
-}
-
-func (c *repo) GetRepoName() string {
-	return *c.Name
-}
-
-func (c *repo) GetRepoType() string {
-	return "git"
-}
-
-func (c *repo) GetCloneUrl() string {
-	return util.ConvertUrlWithAuth(*c.WebUrl, c.GetUserName(), c.GetToken()) + ".git"
-}
-
-func (c *repo) GetUserName() string {
-	return C.Cfg.GetString("source.username")
-}
-
-func (c *repo) GetToken() string {
-	return C.Cfg.GetString("source.password")
-}
-
-func (c *repo) Clone() error {
-	err := git.Clone(c.GetCloneUrl(), c.GetRepoPath(), allowIncompletePush)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return nil, 0, fmt.Errorf("创建请求失败: %w", err)
 	}
-	return nil
-}
 
-func (c *repo) GetRepoPrivate() bool {
-	return true
-}
+	req.Header.Add("x-yunxiao-token", token)
 
-func (c *repo) GetReleases() (cnbReleases []releases) {
-	return nil
-}
-
-func (c *repo) GetProjectID() string {
-	return ""
-}
-
-func init() {
-	var err error
-	// 工程代码泄露可能会导致 AccessKey 泄露，并威胁账号下所有资源的安全性。以下代码示例仅供参考。
-	// 建议使用更安全的 STS 方式，更多鉴权访问方式请参见：https://help.aliyun.com/document_detail/378661.html。
-	config := &openapi.Config{
-		// 必填，请确保代码运行环境设置了环境变量 ALIBABA_CLOUD_ACCESS_KEY_ID。
-		AccessKeyId: tea.String(C.Cfg.GetString("source.ak")),
-		// 必填，请确保代码运行环境设置了环境变量 ALIBABA_CLOUD_ACCESS_KEY_SECRET。
-		AccessKeySecret: tea.String(C.Cfg.GetString("source.as")),
-	}
-	// Endpoint 请参考 https://api.aliyun.com/product/devops
-	config.Endpoint = tea.String(C.Cfg.GetString("source.endpoint"))
-	client, err = devops20210625.NewClient(config)
+	resp, err := client.Do(req)
 	if err != nil {
-		logger.Logger.Fatalf("Failed to create client: %v", err)
+		return nil, 0, fmt.Errorf("发送请求失败: %w", err)
 	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, 0, fmt.Errorf("请求失败: %s", string(body))
+	}
+
+	var result []Repository
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, 0, fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	totalPages := 0
+	if totalPagesStr := resp.Header.Get("X-Total-Pages"); totalPagesStr != "" {
+		fmt.Sscanf(totalPagesStr, "%d", &totalPages)
+	}
+
+	return result, totalPages, nil
 }
 
-func ListRepository(organizationId string) ([]*devops20210625.ListRepositoriesResponseBodyResult, error) {
-	var repos []*devops20210625.ListRepositoriesResponseBodyResult
+// GetAllRepositories 获取所有仓库列表（自动处理分页）
+func GetAllRepositories() ([]Repository, error) {
+	var allRepos []Repository
 	page := 1
+
 	for {
-		res, err := client.ListRepositories(&devops20210625.ListRepositoriesRequest{
-			OrganizationId: tea.String(organizationId),
-			PerPage:        tea.Int64(100),
-			Page:           tea.Int64(int64(page)),
-		})
+		repos, totalPages, err := GetRepositories(page)
 		if err != nil {
 			return nil, err
 		}
-		repos = append(repos, res.Body.Result...)
-		if *res.Body.Total <= int64(page)*100 {
+		allRepos = append(allRepos, repos...)
+		if page >= totalPages {
 			break
 		}
 		page++
 	}
-	return repos, nil
+	return allRepos, nil
 }
