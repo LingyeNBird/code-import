@@ -120,7 +120,7 @@ func CheckConfig() error {
 	}
 
 	//非通用第三方平台迁移，检查 source.token 参数
-	if platform != "common" { {
+	if platform != "common" {
 		if config.Source.Token == "" {
 			return fmt.Errorf("source.token is required")
 		}
@@ -179,7 +179,7 @@ func CheckConfig() error {
 			return fmt.Errorf("organization_mapping_level error only support 1 or 2 ")
 		}
 	}
-	
+
 	if strings.HasPrefix(config.CNB.RootOrganization, "/") {
 		return fmt.Errorf("cnb.RootOrganization 不能以 / 开头")
 	}
@@ -238,7 +238,6 @@ func init() {
 	if err != nil {
 		log.Fatalf("Failed to read config file: %v", err)
 	}
-
 }
 
 func ConvertToApiURL(baseUrl string) (apiUrl string) {
