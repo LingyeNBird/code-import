@@ -242,7 +242,11 @@ func init() {
 
 func ConvertToApiURL(baseUrl string) (apiUrl string) {
 	parts := strings.Split(baseUrl, "://")
-	apiUrl = parts[0] + "://" + "api." + parts[1]
+	if len(parts) == 2 {
+		apiUrl = parts[0] + "://" + "api." + parts[1]
+	} else {
+		apiUrl = baseUrl
+	}
 	return apiUrl
 }
 
