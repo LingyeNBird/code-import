@@ -1,0 +1,25 @@
+name: bug report
+description: 该模版用于反馈 bug
+labels: 
+  - bug
+body:
+  - type: textarea
+    attributes:
+      label: 提供docker运行命令？敏感信息可用 xxx 代替
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 提供一下工具版本？日志前几行会有显示。
+    validations:
+      required: true      
+  - type: textarea
+    attributes:
+      label: 描述下遇到的问题，越详细越好，帮助我们快速解决。
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 如果能提供日志文件就更好了，迁移工具工作目录下的 migrate.log
+    validations:
+      required: false      
