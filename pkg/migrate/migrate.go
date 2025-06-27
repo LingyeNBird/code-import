@@ -347,7 +347,7 @@ func migrateDo(depot vcs.VCS) error {
 		if migrated {
 			atomic.AddInt64(&skipRepoNumber, 1)
 			atomic.AddInt64(&failedRepoNumber, -1)
-			log.Infof("%s 已迁移，跳过同步", repoPath)
+			log.Infof("%s 已迁移，忽略迁移", repoPath)
 			return nil
 		}
 	}
@@ -358,17 +358,15 @@ func migrateDo(depot vcs.VCS) error {
 	if isSvn {
 		atomic.AddInt64(&skipRepoNumber, 1)
 		atomic.AddInt64(&failedRepoNumber, -1)
-		log.Infof("%s svn仓库，跳过同步", repoPath)
+		log.Infof("%s svn仓库，忽略迁移", repoPath)
 		return nil
 	}
-
 	// 执行 clone 操作
 	err = depot.Clone()
 	if err != nil {
 		log.Errorf(err.Error())
 		return fmt.Errorf(err.Error())
 	}
-
 	// 如果是只下载模式，则直接返回
 	if DownloadOnly {
 		atomic.AddInt64(&successfulRepoNumber, 1)
@@ -377,7 +375,6 @@ func migrateDo(depot vcs.VCS) error {
 		log.Infof("%s 下载完成，耗时%s", repoPath, duration)
 		return nil
 	}
-
 	// 以下是原有的迁移逻辑
 	cnbRepoPath, cnbRepoGroup := target.GetCnbRepoPathAndGroup(subGroupName, repoName, organizationMappingLevel)
 	if MigrateCode {
@@ -395,7 +392,14 @@ func migrateDo(depot vcs.VCS) error {
 		} else if has && SkipExistsRepo {
 			atomic.AddInt64(&skipRepoNumber, 1)
 			atomic.AddInt64(&failedRepoNumber, -1)
-			log.Warnf("%s CNB仓库%s已存在，跳过同步", repoPath, cnbRepoPath)
+			log.Warnf("%s CNB仓库%s已存在，忽略迁移", repoPath, cnbRepoPath)
+			return nil
+		}
+		// 检查源仓库是否初始化
+		if !git.IsBareRepoInitialized(repoPath) {
+			atomic.AddInt64(&skipRepoNumber, 1)
+			atomic.AddInt64(&failedRepoNumber, -1)
+			log.Infof("%s 源仓库未初始化，忽略迁移", repoPath)
 			return nil
 		}
 		// 设置要进入的目录路径
@@ -532,7 +536,7 @@ func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) err
 
 	// 如果release已存在则跳过
 	if exist {
-		log.Warnf("%s 迁移release: %s 已存在，跳过迁移", repoPath, release.Name)
+		log.Warnf("%s 迁移release: %s 已存在，忽略迁移", repoPath, release.Name)
 		return nil
 	}
 
