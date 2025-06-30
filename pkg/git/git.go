@@ -326,3 +326,15 @@ func isInvalidUpstreamError(output string) bool {
 	return strings.Contains(output, ErrInvalidUpstreamEN) ||
 		strings.Contains(output, ErrInvalidUpstreamZH)
 }
+
+// IsBareRepoInitialized 判断本地裸仓库是否初始化（有分支或tag）
+// repoDir: 本地裸仓库目录
+func IsBareRepoInitialized(repoDir string) bool {
+	// 执行 git for-each-ref，若有输出则说明已初始化
+	output, err := system.ExecCommand("git for-each-ref", repoDir)
+	if err != nil {
+		logger.Logger.Warnf("检测裸仓库初始化状态失败: %s", err)
+		return false
+	}
+	return len(output) > 0
+}
