@@ -15,7 +15,7 @@
 1. ⚠️开始迁移前，请确保CNB根组织已存在。  
 2. `xxx`为需要用户自行替换的字段，具体含义详见参数介绍-核心参数。  
 3. 云原生开发自带 docker 命令，内网运行更快速
-4. Windows Powershell环境换行符(\)请替换为反引号`,$(pwd)替换为${PWD}
+4. Windows Powershell环境换行符(\\)请替换为反引号`,$(pwd)替换为${PWD}
 
 ### 从 Coding 迁移
 
@@ -244,7 +244,40 @@ docker run --rm  \
 ## 参数介绍
 
 ### 核心参数
+- PLUGIN_SOURCE_TOKEN
+    - 类型：字符串
+    - 必填：是
+    - 默认值：-
+    - 说明：调用源代码托管平台 API 的 token (当 source_platform 不为 common 时必填)
+        - CODING权限：**仅限团队负责人或团队管理员token**,用户信息-只读、项目信息-只读、代码仓库-只读 https://e.coding.net/user/account/setting/tokens
+        - Github权限：repo:all、read:org https://github.com/settings/tokens （classic token）
+        - Gitlab权限：read_api https://gitlab.com/-/user_settings/personal_access_tokens
+        - Gitee权限：user_info、projects https://gitee.com/profile/personal_access_tokens
+        - 阿里云云效权限：代码仓库:只读 https://account-devops.aliyun.com/settings/personalAccessToken
+        - CNB权限：account-engage:r、group-resource:r https://cnb.cool/profile/token
+        - 工蜂权限: api、read_repository https://git.woa.com/profile/account
 
+- PLUGIN_CNB_ROOT_ORGANIZATION
+    - 类型：字符串
+    - 必填：是
+    - 默认值：-
+    - 说明：迁移后，CNB对应的根组织名称，请确保根组织已提前创建,不需要带/
+    - Ex: cnb
+
+- PLUGIN_CNB_TOKEN
+    - 类型：字符串
+    - 必填：是
+    - 默认值：-
+    - 说明：CNB 授权令牌，个人令牌-访问令牌创建 https://cnb.cool/profile/token。
+    - 权限要求：
+        - repo-code 读写
+        - repo-contents 读写
+        - repo-basic-info 只读
+        - account-profile 只读
+        - account-engage 只读
+        - group-resource 读写
+        - group-manage 读写
+    - 授权范围：全部仓库/制品库
 - PLUGIN_SOURCE_URL
     - 类型：字符串
     - 必填：是
@@ -255,19 +288,6 @@ docker run --rm  \
        - gitlab: https://gitlab.com
        - gitee: https://gitee.com
        - common: https://common.com
-
-- PLUGIN_SOURCE_TOKEN
-    - 类型：字符串
-    - 必填：是
-    - 默认值：-
-    - 说明：调用源代码托管平台 API 的 token (当 source_platform 不为 common 时必填)
-        - CODING权限：**仅限团队所有者或团队管理员token**,用户信息-只读、项目信息-只读、代码仓库-只读 https://e.coding.net/user/account/setting/tokens
-        - Github权限：repo:all、read:org https://github.com/settings/tokens
-        - Gitlab权限：read_api https://gitlab.com/-/user_settings/personal_access_tokens
-        - Gitee权限：user_info、projects https://gitee.com/profile/personal_access_tokens
-        - 阿里云云效权限：代码仓库:只读 https://account-devops.aliyun.com/settings/personalAccessToken
-        - CNB权限：account-engage:r、group-resource:r https://cnb.cool/profile/token
-        - 工蜂权限: api、read_repository https://git.woa.com/profile/account
 
 - PLUGIN_SOURCE_PLATFORM
     - 类型：字符串
@@ -308,27 +328,6 @@ docker run --rm  \
     - 必填：是
     - 默认值：https://cnb.cool
     - 说明：CNB访问URL
-
-- PLUGIN_CNB_TOKEN
-    - 类型：字符串
-    - 必填：是
-    - 默认值：-
-    - 说明：CNB 授权令牌，个人令牌-访问令牌创建 https://cnb.cool/profile/token。
-    - 权限要求：
-        - repo-code 读写
-        - repo-basic-info 只读
-        - account-profile 只读
-        - account-engage 只读
-        - group-resource 读写
-        - group-manage 读写
-        - repo-content 读写
-
-- PLUGIN_CNB_ROOT_ORGANIZATION
-    - 类型：字符串
-    - 必填：是
-    - 默认值：-
-    - 说明：迁移后，CNB对应的根组织名称，请确保根组织已提前创建,不需要带/
-    - Ex: root-group
 
 
 ## 其他参数
