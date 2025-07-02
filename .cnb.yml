@@ -56,5 +56,11 @@ $:
 "**":
   web_trigger_code_import:
     - stages:
-        - name: 执行任务
-          script: echo ${source_token}
+        - name: 执行迁移任务
+          script: |
+            docker run --rm  \
+            -e PLUGIN_SOURCE_TOKEN=${source_token}  \
+            -e PLUGIN_CNB_ROOT_ORGANIZATION=${cnb_root_group_name} \
+            -e PLUGIN_CNB_TOKEN=${cnb_token}  \
+            -v $(pwd):$(pwd) -w $(pwd) \
+            cnbcool/code-import
