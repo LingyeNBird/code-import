@@ -55,7 +55,9 @@ $:
             description: ${LATEST_CHANGE_LOG}
 "**":
   web_trigger_code_import:
-    - stages:
+    - services:
+        - docker
+      stages:
         - name: 执行迁移任务
           script: |
             docker run --rm  \
