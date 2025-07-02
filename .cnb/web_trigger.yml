@@ -17,20 +17,20 @@ branch:
       inputs:
         # 目前支持以下三种格式：输入框（input）、多行文本输入框（textarea）、下拉选择框（select 支持单选和多选），switch 开关
         # 其中 key 值（var1、var2、var3、var4、var5）为环境变量名
-        source_token:
+        PLUGIN_SOURCE_TOKEN:
           # 输入框
           name: 源平台token
-          description: 源平台token，如源平台为 CODING，则：**仅限团队负责人或团队管理员token**,权限要求:用户信息-只读、项目信息-只读、代码仓库-只读 https://e.coding.net/user/account/setting/tokens
+          description: "源平台token,以CODING为例:仅限团队负责人或团队管理员token,权限要求:用户信息-只读、项目信息-只读、代码仓库-只读"
           required: true # 是否必填
           type: input
-        source_url:
+        PLUGIN_SOURCE_URL:
           # 输入框
           name: 源平台URL
-          description: 源平台URL
+          description: 源平台URL,CODING保持默认即可
           required: true
           type: input
           default: https://e.coding.net
-        source_platform:
+        PLUGIN_SOURCE_PLATFORM:
           # 输入框
           name: 源平台名称
           description: 源平台名称
@@ -46,15 +46,15 @@ branch:
               value: gitee
             - name: Aliyun
               value: aliyun
-        cnb_root_group_name:
+        PLUGIN_CNB_ROOT_ORGANIZATION:
           # 单选下拉选择框
           name: CNB根组织名称
           description: CNB根组织名称,E.g. cnb
           required: true
           type: input
-        cnb_token:
+        PLUGIN_CNB_TOKEN:
           # 多选下拉选择框
           name: CNB平台token
-          description: "CNB平台token,权限要求: account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw https://cnb.cool/profile/token"
+          description: "CNB平台token,权限要求: account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw"
           required: true
           type: input
