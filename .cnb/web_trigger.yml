@@ -11,6 +11,8 @@ branch:
         # roles 和 users 配置其中之一或都配置均可，二者满足其一即可
         roles:
           - developer
+          - owner
+          - master
       # 可输入环境变量，可覆盖上述 env 的变量配置
       inputs:
         # 目前支持以下三种格式：输入框（input）、多行文本输入框（textarea）、下拉选择框（select 支持单选和多选），switch 开关
