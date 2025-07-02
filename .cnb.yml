@@ -52,4 +52,9 @@ $:
         - name: upload release
           type: git:release
           options:
-            description: ${LATEST_CHANGE_LOG}      
+            description: ${LATEST_CHANGE_LOG}
+"**":
+  web_trigger_code_import:
+    - stages:
+        - name: 执行任务
+          script: echo ${source_token}
