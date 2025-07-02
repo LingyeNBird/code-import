@@ -268,7 +268,7 @@ docker run --rm  \
     - 类型：字符串
     - 必填：是
     - 默认值：-
-    - 说明：CNB 授权令牌，个人令牌-访问令牌创建 https://cnb.cool/profile/token。
+    - 说明：CNB 授权令牌，个人令牌-访问令牌创建 https://cnb.cool/profile/token
     - 权限要求：
         - repo-code 读写
         - repo-contents 读写
