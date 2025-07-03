@@ -2,12 +2,6 @@ include:
   - https://cnb.cool/cnb/plugins/market/-/blob/main/hub.docker.com.yml
 
 main:
-  pull_request:
-    - stages:
-        - name: 代码评审
-          image: cnbcool/ai-review:latest
-          settings:
-            type: code-review
   push:
     - services:
         - docker
@@ -59,7 +53,7 @@ $:
         - docker
       runner:
         tags: cnb:arch:amd64
-        cpu: 16
+        cpus: 16
       stages:
         - name: code-import
           script: |
@@ -67,6 +61,7 @@ $:
             -e PLUGIN_SOURCE_URL=${PLUGIN_SOURCE_URL}  \
             -e PLUGIN_SOURCE_TOKEN=${PLUGIN_SOURCE_TOKEN}  \
             -e PLUGIN_SOURCE_PLATFORM=${PLUGIN_SOURCE_PLATFORM}  \
+            -e PLUGIN_CNB_URL=${PLUGIN_CNB_URL}  \
             -e PLUGIN_CNB_ROOT_ORGANIZATION=${PLUGIN_CNB_ROOT_ORGANIZATION} \
             -e PLUGIN_CNB_TOKEN=${PLUGIN_CNB_TOKEN}  \
             -v $(pwd):$(pwd) -w $(pwd) \

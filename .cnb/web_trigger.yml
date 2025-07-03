@@ -1,3 +1,20 @@
+.PLUGIN_CNB_ROOT_ORGANIZATION: &PLUGIN_CNB_ROOT_ORGANIZATION:
+  # 单选下拉选择框
+  name: CNB根组织名称
+  description: CNB根组织名称,E.g. cnb
+  required: true
+  type: input
+.PLUGIN_CNB_TOKEN: &PLUGIN_CNB_TOKEN:
+  name: CNB平台token
+  description: "CNB平台token,权限要求: account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw 创建地址:https://cnb.cool/profile/token"
+  required: true
+  type: input
+.PLUGIN_CNB_URL: &PLUGIN_CNB_URL:
+  name: CNB平台URL
+  description: CNB平台URL,一般保持默认即可
+  required: true
+  type: input
+  default: https://cnb.cool
 # .cnb/web_trigger.yml
 branch:
   - buttons:
@@ -74,14 +91,7 @@ branch:
           description: "源平台token,"
           required: true # 是否必填
           type: input
-        PLUGIN_CNB_ROOT_ORGANIZATION:
-          # 单选下拉选择框
-          name: CNB根组织名称
-          description: CNB根组织名称,E.g. cnb
-          required: true
-          type: input
-        PLUGIN_CNB_TOKEN:
-          name: CNB平台token
-          description: "CNB平台token,权限要求: account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw 创建地址:https://cnb.cool/profile/token"
-          required: true
-          type: input
+        <<: *PLUGIN_CNB_ROOT_ORGANIZATION
+        <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_CNB_URL
+
