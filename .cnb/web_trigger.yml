@@ -43,29 +43,21 @@ branch:
           description: "源平台token,仅限团队负责人或团队管理员token,权限要求:用户信息-只读、项目信息-只读、代码仓库-只读 创建地址:https://e.coding.net/user/account/setting/tokens"
           required: true # 是否必填
           type: input
-        PLUGIN_CNB_ROOT_ORGANIZATION:
-          # 单选下拉选择框
-          name: CNB根组织名称
-          description: CNB根组织名称,E.g. cnb
-          required: true
-          type: input
-        PLUGIN_CNB_TOKEN:
-          name: CNB平台token
-          description: "CNB平台token,权限要求: account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw  创建地址:https://cnb.cool/profile/token"
-          required: true
-          type: input
+      <<: *PLUGIN_CNB_ROOT_ORGANIZATION
+      <<: *PLUGIN_CNB_TOKEN
+      <<: *PLUGIN_CNB_URL
     - name: Gitlab
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Gitlab批量迁移仓库到CNB
       event: web_trigger_code_import # 触发的 CI 事件名
       # 权限控制，不配置则有仓库写权限的用户可触发构建
       # 如果配置，则需要有仓库写权限，并且满足 roles 或 users 其中之一才有权限触发构建
-      permissions:
-        # roles 和 users 配置其中之一或都配置均可，二者满足其一即可
-        roles:
-          - developer
-          - owner
-          - master
+#      permissions:
+#        # roles 和 users 配置其中之一或都配置均可，二者满足其一即可
+#        roles:
+#          - developer
+#          - owner
+#          - master
       env:
         PLUGIN_SOURCE_PLATFORM: gitlab
       # 可输入环境变量，可覆盖上述 env 的变量配置
@@ -82,6 +74,40 @@ branch:
         PLUGIN_SOURCE_TOKEN:
           # 输入框
           name: "源平台token,权限要求: read_api, 创建地址:https://gitlab.com/profile/personal_access_tokens"
+          description: "源平台token,"
+          required: true # 是否必填
+          type: input
+        <<: *PLUGIN_CNB_ROOT_ORGANIZATION
+        <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_CNB_URL
+    - name: 阿里云(云效)
+      # 如存在，则将作为流水线 title，否则流水线使用默认 title
+      description: 从Gitlab批量迁移仓库到CNB
+      event: web_trigger_code_import # 触发的 CI 事件名
+      # 权限控制，不配置则有仓库写权限的用户可触发构建
+      # 如果配置，则需要有仓库写权限，并且满足 roles 或 users 其中之一才有权限触发构建
+#      permissions:
+#        # roles 和 users 配置其中之一或都配置均可，二者满足其一即可
+#        roles:
+#          - developer
+#          - owner
+#          - master
+      env:
+        PLUGIN_SOURCE_PLATFORM: aliyun
+      # 可输入环境变量，可覆盖上述 env 的变量配置
+      inputs:
+        # 目前支持以下三种格式：输入框（input）、多行文本输入框（textarea）、下拉选择框（select 支持单选和多选），switch 开关
+        # 其中 key 值（var1、var2、var3、var4、var5）为环境变量名
+        PLUGIN_SOURCE_ORGANIZATIONID:
+          # 输入框
+          name: 阿里云云效代码仓库企业ID
+          description: 可在云效访问链接中获取，如https://devops.aliyun.com/organization/
+          required: true
+          type: input
+          default: https://gitlab.com
+        PLUGIN_SOURCE_TOKEN:
+          # 输入框
+          name: "代码仓库:只读 创建地址:https://account-devops.aliyun.com/settings/personalAccessToken"
           description: "源平台token,"
           required: true # 是否必填
           type: input
