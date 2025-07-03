@@ -110,8 +110,8 @@ branch:
           default: https://github.com
         PLUGIN_SOURCE_TOKEN:
           # 输入框
-          name: "源平台token,权限要求: repo:all、read:org  创建地址:https://github.com/settings/tokens （classic token）"
-          description: "源平台token,"
+          name: "源平台token"
+          description: "权限要求: repo:all、read:org  创建地址:https://github.com/settings/tokens （classic token"
           required: true # 是否必填
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
@@ -144,8 +144,8 @@ branch:
           default: https://gitee.com
         PLUGIN_SOURCE_TOKEN:
           # 输入框
-          name: "源平台token,权限要求: user_info、projects 创建地址:https://gitee.com/profile/personal_access_tokens"
-          description: "源平台token,"
+          name: "源平台token"
+          description: "权限要求: user_info、projects 创建地址:https://gitee.com/profile/personal_access_tokens"
           required: true # 是否必填
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
@@ -178,8 +178,8 @@ branch:
           default: https://gitlab.com
         PLUGIN_SOURCE_TOKEN:
           # 输入框
-          name: "代码仓库:只读 创建地址:https://account-devops.aliyun.com/settings/personalAccessToken"
-          description: "源平台token,"
+          name: "源平台token"
+          description: "权限要求: 代码仓库:只读 创建地址:https://account-devops.aliyun.com/settings/personalAccessToken"
           required: true # 是否必填
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
