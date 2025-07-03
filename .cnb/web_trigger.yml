@@ -1,9 +1,10 @@
 .PLUGIN_CNB_ROOT_ORGANIZATION: &PLUGIN_CNB_ROOT_ORGANIZATION
-  # 单选下拉选择框
-  name: CNB根组织名称
-  description: CNB根组织名称,E.g. cnb
-  required: true
-  type: input
+  PLUGIN_CNB_ROOT_ORGANIZATION:
+    # 单选下拉选择框
+    name: CNB根组织名称
+    description: CNB根组织名称,E.g. cnb
+    required: true
+    type: input
 .PLUGIN_CNB_TOKEN: &PLUGIN_CNB_TOKEN
   name: CNB平台token
   description: "CNB平台token,权限要求: account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw 创建地址:https://cnb.cool/profile/token"
@@ -43,9 +44,9 @@ branch:
           description: "源平台token,仅限团队负责人或团队管理员token,权限要求:用户信息-只读、项目信息-只读、代码仓库-只读 创建地址:https://e.coding.net/user/account/setting/tokens"
           required: true # 是否必填
           type: input
-      <<: *PLUGIN_CNB_ROOT_ORGANIZATION
-      <<: *PLUGIN_CNB_TOKEN
-      <<: *PLUGIN_CNB_URL
+        <<: *PLUGIN_CNB_ROOT_ORGANIZATION
+        <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_CNB_URL
     - name: Gitlab
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Gitlab批量迁移仓库到CNB
