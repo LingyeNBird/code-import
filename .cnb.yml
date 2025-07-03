@@ -58,7 +58,8 @@ $:
     - services:
         - docker
       runner:
-        tags: cnb:arch:amd64:16
+        tags: cnb:arch:amd64
+        cpu: 16
       stages:
         - name: code-import
           script: |
