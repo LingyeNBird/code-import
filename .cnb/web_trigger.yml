@@ -153,7 +153,7 @@ branch:
         <<: *PLUGIN_CNB_URL
     - name: 阿里云(云效)
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
-      description: 从Gitlab批量迁移仓库到CNB
+      description: 从阿里云云效批量迁移仓库到CNB
       event: web_trigger_code_import # 触发的 CI 事件名
       # 权限控制，不配置则有仓库写权限的用户可触发构建
       # 如果配置，则需要有仓库写权限，并且满足 roles 或 users 其中之一才有权限触发构建
