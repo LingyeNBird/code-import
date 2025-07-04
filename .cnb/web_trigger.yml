@@ -172,10 +172,9 @@ branch:
         PLUGIN_SOURCE_ORGANIZATIONID:
           # 输入框
           name: 阿里云云效代码仓库企业ID
-          description: 可在云效访问链接中获取，如https://devops.aliyun.com/organization/
+          description: 可在云效访问链接中获取，https://devops.aliyun.com/organization/
           required: true
           type: input
-          default: https://gitlab.com
         PLUGIN_SOURCE_TOKEN:
           # 输入框
           name: "源平台token"
