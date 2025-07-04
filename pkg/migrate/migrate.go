@@ -397,9 +397,9 @@ func migrateDo(depot vcs.VCS) error {
 		}
 		// 检查源仓库是否初始化
 		if !git.IsBareRepoInitialized(repoPath) {
-			atomic.AddInt64(&skipRepoNumber, 1)
+			atomic.AddInt64(&successfulRepoNumber, 1)
 			atomic.AddInt64(&failedRepoNumber, -1)
-			log.Infof("%s 源仓库未初始化，忽略迁移", repoPath)
+			log.Infof("%s 源仓库未初始化", repoPath)
 			return nil
 		}
 		// 设置要进入的目录路径

@@ -4,18 +4,62 @@
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/git-clone-yyds)
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
-## 功能介绍
+## ⚡️功能介绍
 1. 支持CODING、Github、Gitlab、Gitee、阿里云云效、腾讯工蜂以及通用第三方代码托管平台的代码仓库批量迁移至CNB
 2. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
 
 
-## 在Docker上使用
+## 🌟迁移前准备
+1. 创建源平台token  
+> 以CODING为例，其他源平台详见参数介绍 PLUGIN_SOURCE_TOKEN  
+仅限团队负责人或团队管理员token  
+权限要求:用户信息-只读、项目信息-只读、代码仓库-只读   
+创建地址:https://e.coding.net/user/account/setting/tokens
+2. CNB创建根组织  
+> 扫码登录CNB，点击右上角+号创建组织（tips:一年只能创建一个）
+3. 创建CNB访问令牌  
+>权限要求: `account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw`   
+创建地址:https://cnb.cool/profile/token
+
+
+
+## 🔥在云原生构建中使用（推荐）
+
+### 注意⚠️
+该方式会在本仓库启动一个流水线执行迁移任务，迁移日志会公开，日志中包含仓库名，如比较在意可使用下发在Docker上使用方式。
+
+
+### 使用方法
+1. 点击仓库上方构建按钮，选择对应源平台，根据提示填写相应配置参数。
+>![img.png](img/img.png)
+2. 点击左下方橙色按钮，启动自定义事件，开始运行迁移任务
+3. 点击弹窗中的超链接，查看任务运行日志
+![img.png](img.png)
+4. 点击 code-import 这一步，查看日志输出
+![img_2.png](img_2.png)
+5. 等待迁移任务执行完成，查看日志最终输出结果，确认是否迁移完成
+![img_3.png](img_3.png)
+
+
+
+
+
+## 🚀在Docker上使用
 
 ### 注意事项
-1. ⚠️开始迁移前，请确保CNB根组织已存在。  
-2. `xxx`为需要用户自行替换的字段，具体含义详见参数介绍-核心参数。  
-3. 云原生开发自带 docker 命令，内网运行更快速
-4. Windows Powershell环境换行符(\\)请替换为反引号`,$(pwd)替换为${PWD}
+1. `xxx`为需要用户自行替换的字段，具体含义详见参数介绍-核心参数。  
+2. **云原生开发自带 docker 命令，内网运行更快速** https://docs.cnb.cool/zh/workspaces/intro.html
+3. Windows Powershell环境换行符(\\)请替换为反引号`,$(pwd)替换为${PWD}
+
+### 使用方法
+1. 在CNB创建1个空仓库
+2. 点击云原生开发
+![img_4.png](img_4.png)
+3. 使用WebIDE打开
+4. 在终端粘贴迁移命令，`xxx`请根据实际情况进行替换
+![img_5.png](img_5.png)
+5. 等待迁移完成，确认最终迁移结果
+
 
 ### 从 Coding 迁移
 

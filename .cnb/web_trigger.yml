@@ -43,7 +43,7 @@ branch:
         PLUGIN_SOURCE_TOKEN:
           # 输入框
           name: 源平台token
-          description: "源平台token,仅限团队负责人或团队管理员token,权限要求:用户信息-只读、项目信息-只读、代码仓库-只读 创建地址:https://e.coding.net/user/account/setting/tokens"
+          description: "仅限团队负责人或团队管理员token,权限要求:用户信息-只读、项目信息-只读、代码仓库-只读 创建地址:https://e.coding.net/user/account/setting/tokens"
           required: true # 是否必填
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION

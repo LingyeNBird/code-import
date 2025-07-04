@@ -352,8 +352,8 @@ func setDefaultValues(config *viper.Viper) {
 	// 定义默认值
 	defaults := map[string]string{
 		"migrate.force_push":                 "false",
-		"migrate.ignore_lfs_notfound_error":  "false",
-		"migrate.use_lfs_migrate":            "false",
+		"migrate.ignore_lfs_notfound_error":  "true",
+		"migrate.use_lfs_migrate":            "true",
 		"migrate.organization_mapping_level": "1",
 		"migrate.concurrency":                "10",
 		"migrate.type":                       "team",
