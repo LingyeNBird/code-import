@@ -58,6 +58,7 @@ $:
         - name: code-import
           script: |
             docker run --rm  \
+            -e PLUGIN_SOURCE_ORGANIZATIONID=${PLUGIN_SOURCE_ORGANIZATIONID}  \
             -e PLUGIN_SOURCE_URL=${PLUGIN_SOURCE_URL}  \
             -e PLUGIN_SOURCE_TOKEN=${PLUGIN_SOURCE_TOKEN}  \
             -e PLUGIN_SOURCE_PLATFORM=${PLUGIN_SOURCE_PLATFORM}  \
