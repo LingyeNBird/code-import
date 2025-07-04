@@ -407,7 +407,7 @@ docker run --rm  \
 - PLUGIN_MIGRATE_USE_LFS_MIGRATE
     - 类型：字符串
     - 必填：否
-    - 默认值：false
+    - 默认值：true
     - 说明：是否使用lfs migrate处理历史提交中超过CNB单文件最大限制错误
       ⚠️如开启该配置，迁移后commit ID会与源仓库不一致
 
@@ -422,7 +422,7 @@ docker run --rm  \
 - PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
     - 类型：字符串
     - 必填：否
-    - 默认值：false
+    - 默认值：true
     - 说明：⚠️针对LFS源文件丢失的仓库，忽略LFS文件下载报错，LFS推送时忽略丢失的对象报错，继续推送
 
 - PLUGIN_MIGRATE_LOG_LEVEL
