@@ -118,11 +118,11 @@ func Run() {
 	// 获取源平台的 VCS 实例列表
 	sourceVcsList, err := vcs.NewVcs(SourcePlatformName)
 	if err != nil {
-		logger.Logger.Errorf("获取源平台 VCS 实例失败: %s", err)
+		logger.Logger.Errorf("获取源平台仓库列表失败，请检查配置参数: %s", err)
 		return
 	}
 	if len(sourceVcsList) == 0 {
-		logger.Logger.Errorf("源平台 VCS 实例列表为空")
+		logger.Logger.Warnf("源平台仓库列表为空，无需迁移")
 		return
 	}
 	sourceVcs := sourceVcsList[0] // 使用第一个实例
