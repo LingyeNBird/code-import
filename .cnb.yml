@@ -67,4 +67,4 @@ $:
             -e PLUGIN_CNB_TOKEN=${PLUGIN_CNB_TOKEN}  \
             -v $(pwd):$(pwd) -w $(pwd) \
             cnbcool/code-import
-          timeout: 36000
+          timeout: 10h
