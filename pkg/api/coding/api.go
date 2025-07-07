@@ -449,7 +449,6 @@ func GetDepotList(migrateType string) ([]Depots, error) {
 		return nil, err
 	}
 	logger.Logger.Debugw("仓库列表清单", "depotList", depotList)
-	logger.Logger.Infof("获取仓库列表完成，共%d个仓库", len(depotList))
 	return depotList, err
 }
 

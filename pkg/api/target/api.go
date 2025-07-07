@@ -382,7 +382,7 @@ func CreateRootOrganizationIfNotExists(url, token string) (err error) {
 func RootOrganizationExists(url, token string) (exists bool, err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token)
 	endpoint := "/" + RootOrganizationName
-	_, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
+	body, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
 		return false, fmt.Errorf("判断根组织是否存在失败%s", err)
 	}
@@ -392,7 +392,7 @@ func RootOrganizationExists(url, token string) (exists bool, err error) {
 	if respStatusCode == 200 {
 		return true, nil
 	}
-	return false, fmt.Errorf("判断根组织是否存在错误的状态码:%d", respStatusCode)
+	return false, fmt.Errorf("判断根组织是否存在错误的状态码:%d, 错误详情:%s", respStatusCode, string(body))
 }
 
 func CreateRootOrganization(url, token string) (err error) {

@@ -145,7 +145,7 @@ func Run() {
 		return
 	}
 
-	logger.Logger.Infof("仓库总数%d", len(depotList))
+	logger.Logger.Infof("待迁移仓库总数%d", len(depotList))
 	initMigrationStats(depotList)
 
 	// 如果不是只下载模式，则执行 CNB 相关操作
