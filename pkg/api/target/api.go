@@ -22,6 +22,8 @@ const (
 	PageSize            = "100"
 	ReleaseAssetMaxSize = 1024 * 1024 * 1024 * 50
 	DescAssetMaxSize    = 1024 * 1024 * 5
+	GroupDescLimitSize  = 200
+	RepoDescLimitSize   = 350
 )
 
 var (
@@ -192,6 +194,9 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 func CreateSubOrganization(url, token, subGroupName string, subGroup vcs.SubGroup) (err error) {
 	groupPath := path.Join(RootOrganizationName, subGroupName)
 	logger.Logger.Infof("开始创建子组织%s", groupPath)
+	if len(subGroup.Desc) > GroupDescLimitSize {
+		subGroup.Desc = subGroup.Desc[:GroupDescLimitSize]
+	}
 	body := &CreateOrganization{
 		Path:        groupPath,
 		Remark:      subGroup.Remark,
@@ -221,6 +226,9 @@ func CreateRepo(url, token, group, repoName, repoDesc string, private bool) (err
 		visibility = "private"
 	} else {
 		visibility = "public"
+	}
+	if len(repoDesc) > RepoDescLimitSize {
+		repoDesc = repoDesc[:RepoDescLimitSize]
 	}
 	body := &CreateRepoBody{
 		Name:        repoName,
