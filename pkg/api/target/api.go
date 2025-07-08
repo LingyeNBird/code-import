@@ -392,7 +392,7 @@ func RootOrganizationExists(url, token string) (exists bool, err error) {
 	endpoint := "/" + RootOrganizationName
 	body, _, respStatusCode, err := c.RequestV3("GET", endpoint, token, nil)
 	if err != nil {
-		return false, fmt.Errorf("判断根组织是否存在失败%s", err)
+		return false, err
 	}
 	if respStatusCode == 404 {
 		return false, nil

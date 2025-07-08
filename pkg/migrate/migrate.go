@@ -48,6 +48,7 @@ var (
 	MigrateCode              = config.Cfg.GetBool("migrate.code")
 	MigrateRebase            = config.Cfg.GetBool("migrate.rebase")
 	DownloadOnly             = config.Cfg.GetBool("migrate.download_only")
+	RootGroupName            = config.Cfg.GetString("cnb.root_organization")
 	rebaseBackDirPath        string
 	rebaseBranchesMap        sync.Map
 )
@@ -151,13 +152,14 @@ func Run() {
 	// 如果不是只下载模式，则执行 CNB 相关操作
 	if !DownloadOnly {
 		// 检查根组织
+		logger.Logger.Infof("检查根组织%s是否存在", RootGroupName)
 		exist, err := target.RootOrganizationExists(CnbApiURL, CnbToken)
 		if err != nil {
 			logger.Logger.Errorf("判断根组织是否存在失败: %s", err)
 			return
 		}
 		if !exist {
-			logger.Logger.Errorf("根组织%s不存在，请先创建根组织", config.Cfg.GetString("cnb.root_organization"))
+			logger.Logger.Errorf("根组织%s不存在，请先创建根组织", RootGroupName)
 			return
 		}
 
