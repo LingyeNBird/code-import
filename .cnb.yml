@@ -33,7 +33,7 @@ main:
           image: cnbcool/knowledge-base
           settings:
             embedding_model: hunyuan
-            include: "**/**.md"
+            include: "**.md"
             exclude: ""
 $:
   vscode:
