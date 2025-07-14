@@ -355,7 +355,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.ignore_lfs_notfound_error":  "true",
 		"migrate.use_lfs_migrate":            "true",
 		"migrate.organization_mapping_level": "1",
-		"migrate.concurrency":                "10",
+		"migrate.concurrency":                "5",
 		"migrate.type":                       "team",
 		"migrate.allow_incomplete_push":      "true",
 		"migrate.log_level":                  "info",

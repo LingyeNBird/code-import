@@ -18,9 +18,9 @@
 2. CNB创建根组织  
 扫码登录CNB，点击右上角+号创建组织（tips:一年只能创建一个）
 3. 创建CNB访问令牌  
-权限要求: `account-profile:r,account-engage:r,group-resource:rw,group-manage:rw,repo-code:rw,repo-basic-info:r,repo-contents:rw`   
+权限要求: 常见场景勾选`迁移工具凭据`，即可快速完成授权。
 创建地址:https://cnb.cool/profile/token
-
+![img.png](img/img_9.png)
 
 
 ## 🔥在云原生构建中使用（推荐）
@@ -389,7 +389,7 @@ docker run --rm  \
 - PLUGIN_MIGRATE_CONCURRENCY
     - 类型：数值
     - 必填：否
-    - 默认值：10
+    - 默认值：5
     - 说明：仓库迁移并发数，最大10
 
 - PLUGIN_MIGRATE_FORCE_PUSH
