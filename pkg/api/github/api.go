@@ -54,6 +54,15 @@ func GetRepos() ([]*github.Repository, error) {
 		}
 		opt.Page = resp.NextPage
 	}
+	if config.Cfg.GetBool("migrate.exclude_github_fork") {
+		var filteredRepos []*github.Repository
+		for _, repo := range allRepos {
+			if !*repo.Fork {
+				filteredRepos = append(filteredRepos, repo)
+			}
+		}
+		allRepos = filteredRepos
+	}
 	return allRepos, nil
 }
 

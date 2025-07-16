@@ -338,6 +338,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"migrate.rebase_branch",
 		"migrate.allow_select_repos",
 		"migrate.download_only",
+		"migrate.include_github_fork",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -370,6 +371,7 @@ func setDefaultValues(config *viper.Viper) {
 		"source.url":                         "https://e.coding.net",
 		"migrate.allow_select_repos":         "false",
 		"migrate.download_only":              "false",
+		"migrate.include_github_fork":        "true",
 	}
 
 	// 使用循环来设置默认值
