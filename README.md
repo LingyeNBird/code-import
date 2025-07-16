@@ -480,6 +480,12 @@ docker run --rm  \
     - 默认值：false
     - 说明：是否只执行仓库下载操作，不执行迁移。为 true 时仅克隆仓库到本地，不推送到 CNB 平台。该模式下无需提供 CNB 相关配置信息。
 
+- PLUGIN_MIGRATE_EXCLUDE_GITHUB_FORK
+  - 类型：布尔值
+  - 必填：否
+  - 默认值：false
+  - 说明：过滤掉github fork的仓库不执行迁移
+
 ## 常见问题
 1. 超过了单个文件大小限制 500 MiB
 可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数，详见参数介绍
