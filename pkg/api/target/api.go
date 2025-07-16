@@ -156,7 +156,7 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token, "depotList", depotList)
 	subGroups, err := GetSubGroupsByRootGroup(url, token)
 	if err != nil {
-		return err
+		return fmt.Errorf("获取子组织列表失败: %v", err)
 	}
 	for _, depot := range depotList {
 		subGroup := depot.GetSubGroup()
