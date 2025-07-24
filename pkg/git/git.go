@@ -230,7 +230,7 @@ func codePush(workDir, pushURL, repoPath string, force bool) (output string, err
 		if err == nil {
 			return output, nil
 		}
-		logger.Logger.Warnf("%s git push 失败 (尝试 %d/%d): %v", repoPath, i+1, len(retryIntervals), err)
+		logger.Logger.Warnf("%s git push 失败 (尝试 %d/%d): %v \n %s", repoPath, i+1, len(retryIntervals), err, output)
 		if i < len(retryIntervals)-1 {
 			time.Sleep(interval)
 		}

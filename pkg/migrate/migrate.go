@@ -314,12 +314,12 @@ func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 	}
 
 	wg.Wait()
-	duration := time.Since(startTime)
+	duration := int(time.Since(startTime).Seconds())
 	if DownloadOnly {
-		logger.Logger.Infof("代码仓库下载完成，耗时%s。\n【仓库总数】%d【成功下载】%d【忽略下载】%d【下载失败】%d",
+		logger.Logger.Infof("代码仓库下载完成，耗时%d秒。\n【仓库总数】%d【成功下载】%d【忽略下载】%d【下载失败】%d",
 			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
 	} else {
-		logger.Logger.Infof("代码仓库迁移完成，耗时%s。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
+		logger.Logger.Infof("代码仓库迁移完成，耗时%d秒。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
 			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
 	}
 }
@@ -466,8 +466,8 @@ func migrateDo(depot vcs.VCS) error {
 	}
 	atomic.AddInt64(&successfulRepoNumber, 1)
 	atomic.AddInt64(&failedRepoNumber, -1)
-	duration := time.Since(startTime)
-	log.Infof("%s 迁移至CNB %s 成功,耗时%s", repoPath, cnbRepoPath, duration)
+	duration := int(time.Since(startTime).Seconds())
+	log.Infof("%s 迁移至CNB %s 成功,耗时%d秒", repoPath, cnbRepoPath, duration)
 	logger.RecordSuccessfulRepo(repoPath)
 	return nil
 }
