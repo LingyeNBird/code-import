@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 const (
@@ -23,6 +24,9 @@ const (
 	GitPushToLocalBareRepo          = "git push -f source"
 	ErrInvalidUpstreamEN            = "fatal: invalid upstream"
 	ErrInvalidUpstreamZH            = "致命错误：无效的上游"
+	pushCMD                         = "git push %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*"
+	pushForceCMD                    = "git push -f %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*"
+	lfsPushCMD                      = "git lfs push --all %s"
 )
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
@@ -188,19 +192,13 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 
 func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
 	logger.Logger.Infof("%s 开始push", repoPath)
-	if forcePush {
-		out, err := ForcePush(repoPath, pushURL)
-		if err != nil {
-			return out, err
-		}
-	} else {
-		out, err := NormalPush(repoPath, pushURL)
-		if err != nil {
-			return out, err
-		}
+	out, err := codePush(repoPath, pushURL, repoPath, forcePush)
+	if err != nil {
+		logger.Logger.Errorf("%s 裸仓push失败: %s", repoPath, err)
+		return out, err
 	}
 	logger.Logger.Infof("%s 裸仓push成功", repoPath)
-	out, err := PushLFS(repoPath, pushURL)
+	out, err = PushLFS(repoPath, pushURL)
 	if err != nil {
 		return out, err
 	}
@@ -209,22 +207,35 @@ func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
 
 // 强制推送
 func ForcePush(workDir, pushURL string) (output string, err error) {
-	logger.Logger.Debugf("git push -f %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*", pushURL)
-	output, err = system.RunCommand("git", workDir, "push", "-f", pushURL, "refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*")
+	logger.Logger.Debugf(pushForceCMD, pushURL)
+	output, err = system.ExecCommand(fmt.Sprintf(pushForceCMD, pushURL), workDir)
 	if err != nil {
 		return output, err
 	}
 	return output, nil
 }
 
-// 普通推送不带-f参数
-func NormalPush(workDir, pushURL string) (output string, err error) {
-	logger.Logger.Debugf("git push %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*", pushURL)
-	output, err = system.RunCommand("git", workDir, "push", pushURL, "refs/heads/*:refs/heads/*", "refs/tags/*:refs/tags/*")
-	if err != nil {
-		return output, err
+func codePush(workDir, pushURL, repoPath string, force bool) (output string, err error) {
+	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
+	var cmd string
+	for i, interval := range retryIntervals {
+		if force {
+			cmd = fmt.Sprintf(pushForceCMD, pushURL)
+		} else {
+			cmd = fmt.Sprintf(pushCMD, pushURL)
+		}
+		logger.Logger.Debugf(cmd)
+		logger.Logger.Infof("%s git 推送中... (尝试 %d/%d)", repoPath, i+1, len(retryIntervals))
+		output, err = system.ExecCommand(cmd, workDir)
+		if err == nil {
+			return output, nil
+		}
+		logger.Logger.Warnf("%s git push 失败 (尝试 %d/%d): %v", repoPath, i+1, len(retryIntervals), err)
+		if i < len(retryIntervals)-1 {
+			time.Sleep(interval)
+		}
 	}
-	return output, nil
+	return output, err
 }
 
 func IsLFSRepo(repoPath string) (error, bool) {
@@ -262,7 +273,7 @@ func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
 func PushLFS(repoPath, pushUrl string) (string, error) {
 	logger.Logger.Infof("%s 开始推送LFS文件", repoPath)
 	workDir := repoPath
-	output, err := system.RunCommand("git", workDir, "lfs", "push", "--all", pushUrl)
+	output, err := system.ExecCommand(fmt.Sprintf(lfsPushCMD, pushUrl), workDir)
 	if err != nil {
 		logger.Logger.Errorf("%s LFS文件推送失败", repoPath)
 		return output, err
