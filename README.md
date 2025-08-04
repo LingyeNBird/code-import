@@ -7,18 +7,21 @@
 ## 📒功能介绍
 1. 支持CODING、Github、Gitlab、Gitee、阿里云云效、腾讯工蜂以及通用第三方代码托管平台的代码仓库批量迁移至CNB
 2. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
+3. SVN仓库不支持迁移，请先自行转换为 git 仓库
 
 
 ## 🌟迁移前准备
 1. 创建源平台token  
 以CODING为例，其他源平台详见参数介绍 PLUGIN_SOURCE_TOKEN  
-仅限团队负责人或团队管理员token  
-权限要求:用户信息-只读、项目信息-只读、代码仓库-只读   
+⚠️**仅限团队负责人或团队管理员token**  
+⚠️**权限要求:用户信息-只读、项目信息-只读、代码仓库-只读**   
 创建地址:https://e.coding.net/user/account/setting/tokens
+![img_1.png](img/img_11.png)
+![img.png](img/img10.png)
 2. CNB创建根组织  
 扫码登录CNB，点击右上角+号创建组织（tips:一年只能创建一个）
 3. 创建CNB访问令牌  
-权限要求: 常见场景勾选`迁移工具凭据`，即可快速完成授权。
+权限要求: 常见场景勾选`迁移工具凭据`，即可快速完成授权。  
 创建地址:https://cnb.cool/profile/token
 ![img.png](img/img_9.png)
 
