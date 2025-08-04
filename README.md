@@ -16,8 +16,8 @@
 ⚠️**仅限团队负责人或团队管理员token**  
 ⚠️**权限要求:用户信息-只读、项目信息-只读、代码仓库-只读**   
 创建地址:https://e.coding.net/user/account/setting/tokens
-![img_1.png](img/img_11.png)
-![img.png](img/img10.png)
+![img_1.png](img/img_12.png)
+![img.png](img/img_13.png)
 2. CNB创建根组织  
 扫码登录CNB，点击右上角+号创建组织（tips:一年只能创建一个）
 3. 创建CNB访问令牌  
