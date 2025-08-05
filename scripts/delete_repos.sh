@@ -1,6 +1,8 @@
 #!/bin/bash
+# 功能：删除指定组织下所有仓库，慎用！！！
+# 请先在组织设置-组织管控-危险操作-允许通过 Open API 删除组织下资源
 ORG_NAME="xxx" # 替换为你需要清理的组织名称
-API_TOKEN="xxx" # token所需权限 group-delete:rw,repo-delete:rw,group-resource:rw
+API_TOKEN="xxx" # token所需权限 repo-delete:rw,group-resource:r
 API_URL="https://api.cnb.cool"
 
 function delete_repos() {
