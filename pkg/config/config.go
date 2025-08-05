@@ -121,8 +121,8 @@ func CheckConfig() error {
 
 	//非通用第三方平台迁移，检查 source.token 参数
 	if platform != "common" {
-		if config.Source.Token == "" {
-			return fmt.Errorf("source.token is required")
+		if err := checkTokenValid(config.Source.Token, platform); err != nil {
+			return err
 		}
 	}
 
@@ -378,4 +378,29 @@ func setDefaultValues(config *viper.Viper) {
 	for key, value := range defaults {
 		config.SetDefault(key, value)
 	}
+}
+
+// token 合规性检查函数
+func checkTokenValid(token string, platform string) error {
+	if token == "" {
+		return fmt.Errorf("source.token 不能为空")
+	}
+	// 检查是否包含空格或特殊字符
+	for _, c := range token {
+		if c == ' ' || !(c >= 33 && c <= 126) {
+			return fmt.Errorf("source.token 不允许包含空格或特殊字符")
+		}
+	}
+	// coding 平台 token 检查
+	if platform == "coding" {
+		if len(token) != 40 {
+			return fmt.Errorf("CODING平台token长度必须为40位,请检查source.token")
+		}
+		for _, c := range token {
+			if c >= 'A' && c <= 'Z' {
+				return fmt.Errorf("CODING平台token不允许包含大写字母,请检查source.token")
+			}
+		}
+	}
+	return nil
 }

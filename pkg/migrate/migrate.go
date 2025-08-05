@@ -108,7 +108,7 @@ func Run() {
 	startTime := time.Now()     // 记录迁移开始时间
 	err := config.CheckConfig() // 检查配置文件
 	if err != nil {
-		logger.Logger.Errorf("检查配置文件失败: %s", err)
+		logger.Logger.Errorf("配置文件校验失败: %s", err)
 		return
 	}
 	err = system.SetFileDescriptorLimit(system.Limit) // 设置文件描述符限制
