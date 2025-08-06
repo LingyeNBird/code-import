@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -42,6 +43,7 @@ migrate:
   use_lfs_migrate: false
   #CODING与CNB组织映射关系，1表示CODING团队映射为CNB根组织，2表示CODING项目映射为CNB根组织
   organization_mapping_level: 1`
+	codingTokenLength = 40
 )
 
 var Cfg *viper.Viper
@@ -99,7 +101,6 @@ func CheckConfig() error {
 	if err != nil {
 		log.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
-
 	// 检查是否为只下载模式
 	downloadOnly := config.Migrate.DownloadOnly
 
@@ -382,25 +383,30 @@ func setDefaultValues(config *viper.Viper) {
 
 // token 合规性检查函数
 func checkTokenValid(token string, platform string) error {
-	if token == "" {
-		return fmt.Errorf("source.token 不能为空")
-	}
-	// 检查是否包含空格或特殊字符
-	for _, c := range token {
-		if c == ' ' || !(c >= 33 && c <= 126) {
-			return fmt.Errorf("source.token 不允许包含空格或特殊字符")
-		}
+	if err := checkCommonToken(token); err != nil {
+		return err
 	}
 	// coding 平台 token 检查
 	if platform == "coding" {
-		if len(token) != 40 {
-			return fmt.Errorf("CODING平台token长度必须为40位,请检查source.token")
+		if err := checkCodingToken(token); err != nil {
+			return err
 		}
-		for _, c := range token {
-			if c >= 'A' && c <= 'Z' {
-				return fmt.Errorf("CODING平台token不允许包含大写字母,请检查source.token")
-			}
-		}
+	}
+	return nil
+}
+
+func checkCodingToken(token string) error {
+	codingPattern := regexp.MustCompile(`^[a-z0-9]{40}$`)
+	if !codingPattern.MatchString(token) {
+		return fmt.Errorf("source.token 不符合CODING平台token规范，只能包含小写字母、数字，长度 40 个字符，请重新配置。正则匹配规则:%s", codingPattern)
+	}
+	return nil
+}
+
+func checkCommonToken(token string) error {
+	commonPattern := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+	if !commonPattern.MatchString(token) {
+		return fmt.Errorf("source.token 包含非法字符，只能包含字母、数字、中划线、下划线。正则匹配规则:%s", commonPattern)
 	}
 	return nil
 }
