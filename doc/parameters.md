@@ -148,7 +148,7 @@
 - **PLUGIN_MIGRATE_FILE_LIMIT_SIZE**
     - 类型：数值
     - 必填：否
-    - 默认值：500
+    - 默认值：256
     - 说明：CNB最大文件大小限制，单位Mib
 
 - **PLUGIN_MIGRATE_CODE**
