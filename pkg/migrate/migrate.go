@@ -111,6 +111,8 @@ func Run() {
 		logger.Logger.Errorf("配置文件校验失败: %s", err)
 		return
 	}
+	logger.Logger.Infof("SOURCE_URL: %s", config.Cfg.GetString("source.url"))
+	logger.Logger.Infof("CNB_URL: %s", config.Cfg.GetString("cnb.url"))
 	err = system.SetFileDescriptorLimit(system.Limit) // 设置文件描述符限制
 	if err != nil {
 		panic(err)

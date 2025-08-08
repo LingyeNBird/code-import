@@ -109,14 +109,9 @@ func CheckConfig() error {
 		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun、cnb、gongfeng")
 	}
 	if platform != "aliyun" {
-		// 检查 source 参数
-		if config.Source.URL == "" {
-			return fmt.Errorf("source.url is required")
-		}
-
-		// 检查 source.url 前缀
-		if !strings.HasPrefix(config.Source.URL, "http://") && !strings.HasPrefix(config.Source.URL, "https://") {
-			return fmt.Errorf("source.url must start with 'http://' or 'https://'")
+		err := checkURL(config.Source.URL)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -158,14 +153,9 @@ func CheckConfig() error {
 
 	// 如果不是只下载模式，则检查 CNB 相关配置
 	if !downloadOnly {
-		// 检查 cnb 参数
-		if config.CNB.URL == "" {
-			return fmt.Errorf("cnb.url is required")
-		}
-
-		// 检查 cnb.url 前缀
-		if !strings.HasPrefix(config.CNB.URL, "http://") && !strings.HasPrefix(config.CNB.URL, "https://") {
-			return fmt.Errorf("cnb.url must start with 'http://' or 'https://'")
+		err := checkURL(config.CNB.URL)
+		if err != nil {
+			return err
 		}
 
 		if config.CNB.Token == "" {
@@ -407,6 +397,15 @@ func checkCommonToken(token string) error {
 	commonPattern := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 	if !commonPattern.MatchString(token) {
 		return fmt.Errorf("source.token 包含非法字符，只能包含字母、数字、中划线、下划线。正则匹配规则:%s", commonPattern)
+	}
+	return nil
+}
+
+func checkURL(url string) error {
+	// 仅允许 http:// 或 https:// 开头，后跟至少一个点的域名（允许多级子域名），不允许包含路径
+	urlPattern := regexp.MustCompile(`^https?://([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+$`)
+	if !urlPattern.MatchString(url) {
+		return fmt.Errorf("url %s 格式错误，必须以 'http://' 或 'https://' 开头，且只能包含域名，不能包含路径,如 https://e.coding.net、https://cnb.cool", url)
 	}
 	return nil
 }
