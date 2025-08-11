@@ -129,6 +129,11 @@ type Repos struct {
 	LastUpdateNickname   string        `json:"last_update_nickname"`
 }
 
+type errResp struct {
+	ErrCode int    `json:"errcode"`
+	ErrMsg  string `json:"errmsg"`
+}
+
 func (r *Repos) GetSubGroupName() string {
 	parts := strings.Split(r.Path, "/")
 	return parts[1]
@@ -209,6 +214,14 @@ func CreateSubOrganization(url, token, subGroupName string, subGroup vcs.SubGrou
 	}
 
 	if statusCode == 409 {
+		var apiErr *errResp
+		if unmarshalErr := json.Unmarshal(resp, &apiErr); unmarshalErr != nil {
+			return fmt.Errorf("%s: 解析错误响应失败: %v, 原始响应: %s", groupPath, unmarshalErr, string(resp))
+		}
+		// 10009 仓库占用了组织名称, 10010 组织已存在
+		if apiErr.ErrCode == 10009 {
+			return fmt.Errorf("%s仓库与要创建的子组织冲突，请先重命名或删除该仓库后再次运行迁移任务", groupPath)
+		}
 		logger.Logger.Infof("子组织%s已存在", groupPath)
 		return nil
 	}
