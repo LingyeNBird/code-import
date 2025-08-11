@@ -24,14 +24,7 @@
     - 必填：是
     - 默认值：-
     - 说明：CNB 授权令牌，个人令牌-访问令牌创建 https://cnb.cool/profile/token
-    - 权限要求：
-        - repo-code 读写
-        - repo-contents 读写
-        - repo-basic-info 只读
-        - account-profile 只读
-        - account-engage 只读
-        - group-resource 读写
-        - group-manage 读写
+    - 权限要求：常见场景选择`迁移工具凭据`
     - 授权范围：全部仓库/制品库
 
 - **PLUGIN_SOURCE_URL**
@@ -40,9 +33,9 @@
     - 默认值：https://e.coding.net
     - 说明：源仓库代码托管平台URL
     - Ex:
-       - github: https://github.com
-       - gitlab: https://gitlab.com
-       - gitee: https://gitee.com
+       - Github: https://github.com
+       - GitLab: https://gitlab.com
+       - Gitee: https://gitee.com
        - common: https://common.com
 
 - **PLUGIN_SOURCE_PLATFORM**
