@@ -147,8 +147,8 @@ branch:
         # 其中 key 值（var1、var2、var3、var4、var5）为环境变量名
         PLUGIN_SOURCE_ORGANIZATIONID:
           # 输入框
-          name: 阿里云云效代码仓库企业ID
-          description: 可在云效访问链接中获取，https://devops.aliyun.com/organization/
+          name: 云效代码仓库组织ID
+          description: 在云效组织基本信息页面，查看当前组织ID。
           required: true
           type: input
         PLUGIN_SOURCE_TOKEN:
