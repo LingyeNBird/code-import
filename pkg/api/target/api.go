@@ -582,11 +582,6 @@ func UploadReleaseDescImgAndAttachments(attachment vcs.Attachment) (path string,
 		logger.Logger.Errorf("Upload file to cos error: %v", err)
 		return "", err
 	}
-	err = PlatformConfirmUpload(res.Assets.Path, res.Token)
-	if err != nil {
-		logger.Logger.Errorf("Confirm upload error: %v", err)
-		return "", err
-	}
 	return res.Assets.Path, nil
 }
 
