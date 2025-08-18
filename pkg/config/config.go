@@ -24,13 +24,13 @@ const (
   project: [ProjectName]
   仓库路径，团队名/项目名/仓库名，多个以英文逗号分割
   repo: [TeamName/ProjectName/RepoName]
-cnb:
+ cnb:
   #CNB URL
   url: https://cnb.example.com
   token: xxx
   #CNB根组织，需提前手动创建
   root_organization: "coding"
-migrate:
+ migrate:
   #迁移类型，project/repo
   type: project
   #仓库迁移并发数，最大10
@@ -105,24 +105,24 @@ func CheckConfig() error {
 	downloadOnly := config.Migrate.DownloadOnly
 
 	platform := config.Source.Platform
-	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" && platform != "cnb" && platform != "gongfeng" {
-		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun、cnb、gongfeng")
+	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" && platform != "cnb" && platform != "gongfeng" && platform != "local" {
+		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun、cnb、gongfeng、local")
 	}
-	if platform != "aliyun" {
+	if platform != "aliyun" && platform != "local" {
 		err := checkURL(config.Source.URL)
 		if err != nil {
 			return err
 		}
 	}
 
-	//非通用第三方平台迁移，检查 source.token 参数
-	if platform != "common" {
+	//非通用第三方平台迁移，检查 source.token 参数（local 不需要）
+	if platform != "common" && platform != "local" {
 		if err := checkTokenValid(config.Source.Token, platform); err != nil {
 			return err
 		}
 	}
 
-	//common http迁移
+	//common http迁移（local 不需要）
 	if platform == "common" && !config.Migrate.Ssh {
 		if config.Source.UserName == "" || config.Source.Password == "" {
 			return fmt.Errorf("when platform is common, source.username、password is required")
@@ -147,7 +147,7 @@ func CheckConfig() error {
 		return fmt.Errorf("coding.project is required")
 	}
 
-	if config.Migrate.Type == "repo" && (len(config.Source.Repo) == 0 || config.Source.Repo[0] == "") {
+	if config.Migrate.Type == "repo" && platform != "local" && (len(config.Source.Repo) == 0 || config.Source.Repo[0] == "") {
 		return fmt.Errorf("coding.repo is required")
 	}
 

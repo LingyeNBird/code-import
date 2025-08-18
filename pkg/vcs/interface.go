@@ -75,6 +75,8 @@ func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 		return newCnbRepo()
 	case "gongfeng":
 		return newGongfengRepo()
+	case "local":
+		return newLocalRepo()
 	default:
 		return nil, fmt.Errorf("不支持的仓库平台: %s", sourceRepoPlatformName)
 	}

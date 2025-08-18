@@ -42,7 +42,7 @@
     - 类型：字符串
     - 必填：是
     - 默认值：coding
-    - 说明：迁移的平台名称，支持 coding/gitlab/github/gitee/aliyun，其他通用平台填写 common
+    - 说明：迁移的平台名称，支持 coding/gitlab/github/gitee/aliyun/cnb/gongfeng，其他通用平台填写 common；本地裸仓库填写 local
 
 - **PLUGIN_SOURCE_REPO**
     - 类型：字符串

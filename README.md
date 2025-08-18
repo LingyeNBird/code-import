@@ -5,7 +5,7 @@
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
 ## 📒功能介绍
-1. 支持 CODING、GitHub、GitLab、Gitee、Codeup(云效)、CNB、腾讯工蜂以及通用第三方代码托管平台的代码仓库批量迁移至 CNB
+1. 支持 CODING、GitHub、GitLab、Gitee、Codeup(云效)、CNB、腾讯工蜂、通用第三方代码托管平台以及本地裸仓库(Local)的代码仓库批量迁移至 CNB
 2. 自动创建 CNB 子组织及仓库(迁移完后的仓库路径为`<CNB根组织>/<源仓库路径>`)
 3. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
 4. SVN 仓库不支持迁移，请先自行转换为git仓库

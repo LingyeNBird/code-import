@@ -13,7 +13,7 @@ var (
 )
 
 type Repos struct {
-	Id              int64     `json:"id"`
+	Id              string    `json:"id"`
 	Name            string    `json:"name"`
 	Freeze          bool      `json:"freeze"`
 	Status          int       `json:"status"`

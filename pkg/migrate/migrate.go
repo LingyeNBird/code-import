@@ -51,6 +51,7 @@ var (
 	RootGroupName            = config.Cfg.GetString("cnb.root_organization")
 	rebaseBackDirPath        string
 	rebaseBranchesMap        sync.Map
+	workDirCreated           bool
 )
 
 // checkAndGetRepoList 检查并获取仓库列表
@@ -193,9 +194,9 @@ func Run() {
 		return
 	}
 
-	// defer 删除 source_git_dir 目录，确保所有迁移操作完成后再清理
+	// defer 删除 source_git_dir 目录，确保所有迁移操作完成后再清理（仅删除本工具创建的目录，且非 local 平台）
 	pwdDir, err := os.Getwd()
-	if err == nil && !DownloadOnly { // 只在非只下载模式下删除目录
+	if err == nil && !DownloadOnly && workDirCreated && SourcePlatformName != "local" {
 		gitDirABSPath := filepath.Join(pwdDir, "..", GitDirName)
 		defer func(path string) {
 			_ = os.RemoveAll(path)
@@ -244,10 +245,21 @@ func setupWorkDir() error {
 		workDirName = GitDirName
 	}
 
-	if err := os.Mkdir(workDirName, 0755); err != nil {
-		return fmt.Errorf("创建Git工作目录失败: %s", err)
+	if st, err := os.Stat(workDirName); err != nil {
+		if os.IsNotExist(err) {
+			if err := os.Mkdir(workDirName, 0755); err != nil {
+				return fmt.Errorf("创建Git工作目录失败: %s", err)
+			}
+			logger.Logger.Infof("创建仓库工作目录%s成功", workDirName)
+			workDirCreated = true
+		} else {
+			return fmt.Errorf("检查Git工作目录失败: %s", err)
+		}
+	} else if !st.IsDir() {
+		return fmt.Errorf("%s 已存在但不是目录", workDirName)
+	} else {
+		logger.Logger.Infof("使用已有仓库工作目录%s", workDirName)
 	}
-	logger.Logger.Infof("创建仓库工作目录%s成功", workDirName)
 
 	pwdDir, err := os.Getwd()
 	if err != nil {
@@ -413,12 +425,14 @@ func migrateDo(depot vcs.VCS) error {
 		}
 		// 完整的仓库目录路径
 		fullRepoDir := filepath.Join(pwdDir, repoPath)
-		defer func(path string) {
-			err := os.RemoveAll(path)
-			if err != nil {
-				log.Errorf("%s 删除失败: %s", path, err)
-			}
-		}(fullRepoDir)
+		if SourcePlatformName != "local" {
+			defer func(path string) {
+				err := os.RemoveAll(path)
+				if err != nil {
+					log.Errorf("%s 删除失败: %s", path, err)
+				}
+			}(fullRepoDir)
+		}
 
 		pushURL := target.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
 		rebaseRepoPath := filepath.Join(RebaseDirPrefix, repoPath)

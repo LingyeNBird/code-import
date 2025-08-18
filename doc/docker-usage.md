@@ -257,6 +257,33 @@
 
  </details>
 
+* <details>
+    <summary> 从本地仓库迁移（Local）</summary>
+
+    本地模式会扫描工作目录下 `source_git_dir` 目录中的所有裸仓库，并将它们迁移至 CNB。裸仓库需满足目录下包含 `HEAD` 文件与 `objects/` 目录的结构。
+    
+    ### 准备本地裸仓库
+    - 将待迁移的裸仓库放入当前工作目录的 `source_git_dir/` 下，支持多级子目录；
+    - 例如：
+      - `source_git_dir/group1/repo1/`
+      - `source_git_dir/group2/sub/repo2/`
+    
+    ### 执行迁移
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_PLATFORM="local" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx" \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
+
+    ### 说明
+    - 本地模式不需要配置 `PLUGIN_SOURCE_URL`、`PLUGIN_SOURCE_TOKEN`；
+    - 裸仓库的相对路径会映射为 CNB 的子组织层级，例如 `source_git_dir/group1/repo1` 最终路径为 `/<CNB根组织>/group1/repo1`；
+
+  </details>
+
 
 ## 迁移完成后，增量更新原平台最新内容
 清空原工作目录下的 successful.log
