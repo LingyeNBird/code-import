@@ -381,7 +381,7 @@ func checkResponse(data []byte) error {
 		return err
 	}
 	if responseError.Response.Error.Code != "" {
-		return fmt.Errorf(responseError.Response.Error.Message)
+		return fmt.Errorf(string(data))
 	}
 	return nil
 }
