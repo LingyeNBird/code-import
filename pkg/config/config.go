@@ -394,9 +394,9 @@ func checkCodingToken(token string) error {
 }
 
 func checkCommonToken(token string) error {
-	commonPattern := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+	commonPattern := regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
 	if !commonPattern.MatchString(token) {
-		return fmt.Errorf("source.token 包含非法字符，只能包含字母、数字、中划线、下划线。正则匹配规则:%s", commonPattern)
+		return fmt.Errorf("source.token 包含非法字符，只能包含字母、数字、中划线、下划线、点号。正则匹配规则:%s", commonPattern)
 	}
 	return nil
 }
