@@ -235,56 +235,6 @@
 
   </details>
 
-* <details>
-    <summary> 仅下载仓库模式 </summary>
-
-    如果只需要将仓库下载到本地而不推送到 CNB 平台，可以使用仅下载模式。该模式下会跳过所有 CNB 相关操作，仅执行仓库克隆，无需提供 CNB 相关配置信息。
-    
-    这里以 CODING 为例，其他平台只需在原有迁移命令基础上增加 `-e PLUGIN_MIGRATE_DOWNLOAD_ONLY="true"` 参数即可：
-    
-    ```shell
-    docker run --rm  \
-      -e PLUGIN_SOURCE_TOKEN="xxx"  \
-      -e PLUGIN_MIGRATE_DOWNLOAD_ONLY="true" \
-      -v $(pwd):$(pwd) -w $(pwd) \
-      cnbcool/code-import
-    ```
-    **仅下载模式特点：**
-    - 仅执行仓库克隆操作，不推送到 CNB 平台
-    - 无需提供 CNB 相关配置信息（如 CNB_TOKEN、CNB_ROOT_ORGANIZATION 等）
-    - 跳过所有 CNB 相关操作（如创建子组织、创建仓库等）
-    - 下载完成后保留工作目录（格式：`source_git_dir_时间戳`）
-
- </details>
-
-* <details>
-    <summary> 从本地仓库迁移（Local）</summary>
-
-    本地模式会扫描工作目录下 `source_git_dir` 目录中的所有裸仓库，并将它们迁移至 CNB。裸仓库需满足目录下包含 `HEAD` 文件与 `objects/` 目录的结构。
-    
-    ### 准备本地裸仓库
-    - 将待迁移的裸仓库放入当前工作目录的 `source_git_dir/` 下，支持多级子目录；
-    - 例如：
-      - `source_git_dir/group1/repo1/`
-      - `source_git_dir/group2/sub/repo2/`
-    
-    ### 执行迁移
-    ```shell
-    docker run --rm  \
-      -e PLUGIN_SOURCE_PLATFORM="local" \
-      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
-      -e PLUGIN_CNB_TOKEN="xxx" \
-      -v $(pwd):$(pwd) -w $(pwd) \
-      cnbcool/code-import
-    ```
-
-    ### 说明
-    - 本地模式不需要配置 `PLUGIN_SOURCE_URL`、`PLUGIN_SOURCE_TOKEN`；
-    - 裸仓库的相对路径会映射为 CNB 的子组织层级，例如 `source_git_dir/group1/repo1` 最终路径为 `/<CNB根组织>/group1/repo1`；
-
-  </details>
-
-
 ## 迁移完成后，增量更新原平台最新内容
 清空原工作目录下的 successful.log
 
