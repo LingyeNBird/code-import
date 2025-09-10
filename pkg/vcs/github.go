@@ -11,6 +11,10 @@ import (
 	"github.com/google/go-github/v66/github"
 )
 
+const (
+	GitUserName = "git"
+)
+
 type GithubVcs struct {
 	httpURL   string
 	RepoPath  string
@@ -51,7 +55,7 @@ func (c *GithubVcs) GetCloneUrl() string {
 }
 
 func (c *GithubVcs) GetUserName() string {
-	return api.GetUserName()
+	return GitUserName
 }
 
 func (c *GithubVcs) GetToken() string {
