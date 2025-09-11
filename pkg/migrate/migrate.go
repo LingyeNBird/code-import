@@ -116,7 +116,9 @@ func Run() {
 	logger.Logger.Infof("CNB_URL: %s", config.Cfg.GetString("cnb.url"))
 	err = system.SetFileDescriptorLimit(system.Limit) // 设置文件描述符限制
 	if err != nil {
-		panic(err)
+		logger.Logger.Errorf("设置文件描述符限制失败: %s", err)
+
+		return
 	}
 
 	// 获取源平台的 VCS 实例列表
@@ -335,6 +337,12 @@ func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 	} else {
 		logger.Logger.Infof("代码仓库迁移完成，耗时%d秒。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
 			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
+	}
+
+	// 检查是否有忽略迁移或迁移失败的仓库，如果有则退出程序，返回错误码1
+	if skipRepoNumber > 0 || failedRepoNumber > 0 {
+		logger.Logger.Warnf("存在忽略或失败的仓库，请检查日志查看详情")
+		os.Exit(1)
 	}
 }
 
