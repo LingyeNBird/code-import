@@ -8,6 +8,7 @@ import (
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -38,8 +39,8 @@ func (c *CodingVcs) GetRepoName() string {
 func (c *CodingVcs) GetSubGroup() *SubGroup {
 	project, err := coding.GetProjectByName(config.Cfg.GetString("source.url"), c.GetToken(), c.SubGroupName)
 	if err != nil {
-		logger.Logger.Errorf(err.Error())
-		panic(err)
+		logger.Logger.Errorf("获取项目信息失败: %v", err)
+		os.Exit(1)
 	}
 	return &SubGroup{
 		Name:   c.SubGroupName,
