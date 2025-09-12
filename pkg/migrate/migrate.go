@@ -19,7 +19,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -338,11 +337,9 @@ func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 		logger.Logger.Infof("代码仓库迁移完成，耗时%d秒。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
 			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
 	}
-
-	// 检查是否有忽略迁移或迁移失败的仓库，如果有则退出程序，返回错误码1
+	// 检查是否有忽略迁移或迁移失败的仓库
 	if skipRepoNumber > 0 || failedRepoNumber > 0 {
-		logger.Logger.Warnf("存在忽略或失败的仓库，请检查日志查看详情")
-		os.Exit(1)
+		logger.Logger.Errorf("存在忽略迁移或迁移失败的仓库，请检查error级别日志查看详情")
 	}
 }
 
@@ -358,37 +355,35 @@ func migrateDo(depot vcs.VCS) error {
 	var err error
 	repoName, subGroup, repoPath, repoPrivate := depot.GetRepoName(), depot.GetSubGroup(), depot.GetRepoPath(), depot.GetRepoPrivate()
 	subGroupName := subGroup.Name
-	// 使用zap的With方法添加repo字段
-	log := logger.Logger.With(zap.String("repo", repoPath))
 
 	// 如果不是只下载模式，则检查是否已迁移
 	if !DownloadOnly {
 		err, migrated := isMigrated(repoPath, logger.SuccessfulLogFilePath)
 		if err != nil {
-			log.Errorf("判断是否迁移失败: %s", err)
+			logger.Logger.Errorf("判断是否迁移失败: %s", err)
 			return fmt.Errorf("%s 判断是否迁移失败%s", repoPath, err)
 		}
 		if migrated {
 			atomic.AddInt64(&skipRepoNumber, 1)
 			atomic.AddInt64(&failedRepoNumber, -1)
-			log.Infof("%s 已迁移，忽略迁移", repoPath)
+			logger.Logger.Infof("%s 已迁移，忽略迁移", repoPath)
 			return nil
 		}
 	}
 
-	log.Infof("%s 开始迁移", repoPath)
+	logger.Logger.Infof("%s 开始迁移", repoPath)
 	startTime := time.Now()
 	isSvn := git.IsSvnRepo(depot.GetRepoType())
 	if isSvn {
 		atomic.AddInt64(&skipRepoNumber, 1)
 		atomic.AddInt64(&failedRepoNumber, -1)
-		log.Infof("%s svn仓库，忽略迁移", repoPath)
+		logger.Logger.Errorf("%s svn仓库，忽略迁移", repoPath)
 		return nil
 	}
 	// 执行 clone 操作
 	err = depot.Clone()
 	if err != nil {
-		log.Errorf(err.Error())
+		logger.Logger.Errorf(err.Error())
 		return fmt.Errorf(err.Error())
 	}
 	// 如果是只下载模式，则直接返回
@@ -396,7 +391,7 @@ func migrateDo(depot vcs.VCS) error {
 		atomic.AddInt64(&successfulRepoNumber, 1)
 		atomic.AddInt64(&failedRepoNumber, -1)
 		duration := time.Since(startTime)
-		log.Infof("%s 下载完成，耗时%s", repoPath, duration)
+		logger.Logger.Infof("%s 下载完成，耗时%s", repoPath, duration)
 		return nil
 	}
 	// 以下是原有的迁移逻辑
@@ -411,19 +406,19 @@ func migrateDo(depot vcs.VCS) error {
 			if err != nil {
 				return fmt.Errorf("%s 仓库创建失败: %s", repoPath, err)
 			}
-			log.Infof("%s 仓库创建成功", repoPath)
+			logger.Logger.Infof("%s 仓库创建成功", repoPath)
 			time.Sleep(1000 * time.Millisecond) // 添加0.5秒延迟，避免push操作太快导致报错找不到仓库
 		} else if has && SkipExistsRepo {
 			atomic.AddInt64(&skipRepoNumber, 1)
 			atomic.AddInt64(&failedRepoNumber, -1)
-			log.Warnf("%s CNB仓库%s已存在，忽略迁移", repoPath, cnbRepoPath)
+			logger.Logger.Warnf("%s CNB仓库%s已存在，忽略迁移", repoPath, cnbRepoPath)
 			return nil
 		}
 		// 检查源仓库是否初始化
 		if !git.IsBareRepoInitialized(repoPath) {
 			atomic.AddInt64(&successfulRepoNumber, 1)
 			atomic.AddInt64(&failedRepoNumber, -1)
-			log.Infof("%s 源仓库未初始化", repoPath)
+			logger.Logger.Infof("%s 源仓库未初始化", repoPath)
 			return nil
 		}
 		// 设置要进入的目录路径
@@ -437,7 +432,7 @@ func migrateDo(depot vcs.VCS) error {
 			defer func(path string) {
 				err := os.RemoveAll(path)
 				if err != nil {
-					log.Errorf("%s 删除失败: %s", path, err)
+					logger.Logger.Errorf("%s 删除失败: %s", path, err)
 				}
 			}(fullRepoDir)
 		}
@@ -456,10 +451,10 @@ func migrateDo(depot vcs.VCS) error {
 			//备份CNB侧仓库
 			err = util.CopyDir(rebaseRepoPath, destPath)
 			if err != nil {
-				log.Errorf("备份仓库失败: %v", err)
+				logger.Logger.Errorf("备份仓库失败: %v", err)
 				return fmt.Errorf("备份仓库失败: %w", err)
 			}
-			log.Infof("%s 已备份仓库到 %s", repoPath, destPath)
+			logger.Logger.Infof("%s 已备份仓库到 %s", repoPath, destPath)
 			rebaseErr := git.Rebase(rebaseRepoPath, depot.GetRepoPath())
 			if rebaseErr != nil {
 				return rebaseErr
@@ -468,7 +463,7 @@ func migrateDo(depot vcs.VCS) error {
 
 		output, err := git.Push(repoPath, pushURL, isForcePush)
 		if err != nil && useLfsMigrate && git.IsExceededLimitError(output) {
-			log.Warnf("%s 历史提交文件大小超过%sM", repoPath, git.FileLimitSize)
+			logger.Logger.Warnf("%s 历史提交文件大小超过%sM", repoPath, git.FileLimitSize)
 			fixError := git.FixExceededLimitError(repoPath)
 			if fixError != nil {
 				return fmt.Errorf("%s 修复大文件超过限制: %s", repoPath, fixError)
@@ -491,7 +486,7 @@ func migrateDo(depot vcs.VCS) error {
 	atomic.AddInt64(&successfulRepoNumber, 1)
 	atomic.AddInt64(&failedRepoNumber, -1)
 	duration := int(time.Since(startTime).Seconds())
-	log.Infof("%s 迁移至CNB %s 成功,耗时%d秒", repoPath, cnbRepoPath, duration)
+	logger.Logger.Infof("%s 迁移至CNB %s 成功,耗时%d秒", repoPath, cnbRepoPath, duration)
 	logger.RecordSuccessfulRepo(repoPath)
 	return nil
 }
@@ -526,9 +521,8 @@ func migrateRelease(depot vcs.VCS) error {
 		return nil
 	}
 	repoPath := depot.GetRepoPath()
-	log := logger.Logger
 
-	log.Infof("%s 开始迁移 release", repoPath)
+	logger.Logger.Infof("%s 开始迁移 release", repoPath)
 
 	// 遍历处理每个release
 	for _, release := range releases {
@@ -537,7 +531,7 @@ func migrateRelease(depot vcs.VCS) error {
 		}
 	}
 
-	log.Infof("%s 迁移 release 成功", repoPath)
+	logger.Logger.Infof("%s 迁移 release 成功", repoPath)
 	return nil
 }
 
@@ -550,19 +544,18 @@ func migrateRelease(depot vcs.VCS) error {
 // 返回:
 //   - error: 迁移过程中的错误信息
 func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) error {
-	log := logger.Logger
-	log.Infof("%s 开始迁移release: %s", repoPath, release.Name)
+	logger.Logger.Infof("%s 开始迁移release: %s", repoPath, release.Name)
 
 	// 在目标平台创建release
 	releaseID, exist, err := target.CreateRelease(repoPath, depot.GetProjectID(), release, depot)
 	if err != nil {
-		log.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, err)
+		logger.Logger.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, err)
 		return err
 	}
 
 	// 如果release已存在则跳过
 	if exist {
-		log.Warnf("%s 迁移release: %s 已存在，忽略迁移", repoPath, release.Name)
+		logger.Logger.Warnf("%s 迁移release: %s 已存在，忽略迁移", repoPath, release.Name)
 		return nil
 	}
 
@@ -573,7 +566,7 @@ func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) err
 		}
 	}
 
-	log.Infof("%s 迁移 release %s 成功", repoPath, release.Name)
+	logger.Logger.Infof("%s 迁移 release %s 成功", repoPath, release.Name)
 	return nil
 }
 
@@ -586,12 +579,11 @@ func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) err
 // 返回:
 //   - error: 迁移过程中的错误信息
 func migrateReleaseAssets(repoPath, releaseID string, release vcs.Releases) error {
-	log := logger.Logger
 	// 遍历处理每个资源文件
 	for _, asset := range release.Assets {
 
 		if err := migrateReleaseAsset(repoPath, releaseID, asset.Name, asset.Url); err != nil {
-			log.Errorf("%s 迁移 release %s asset %s 失败: %s",
+			logger.Logger.Errorf("%s 迁移 release %s asset %s 失败: %s",
 				repoPath, release.Name, asset.Name, err)
 			return err
 		}

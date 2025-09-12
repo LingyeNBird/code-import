@@ -39,20 +39,20 @@ func init() {
 		zapcore.AddSync(logFile),
 	)
 
-	// 创建一个JSON编码器配置
-	//encoderConfig := zapcore.EncoderConfig{
-	//	TimeKey:        "time",
-	//	LevelKey:       "level",
-	//	NameKey:        "logger",
-	//	CallerKey:      "caller",
-	//	MessageKey:     "msg",
-	//	StacktraceKey:  "stacktrace",
-	//	LineEnding:     zapcore.DefaultLineEnding,
-	//	EncodeLevel:    zapcore.LowercaseLevelEncoder,
-	//	EncodeTime:     zapcore.ISO8601TimeEncoder,
-	//	EncodeDuration: zapcore.StringDurationEncoder,
-	//	EncodeCaller:   zapcore.ShortCallerEncoder,
-	//}
+	// 创建带颜色的编码器配置
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "time",
+		LevelKey:       "level",
+		NameKey:        "logger",
+		CallerKey:      "caller",
+		MessageKey:     "msg",
+		StacktraceKey:  "stacktrace",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.LowercaseColorLevelEncoder, // 使用彩色级别编码器
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
+	}
 
 	level := zap.NewAtomicLevel()
 	switch config.Cfg.GetString("migrate.log_level") {
@@ -69,9 +69,9 @@ func init() {
 		return
 	}
 
-	// 创建一个核心，使用多写入器和JSON编码器配置
+	// 创建一个核心，使用多写入器和带颜色的编码器配置
 	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+		zapcore.NewConsoleEncoder(encoderConfig),
 		multiWriteSyncer,
 		level,
 	)
