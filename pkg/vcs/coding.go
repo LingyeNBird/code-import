@@ -42,10 +42,20 @@ func (c *CodingVcs) GetSubGroup() *SubGroup {
 		logger.Logger.Errorf("获取项目信息失败: %v", err)
 		os.Exit(1)
 	}
+	// 初始化描述和备注字段
+	var desc, remark string
+	// 如果配置了映射 Coding 项目描述，则使用项目的描述作为描述字段
+	if config.Cfg.GetBool("migrate.map_coding_display_name") {
+		desc = project.Description
+	}
+	// 如果配置了映射 Coding 项目显示名称，则使用项目的显示名称作为备注字段
+	if config.Cfg.GetBool("migrate.map_coding_description") {
+		remark = project.DisplayName
+	}
 	return &SubGroup{
 		Name:   c.SubGroupName,
-		Desc:   project.Description,
-		Remark: project.DisplayName,
+		Desc:   desc,
+		Remark: remark,
 	}
 }
 
