@@ -339,7 +339,7 @@ func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 	}
 	// 检查是否有忽略迁移或迁移失败的仓库
 	if skipRepoNumber > 0 || failedRepoNumber > 0 {
-		logger.Logger.Errorf("存在忽略迁移或迁移失败的仓库，请检查error级别日志查看详情")
+		logger.Logger.Errorf("存在忽略迁移或迁移失败的仓库，请检查ERROR级别日志查看详情")
 	}
 }
 

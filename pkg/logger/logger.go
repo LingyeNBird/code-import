@@ -48,7 +48,14 @@ func init() {
 		MessageKey:     "msg",
 		StacktraceKey:  "stacktrace",
 		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseColorLevelEncoder, // 使用彩色级别编码器
+		// 自定义日志级别编码器：INFO级别不带颜色，其他级别带颜色
+		EncodeLevel: func(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
+			if l == zapcore.InfoLevel {
+				enc.AppendString(l.CapitalString())
+			} else {
+				zapcore.CapitalColorLevelEncoder(l, enc)
+			}
+		},
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.StringDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
