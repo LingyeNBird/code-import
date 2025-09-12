@@ -80,13 +80,15 @@ type Migrate struct {
 	useLfsMigrate            bool   `yaml:"use_lfs_migrate"`
 	organizationMappingLevel int    `yaml:"organization_mapping_level"`
 	//针对LFS源文件丢失的仓库，LFS推送时，允许本地缓存中丢失对象，而无需停止 Git 推送。https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-config.adoc
-	allowIncompletePush bool   `yaml:"allow_incomplete_push"`
-	LogLevel            string `yaml:"log_level"`
-	fileLimitSize       int64  `yaml:"file_limit_size"`
-	SkipExistsRepo      bool   `yaml:"skip_exists_repo"`
-	Ssh                 bool   `yaml:"ssh"`
-	AllowSelectRepos    bool   `yaml:"allow_select_repos"`
-	DownloadOnly        bool   `yaml:"download_only"`
+	allowIncompletePush  bool   `yaml:"allow_incomplete_push"`
+	LogLevel             string `yaml:"log_level"`
+	fileLimitSize        int64  `yaml:"file_limit_size"`
+	SkipExistsRepo       bool   `yaml:"skip_exists_repo"`
+	Ssh                  bool   `yaml:"ssh"`
+	AllowSelectRepos     bool   `yaml:"allow_select_repos"`
+	DownloadOnly         bool   `yaml:"download_only"`
+	MapCodingDisplayName bool   `yaml:"map_coding_display_name"`
+	MapCodingDescription bool   `yaml:"map_coding_description"`
 }
 
 func CheckConfig() error {
@@ -209,7 +211,24 @@ func init() {
 
 	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo", "migrate.rebase_branch")
 
-	err = parseStringEnvValueToBool(Cfg, "migrate.force_push", "migrate.ignore_lfs_notfound_error", "migrate.use_lfs_migrate", "migrate.allow_incomplete_push", "migrate.skip_exists_repo", "migrate.release", "migrate.code", "migrate.ssh", "migrate.rebase", "migrate.allow_select_repos", "migrate.download_only")
+	// 需要转换为布尔值的配置项
+	boolKeys := []string{
+		"migrate.force_push",
+		"migrate.ignore_lfs_notfound_error",
+		"migrate.use_lfs_migrate",
+		"migrate.allow_incomplete_push",
+		"migrate.skip_exists_repo",
+		"migrate.release",
+		"migrate.code",
+		"migrate.ssh",
+		"migrate.rebase",
+		"migrate.allow_select_repos",
+		"migrate.download_only",
+		"migrate.map_coding_display_name",
+		"migrate.map_coding_description",
+	}
+
+	err = parseStringEnvValueToBool(Cfg, boolKeys...)
 	if err != nil {
 		panic(err)
 	}
@@ -330,6 +349,8 @@ func bindEnvVariables(config *viper.Viper) error {
 		"migrate.allow_select_repos",
 		"migrate.download_only",
 		"migrate.include_github_fork",
+		"migrate.map_coding_display_name",
+		"migrate.map_coding_description",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -363,6 +384,8 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.allow_select_repos":         "false",
 		"migrate.download_only":              "false",
 		"migrate.include_github_fork":        "true",
+		"migrate.map_coding_display_name":    "false",
+		"migrate.map_coding_description":     "false",
 	}
 
 	// 使用循环来设置默认值
