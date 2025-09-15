@@ -370,7 +370,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.organization_mapping_level": "1",
 		"migrate.concurrency":                "5",
 		"migrate.type":                       "team",
-		"migrate.allow_incomplete_push":      "true",
+		"migrate.allow_incomplete_push":      "false",
 		"migrate.log_level":                  "info",
 		"source.platform":                    "coding",
 		"migrate.file_limit_size":            "256",

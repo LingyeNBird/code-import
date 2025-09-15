@@ -73,6 +73,7 @@ $:
             -e PLUGIN_CNB_URL=${PLUGIN_CNB_URL}  \
             -e PLUGIN_CNB_ROOT_ORGANIZATION=${PLUGIN_CNB_ROOT_ORGANIZATION} \
             -e PLUGIN_CNB_TOKEN=${PLUGIN_CNB_TOKEN}  \
+            -e PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH=${PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH} \
             -v $(pwd):$(pwd) -w $(pwd) \
             cnbcool/code-import
           timeout: 10h

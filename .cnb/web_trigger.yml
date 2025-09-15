@@ -16,8 +16,18 @@
     name: CNB平台URL
     description: CNB平台URL,一般保持默认即可
     required: true
-    type: input
-    default: https://cnb.cool
+.PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH: &PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
+  PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH:
+    name: 忽略 LFS 文件下载报错，继续迁移，默认不忽略，一般保持默认即可，谨慎开启！
+    description: "忽略 LFS 文件下载报错，继续迁移，默认不忽略，一般保持默认即可，谨慎开启！"
+    required: true
+    type: select
+    default: false
+    options:
+      - name: 忽略
+        value: true
+      - name: 不忽略
+        value: false
 # .cnb/web_trigger.yml
 branch:
   - buttons:
@@ -43,6 +53,7 @@ branch:
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
     - name: GitLab
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Gitlab批量迁移仓库到CNB
@@ -71,6 +82,7 @@ branch:
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
     - name: GitHub
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Github批量迁移仓库到CNB
@@ -99,6 +111,7 @@ branch:
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
     - name: Gitee
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Gitee批量迁移仓库到CNB
@@ -127,6 +140,7 @@ branch:
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
     - name: Codeup(云效)
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Codeup批量迁移仓库到CNB
@@ -159,3 +173,4 @@ branch:
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH        
