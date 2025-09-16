@@ -19,12 +19,12 @@ import (
 )
 
 const (
-	PageSize            = "100"
-	ReleaseAssetMaxSize = 1024 * 1024 * 1024 * 50
-	DescAssetMaxSize    = 1024 * 1024 * 5
-	GroupDescLimitSize  = 200
-	RepoDescLimitSize   = 350
-	specialChars        = "-*/."
+	PageSize             = "100"
+	ReleaseAssetMaxSize  = 1024 * 1024 * 1024 * 50
+	DescAssetMaxSize     = 1024 * 1024 * 5
+	GroupDescLimitSize   = 200
+	GroupRemarkLimitSize = 50
+	RepoDescLimitSize    = 350
 )
 
 var (
@@ -198,12 +198,14 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 }
 
 func CreateSubOrganization(url, token, subGroupName string, subGroup vcs.SubGroup) (err error) {
-	// 去除子组名称中的特殊字符
-	subGroupName = strings.TrimLeft(strings.TrimRight(subGroupName, specialChars), specialChars)
+	subGroupName = normalizeGroupName(subGroupName)
 	groupPath := path.Join(RootOrganizationName, subGroupName)
 	logger.Logger.Infof("开始创建子组织%s", groupPath)
 	if len(subGroup.Desc) > GroupDescLimitSize {
 		subGroup.Desc = subGroup.Desc[:GroupDescLimitSize]
+	}
+	if len(subGroup.Remark) > GroupRemarkLimitSize {
+		subGroup.Remark = subGroup.Remark[:GroupRemarkLimitSize]
 	}
 	body := &CreateOrganization{
 		Path:        groupPath,
@@ -723,4 +725,52 @@ func GetCosUploadUrlAndForm(attachment vcs.Attachment) (form UploadImgOrFileRes,
 		return form, err
 	}
 	return form, nil
+}
+
+// normalizeGroupName 规范化子组织名称，使其符合命名规则
+// 规则：只能以字母或数字开头和结尾，长度1-50个字符
+// 中间可以包含点(.)、下划线(_)和连字符(-)，后缀不能以.git结尾
+func normalizeGroupName(input string) string {
+	if input == "" {
+		return input
+	}
+
+	// 去除开头和结尾的非字母数字字符
+	runes := []rune(input)
+
+	// 去除开头非字母数字字符
+	start := 0
+	for start < len(runes) && !isAlphanumeric(runes[start]) {
+		start++
+	}
+
+	// 去除结尾非字母数字字符
+	end := len(runes) - 1
+	for end >= start && !isAlphanumeric(runes[end]) {
+		end--
+	}
+
+	if start > end {
+		// 如果没有字母数字字符，返回空字符串
+		return ""
+	}
+
+	// 截取有效部分
+	result := string(runes[start : end+1])
+
+	// 检查长度，超过50则截取
+	if len(result) > 50 {
+		result = result[:50]
+	}
+
+	// 确保不以.git结尾和.svn 结尾
+	result = strings.TrimSuffix(result, ".git")
+	result = strings.TrimSuffix(result, ".svn")
+
+	return result
+}
+
+// isAlphanumeric 检查字符是否为字母或数字
+func isAlphanumeric(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
 }
