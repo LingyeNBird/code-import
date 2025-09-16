@@ -24,6 +24,7 @@ const (
 	DescAssetMaxSize    = 1024 * 1024 * 5
 	GroupDescLimitSize  = 200
 	RepoDescLimitSize   = 350
+	specialChars        = "-*/."
 )
 
 var (
@@ -197,6 +198,8 @@ func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (e
 }
 
 func CreateSubOrganization(url, token, subGroupName string, subGroup vcs.SubGroup) (err error) {
+	// 去除子组名称中的特殊字符
+	subGroupName = strings.TrimLeft(strings.TrimRight(subGroupName, specialChars), specialChars)
 	groupPath := path.Join(RootOrganizationName, subGroupName)
 	logger.Logger.Infof("开始创建子组织%s", groupPath)
 	if len(subGroup.Desc) > GroupDescLimitSize {

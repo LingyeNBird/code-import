@@ -384,8 +384,8 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.allow_select_repos":         "false",
 		"migrate.download_only":              "false",
 		"migrate.include_github_fork":        "true",
-		"migrate.map_coding_display_name":    "false",
-		"migrate.map_coding_description":     "false",
+		"migrate.map_coding_display_name":    "true",
+		"migrate.map_coding_description":     "true",
 	}
 
 	// 使用循环来设置默认值
