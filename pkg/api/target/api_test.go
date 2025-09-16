@@ -1,91 +1,79 @@
 package target
 
 import (
-	"path"
-	"strings"
 	"testing"
 )
 
-func TestSubGroupNameProcessing(t *testing.T) {
-	// 定义测试用例
+func TestNormalizeGroupName(t *testing.T) {
 	testCases := []struct {
-		name         string
-		inputName    string
-		expectedName string
-		expectedPath string
-		originalRoot string
+		name     string
+		input    string
+		expected string
 	}{
 		{
-			name:         "正常名称无特殊字符",
-			inputName:    "normal-group",
-			expectedName: "normal-group",
-			expectedPath: "root-org/normal-group",
-			originalRoot: "root-org",
+			name:     "空字符串",
+			input:    "",
+			expected: "",
 		},
 		{
-			name:         "名称前后有特殊字符",
-			inputName:    "---group...",
-			expectedName: "group",
-			expectedPath: "root-org/group",
-			originalRoot: "root-org",
+			name:     "正常字母数字",
+			input:    "testGroup123",
+			expected: "testGroup123",
 		},
 		{
-			name:         "名称中间有特殊字符",
-			inputName:    "group/with/slashes",
-			expectedName: "group/with/slashes", // 中间的特殊字符不会被移除
-			expectedPath: "root-org/group/with/slashes",
-			originalRoot: "root-org",
+			name:     "前后有特殊字符",
+			input:    "---testGroup---",
+			expected: "testGroup",
 		},
 		{
-			name:         "名称前后和中间都有特殊字符",
-			inputName:    "---group/with/slashes...",
-			expectedName: "group/with/slashes",
-			expectedPath: "root-org/group/with/slashes",
-			originalRoot: "root-org",
+			name:     "只有特殊字符",
+			input:    "---***---",
+			expected: "",
 		},
 		{
-			name:         "只有特殊字符",
-			inputName:    "-*/.",
-			expectedName: "",
-			expectedPath: "root-org",
-			originalRoot: "root-org",
+			name:     "以.git结尾",
+			input:    "testGroup.git",
+			expected: "testGroup",
 		},
 		{
-			name:         "空名称",
-			inputName:    "",
-			expectedName: "",
-			expectedPath: "root-org",
-			originalRoot: "root-org",
+			name:     "前后特殊字符且以.git结尾",
+			input:    "---testGroup.git---",
+			expected: "testGroup",
+		},
+		{
+			name:     "包含中文字符",
+			input:    "---测试组123---",
+			expected: "123", // 只保留字母数字，中文字符被当作特殊字符去除
+		},
+		{
+			name:     "长度超过50字符",
+			input:    "thisisareallylonggroupnamethatexceedsfiftycharacterslimit",
+			expected: "thisisareallylonggroupnamethatexceedsfiftycharacte",
+		},
+		{
+			name:     "前后特殊字符且长度超过50",
+			input:    "---thisisareallylonggroupnamethatexceedsfiftycharacterslimit---",
+			expected: "thisisareallylonggroupnamethatexceedsfiftycharacte",
+		},
+		{
+			name:     "中间包含点号",
+			input:    "test.group.name",
+			expected: "test.group.name",
 		},
 	}
 
-	// 保存原始的RootOrganizationName
-	originalRootOrganizationName := RootOrganizationName
-
-	// 测试每个用例
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// 设置测试环境
-			RootOrganizationName = tc.originalRoot
-			specialCharsForTest := specialChars // 使用包中定义的specialChars常量
-
-			// 执行被测试的逻辑
-			processedName := strings.TrimLeft(strings.TrimRight(tc.inputName, specialCharsForTest), specialCharsForTest)
-			processedPath := path.Join(RootOrganizationName, processedName)
-
-			// 验证结果
-			if processedName != tc.expectedName {
-				t.Errorf("处理后的名称不匹配，期望: %s, 实际: %s", tc.expectedName, processedName)
-			}
-
-			if processedPath != tc.expectedPath {
-				t.Errorf("处理后的路径不匹配，期望: %s, 实际: %s", tc.expectedPath, processedPath)
+			result := normalizeGroupName(tc.input)
+			t.Logf("Input: %q", tc.input)
+			t.Logf("Expected: %q", tc.expected)
+			t.Logf("Actual: %q", result)
+			t.Logf("Length: expected=%d, actual=%d", len(tc.expected), len(result))
+			if result != tc.expected {
+				t.Errorf("normalizeGroupName(%q) = %q, expected %q", tc.input, result, tc.expected)
 			}
 		})
 	}
-
-	// 恢复原始的RootOrganizationName
-	RootOrganizationName = originalRootOrganizationName
 }
 
 // TestCreateSubOrganization 测试完整的CreateSubOrganization函数
