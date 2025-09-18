@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -215,6 +216,37 @@ func ForcePush(workDir, pushURL string) (output string, err error) {
 	return output, nil
 }
 
+// maskSensitiveInfo 屏蔽输出中的敏感信息，如 git 凭证
+func maskSensitiveInfo(input string) string {
+	// 使用更复杂的方法来处理 URL 中的凭证
+	// 首先匹配整个 URL 模式
+	urlRegex := regexp.MustCompile(`(https?://)[^/\s"']+(@[^/\s"':]+)`)
+
+	// 第一步：找出所有可能包含凭证的 URL
+	maskedOutput := urlRegex.ReplaceAllStringFunc(input, func(urlMatch string) string {
+		// 检查 URL 是否包含用户名和密码（查找 @ 符号前是否有 : 符号）
+		atIndex := strings.LastIndex(urlMatch, "@")
+		if atIndex <= 0 {
+			return urlMatch // 没有 @ 符号或 @ 在开头，不是凭证格式
+		}
+
+		// 查找协议部分（http:// 或 https://）
+		protoEndIndex := strings.Index(urlMatch, "://") + 3
+		if protoEndIndex < 3 {
+			return urlMatch // 没有找到协议部分
+		}
+
+		// 提取协议部分和域名部分
+		protocol := urlMatch[:protoEndIndex]
+		domain := urlMatch[atIndex:] // 包含 @ 符号及之后的内容
+
+		// 组合结果：协议 + 屏蔽的凭证 + 域名
+		return protocol + "****:****" + domain
+	})
+
+	return maskedOutput
+}
+
 func codePush(workDir, pushURL, repoPath string, force bool) (output string, err error) {
 	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
 	var cmd string
@@ -230,6 +262,8 @@ func codePush(workDir, pushURL, repoPath string, force bool) (output string, err
 		if err == nil {
 			return output, nil
 		}
+		// 屏蔽错误日志中的敏感信息
+		output = maskSensitiveInfo(output)
 		logger.Logger.Warnf("%s git push 失败 (尝试 %d/%d): %v \n %s", repoPath, i+1, len(retryIntervals), err, output)
 		if i < len(retryIntervals)-1 {
 			time.Sleep(interval)

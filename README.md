@@ -33,7 +33,7 @@
 
 
 ## ❓常见问题
-1. 超过了单个文件大小限制 500 MiB
+1. 超过了单个文件大小限制 256 MiB
 可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数，详见[更多参数](doc/parameters.md)
 2. 获取仓库列表失败/获取项目信息失败: `The current scope does not support access to this API`
 检查 PLUGIN_SOURCE_TOKEN 权限是否符合要求，如源平台为 CODING，确保 token 属于团队所有者或团队管理员，详见[CODDING Token要求](doc/ready.md)
