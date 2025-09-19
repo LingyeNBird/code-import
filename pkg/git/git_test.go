@@ -46,6 +46,15 @@ func TestMaskSensitiveInfo(t *testing.T) {
 			input:    "这是一段没有URL的文本",
 			expected: "这是一段没有URL的文本",
 		},
+		{
+			name: "多行带凭证的URL",
+			input: "第一行: https://user1:pass1@example.com/repo1.git\n" +
+				"第二行: http://admin:secret@example.org/repo2.git\n" +
+				"第三行: https://test:complex@p@ss@example.net/repo3.git",
+			expected: "第一行: https://****:****@example.com/repo1.git\n" +
+				"第二行: http://****:****@example.org/repo2.git\n" +
+				"第三行: https://****:****@example.net/repo3.git",
+		},
 	}
 
 	// 执行测试用例

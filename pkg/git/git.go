@@ -286,22 +286,24 @@ func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
 	workDir := repoPath
 	logger.Logger.Infof("%s 下载LFS文件", repoPath)
 	output, err := system.RunCommand("git", workDir, "lfs", "fetch", "--all", "origin")
+	// 屏蔽日志输出中的敏感信息
+	maskedOutput := maskSensitiveInfo(output)
 	logger.Logger.Debugf("%s 下载LFS文件\n%s", repoPath, output)
 	if err != nil && allowIncompletePush {
 		logger.Logger.Warnf("%s 下载LFS文件失败,忽略报错继续执行lfs Push", repoPath)
 		logger.Logger.Infof("%s 正在设置lfs.allowincompletepush为true", repoPath)
-		output, err := system.RunCommand("git", workDir, "config", "lfs.allowincompletepush", "true")
-		if err != nil {
-			return output, err
+		configOutput, configErr := system.RunCommand("git", workDir, "config", "lfs.allowincompletepush", "true")
+		if configErr != nil {
+			return maskSensitiveInfo(configOutput), configErr
 		}
 		logger.Logger.Infof("%s 设置lfs.allowincompletepush为true成功", repoPath)
-		return output, nil
+		return maskedOutput, nil
 	}
 	if err != nil {
 		logger.Logger.Errorf("%s 下载LFS文件失败", repoPath)
-		return output, err
+		return maskedOutput, err
 	}
-	return output, err
+	return maskedOutput, err
 }
 
 func PushLFS(repoPath, pushUrl string) (string, error) {
@@ -309,8 +311,10 @@ func PushLFS(repoPath, pushUrl string) (string, error) {
 	workDir := repoPath
 	output, err := system.ExecCommand(fmt.Sprintf(lfsPushCMD, pushUrl), workDir)
 	if err != nil {
+		// 屏蔽输出中的敏感信息
+		maskedOutput := maskSensitiveInfo(output)
 		logger.Logger.Errorf("%s LFS文件推送失败", repoPath)
-		return output, err
+		return maskedOutput, err
 	}
 	logger.Logger.Infof("%s LFS文件推送成功", repoPath)
 	return output, err
@@ -322,7 +326,9 @@ func FixExceededLimitError(repoPath string) error {
 	logger.Logger.Infof("%s 使用git lfs migrate 处理历史提交中的大文件", repoPath)
 	output, err := system.RunCommand("git", workDir, "lfs", "migrate", "import", "--everything", above)
 	if err != nil {
-		return fmt.Errorf("git lfs migrate import 失败: %s\n%s", err, output)
+		// 屏蔽输出中的敏感信息
+		maskedOutput := maskSensitiveInfo(output)
+		return fmt.Errorf("git lfs migrate import 失败: %s\n%s", err, maskedOutput)
 	}
 	logger.Logger.Infof("%s 使用git lfs migrate 处理历史提交中的大文件成功", repoPath)
 	logger.Logger.Debugf("%s 使用git lfs migrate 处理历史提交中的大文件成功\n%s", repoPath, output)
