@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	aliyunEndpoint  = "https://openapi-rdc.aliyuncs.com"
+	AliyunEndpoint  = "https://openapi-rdc.aliyuncs.com"
 	defaultPageSize = 100
 )
 
@@ -53,7 +53,7 @@ func GetRepositories(page int) ([]Repository, int, error) {
 	token := config.Cfg.GetString("source.token")
 
 	url := fmt.Sprintf("%s/oapi/v1/codeup/organizations/%s/repositories?page=%d&perPage=%d",
-		aliyunEndpoint, organizationID, page, defaultPageSize)
+		AliyunEndpoint, organizationID, page, defaultPageSize)
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)

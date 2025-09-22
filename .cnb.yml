@@ -51,6 +51,10 @@ $:
           image: cnbcool/changelog
           exports:
             latestChangeLog: LATEST_CHANGE_LOG
+        - name: print changelog
+          script: 
+          - echo $LATEST_CHANGE_LOG
+          - cat CHANGELOG.md
         - name: upload release
           type: git:release
           options:
