@@ -425,10 +425,28 @@ func checkCommonToken(token string) error {
 }
 
 func checkURL(url string) error {
-	// 仅允许 http:// 或 https:// 开头，后跟至少一个点的域名（允许多级子域名），不允许包含路径
-	urlPattern := regexp.MustCompile(`^https?://([A-Za-z0-9-]+\.)+[A-Za-z0-9-]+$`)
-	if !urlPattern.MatchString(url) {
-		return fmt.Errorf("url %s 格式错误，必须以 'http://' 或 'https://' 开头，且只能包含域名，不能包含路径,如 https://e.coding.net、https://cnb.cool", url)
+	// 仅允许 http:// 或 https:// 开头，后跟域名或IP地址，支持端口号，不允许包含路径
+	// 支持域名格式：example.com, api.example.com
+	// 支持IP地址格式：192.168.1.1, 10.0.0.1
+
+	// IP地址模式：严格匹配IPv4地址
+	ipPattern := `^https?://((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:[0-9]+)?$`
+
+	// 域名模式：至少包含一个点的域名，且至少有一个部分包含字母
+	domainPattern := `^https?://(([A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*\.)+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*|([A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*\.)+[A-Za-z0-9-]+|([A-Za-z0-9-]+\.)+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)(:[0-9]+)?$`
+
+	ipRegex := regexp.MustCompile(ipPattern)
+	domainRegex := regexp.MustCompile(domainPattern)
+
+	// 先检查IP地址模式，如果匹配则直接返回成功
+	if ipRegex.MatchString(url) {
+		return nil
 	}
-	return nil
+
+	// 再检查域名模式
+	if domainRegex.MatchString(url) {
+		return nil
+	}
+
+	return fmt.Errorf("url %s 格式错误，必须以 'http://' 或 'https://' 开头，且只能包含域名或IP地址，不能包含路径,如 https://e.coding.net、https://cnb.cool、https://example.com:8080、http://192.168.1.1:8080", url)
 }
