@@ -19,6 +19,7 @@ const (
 
 type CodingVcs struct {
 	httpURL      string
+	sshURL       string
 	RepoPath     string
 	SubGroupName string
 	RepoName     string
@@ -64,6 +65,10 @@ func (c *CodingVcs) GetRepoType() string {
 }
 
 func (c *CodingVcs) GetCloneUrl() string {
+	ssh := config.Cfg.GetBool("migrate.ssh")
+	if ssh {
+		return c.sshURL
+	}
 	return util.ConvertUrlWithAuth(c.httpURL, CodingUserName, c.GetToken())
 }
 
@@ -146,6 +151,7 @@ func CodingCovertToVcs(repoList []coding.Depots) []VCS {
 	for _, repo := range repoList {
 		VCS = append(VCS, &CodingVcs{
 			httpURL:      repo.HttpsUrl,
+			sshURL:       repo.SshUrl,
 			RepoPath:     repo.GetRepoPath(),
 			SubGroupName: repo.ProjectName,
 			RepoName:     repo.Name,
