@@ -67,6 +67,8 @@ func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 		return newGithubRepo()
 	case "gitee":
 		return newGiteeRepo()
+	case "gitea":
+		return newGiteaRepo()
 	case "common":
 		return newCommonRepo()
 	case "aliyun":

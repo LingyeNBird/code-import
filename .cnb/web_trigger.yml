@@ -174,3 +174,36 @@ branch:
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
         <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH        
+    - name: Gitea
+      # 如存在，则将作为流水线 title，否则流水线使用默认 title
+      description: 从Gitea批量迁移仓库到CNB
+      event: web_trigger_code_import # 触发的 CI 事件名
+      # 权限控制，不配置则有仓库写权限的用户可触发构建
+      # 如果配置，则需要有仓库写权限，并且满足 roles 或 users 其中之一才有权限触发构建
+      #      permissions:
+      #        # roles 和 users 配置其中之一或都配置均可，二者满足其一即可
+      #        roles:
+      #          - developer
+      #          - owner
+      #          - master
+      env:
+        PLUGIN_SOURCE_PLATFORM: gitea
+        PLUGIN_CNB_URL: https://cnb.cool
+      # 可输入环境变量，可覆盖上述 env 的变量配置
+      inputs:
+        # 目前支持以下三种格式：输入框（input）、多行文本输入框（textarea）、下拉选择框（select 支持单选和多选），switch 开关
+        # 其中 key 值（var1、var2、var3、var4、var5）为环境变量名
+        PLUGIN_SOURCE_URL:
+          name: "源平台 URL"
+          required: true
+          type: input
+          default: https://gitea.com
+        PLUGIN_SOURCE_TOKEN:
+          # 输入框
+          name: "源平台token"
+          description: "权限要求: read:organization、read:repository、read:user https://gitea.com/user/settings/applications (设置-应用-生成新的令牌)"
+          required: true # 是否必填
+          type: input
+        <<: *PLUGIN_CNB_ROOT_ORGANIZATION
+        <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH

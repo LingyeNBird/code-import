@@ -237,3 +237,44 @@ func GetReleaseAttachmentMarkdownURL(desc string) []string {
 	}
 	return path
 }
+
+// GiteaExtractAttachments 从 Gitea Markdown 内容中提取附件和图片的名称和 URL
+func GiteaExtractAttachments(markdown string) (attachments map[string]string, images map[string]string, exists bool) {
+	// 正则表达式匹配 Markdown 链接（附件）
+	linkRe := regexp.MustCompile(`\[(.*?)\]\((.*?)\)`)
+	linkMatches := linkRe.FindAllStringSubmatch(markdown, -1)
+	attachments = make(map[string]string)
+	// 遍历链接匹配项并填充附件 map
+	for _, match := range linkMatches {
+		if len(match) == 3 {
+			attachmentName := match[1] // 附件名
+			attachmentURL := match[2]  // 附件 URL
+			// 排除图片 URL
+			if !isImageURL(attachmentURL) {
+				attachments[attachmentName] = attachmentURL
+			}
+		}
+	}
+
+	// 正则表达式匹配 Markdown 图片，包括文件扩展名
+	imageRe := regexp.MustCompile(`!\[(.*?)\]\((.*?)(\.[^.]+)?\)`)
+	imageMatches := imageRe.FindAllStringSubmatch(markdown, -1)
+	images = make(map[string]string)
+	// 遍历图片匹配项并填充图片 map
+	for _, match := range imageMatches {
+		if len(match) >= 3 {
+			imageName := match[1] // 图片名
+			imageURL := match[2]  // 图片 URL
+			if len(match) == 4 && match[3] != "" {
+				imageName += match[3] // 添加文件扩展名
+				imageURL += match[3]
+			}
+			images[imageName] = imageURL
+		}
+	}
+
+	// 检查是否找到任何附件或图片
+	exists = len(attachments) > 0 || len(images) > 0
+
+	return attachments, images, exists
+}

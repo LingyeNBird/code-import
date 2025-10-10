@@ -11,6 +11,7 @@
         - 阿里云云效权限：代码仓库:只读 https://account-devops.aliyun.com/settings/personalAccessToken
         - CNB权限：account-engage:r、group-resource:r https://cnb.cool/profile/token
         - 工蜂权限: api、read_repository https://git.woa.com/profile/account
+        - Gitea权限: read:organization、read:repository、read:user http(s)://<YOUR-GITEA-HOST>/user/settings/applications (设置-应用-生成新的令牌)
 
 - **PLUGIN_CNB_ROOT_ORGANIZATION**
     - 类型：字符串

@@ -81,6 +81,15 @@ func NewCodingClient() *Client {
 	}
 }
 
+func NewGiteaClient() *Client {
+	return &Client{
+		BaseURL:    config.Cfg.GetString("source.url") + "/api/v1",
+		HTTPClient: &http.Client{},
+		Token:      config.Cfg.GetString("source.token"),
+		Limiter:    rate.NewLimiter(rate.Every(time.Second), 10),
+	}
+}
+
 // Request 发送一个 HTTP 请求到 OpenAPI
 func (c *Client) Request(method, endpoint string, token string, body interface{}) ([]byte, error) {
 	defer logger.Logger.Debugw("Request", "body", body, "reqPath", endpoint, "url", c.BaseURL+endpoint)
@@ -364,6 +373,48 @@ func (c *Client) Unmarshal(data []byte, v interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Client) GiteaRequest(method, endpoint string, body interface{}) ([]byte, http.Header, int, error) {
+	logger.Logger.Debugf("开始 Gitea 请求 %s", endpoint)
+	if err := c.Limiter.Wait(context.Background()); err != nil {
+		return nil, nil, 0, err
+	}
+
+	// 将 body 转换为 JSON 格式
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	fullUrl := fmt.Sprintf("%s%s", c.BaseURL, endpoint)
+	logger.Logger.Debugf("Gitea 请求 URL: %s", fullUrl)
+
+	// 创建一个新的 HTTP 请求
+	req, err := http.NewRequest(method, fullUrl, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	// 设置请求头 - Gitea 使用 token 方式认证
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "token "+c.Token)
+	req.Header.Set("Accept", "application/json")
+
+	// 发送请求
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	// 读取响应体
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	return respBody, resp.Header, resp.StatusCode, nil
 }
 
 // SendUploadRequest 发送上传请求
