@@ -107,8 +107,8 @@ func CheckConfig() error {
 	downloadOnly := config.Migrate.DownloadOnly
 
 	platform := config.Source.Platform
-	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "aliyun" && platform != "cnb" && platform != "gongfeng" && platform != "local" {
-		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、aliyun、cnb、gongfeng、local")
+	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "gitea" && platform != "aliyun" && platform != "cnb" && platform != "gongfeng" && platform != "local" {
+		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、gitea、aliyun、cnb、gongfeng、local")
 	}
 	if platform != "aliyun" && platform != "local" {
 		err := checkURL(config.Source.URL)
