@@ -103,7 +103,7 @@
 - **PLUGIN_MIGRATE_SKIP_EXISTS_REPO**
     - Type: boolean
     - Required: No
-    - Default: true
+    - Default: false
     - Description: Skip repositories that already exist in CNB
 
 - **PLUGIN_MIGRATE_USE_LFS_MIGRATE**
