@@ -103,7 +103,7 @@
 - **PLUGIN_MIGRATE_SKIP_EXISTS_REPO**
     - 类型：布尔值
     - 必填：否
-    - 默认值：true
+    - 默认值：false
     - 说明：跳过 CNB 已存在的仓库
 
 - **PLUGIN_MIGRATE_USE_LFS_MIGRATE**
