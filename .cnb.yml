@@ -63,9 +63,6 @@ $:
   web_trigger_code_import:
     - services:
         - docker
-      runner:
-        tags: cnb:arch:amd64
-        cpus: 16
       stages:
         - name: code-import
           script: |
@@ -78,6 +75,7 @@ $:
             -e PLUGIN_CNB_ROOT_ORGANIZATION=${PLUGIN_CNB_ROOT_ORGANIZATION} \
             -e PLUGIN_CNB_TOKEN=${PLUGIN_CNB_TOKEN}  \
             -e PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH=${PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH} \
+            -e PLUGIN_SROUCE_GROUP=${PLUGIN_SROUCE_GROUP} \
             -v $(pwd):$(pwd) -w $(pwd) \
             cnbcool/code-import
           timeout: 10h
