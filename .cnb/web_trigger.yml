@@ -54,6 +54,26 @@ branch:
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
         <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
+        PLUGIN_MIGRATE_MAP_CODING_DISPLAY_NAME:
+          name: 映射 CODING 项目名为 CNB 子组织名称
+          description: 映射 CODING 项目显示名称为 CNB 子组织别名，默认开启，一般保持默认即可,如遇创建子组织报错，可尝试关闭此选项
+          type: select
+          default: true
+          options:
+            - name: 开启
+              value: true
+            - name: 关闭
+              value: false          
+        PLUGIN_MIGRATE_MAP_CODING_DESCRIPTION:
+          name: 映射 CODING 项目简介为 CNB 子组织简介
+          description: 映射 CODING 项目简介为 CNB 子组织简介，默认开启，一般保持默认即可,如遇创建子组织报错，可尝试关闭此选项
+          type: select
+          default: true
+          options:
+            - name: 开启
+              value: true
+            - name: 关闭
+              value: false        
     - name: GitLab
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Gitlab批量迁移仓库到CNB
