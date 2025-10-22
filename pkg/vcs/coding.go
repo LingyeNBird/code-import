@@ -45,13 +45,13 @@ func (c *CodingVcs) GetSubGroup() *SubGroup {
 	}
 	// 初始化描述和备注字段
 	var desc, remark string
-	// 如果配置了映射 Coding 项目描述，则使用项目的描述作为描述字段
-	if config.Cfg.GetBool("migrate.map_coding_display_name") {
-		desc = project.Description
-	}
-	// 如果配置了映射 Coding 项目显示名称，则使用项目的显示名称作为备注字段
+	// 如果配置了映射 Coding 项目描述，则使用项目的描述作为子组织描述
 	if config.Cfg.GetBool("migrate.map_coding_description") {
-		remark = project.DisplayName
+		desc = strings.TrimSpace(project.Description)
+	}
+	// 如果配置了映射 Coding 项目显示名称，则使用项目的显示名称作为子组织别名
+	if config.Cfg.GetBool("migrate.map_coding_display_name") {
+		remark = strings.TrimSpace(project.DisplayName)
 	}
 	return &SubGroup{
 		Name:   c.SubGroupName,
