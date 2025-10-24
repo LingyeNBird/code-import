@@ -6,6 +6,7 @@ import (
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/system"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -216,35 +217,52 @@ func ForcePush(workDir, pushURL string) (output string, err error) {
 	return output, nil
 }
 
-// maskSensitiveInfo 屏蔽输出中的敏感信息，如 git 凭证
-func maskSensitiveInfo(input string) string {
-	// 使用更复杂的方法来处理 URL 中的凭证
-	// 首先匹配整个 URL 模式
-	urlRegex := regexp.MustCompile(`(https?://)[^/\s"']+(@[^/\s"':]+)`)
+// removeCredentialsFromURL 屏蔽url中的敏感信息，如 git 凭证
+func removeCredentialsFromURL(input string) string {
+	// URL 正则表达式
+	urlRegex := regexp.MustCompile(`https?://[^\s]+`)
 
-	// 第一步：找出所有可能包含凭证的 URL
-	maskedOutput := urlRegex.ReplaceAllStringFunc(input, func(urlMatch string) string {
-		// 检查 URL 是否包含用户名和密码（查找 @ 符号前是否有 : 符号）
-		atIndex := strings.LastIndex(urlMatch, "@")
-		if atIndex <= 0 {
-			return urlMatch // 没有 @ 符号或 @ 在开头，不是凭证格式
+	return urlRegex.ReplaceAllStringFunc(input, func(urlMatch string) string {
+		// 使用 url.Parse 进行专业解析
+		u, err := url.Parse(urlMatch)
+		if err != nil {
+			return urlMatch // 解析失败，返回原字符串
 		}
 
-		// 查找协议部分（http:// 或 https://）
-		protoEndIndex := strings.Index(urlMatch, "://") + 3
-		if protoEndIndex < 3 {
-			return urlMatch // 没有找到协议部分
+		// 如果有用户信息，直接移除
+		if u.User != nil {
+			u.User = nil
+			// 使用自定义的字符串构建方法
+			return buildURLString(u)
 		}
 
-		// 提取协议部分和域名部分
-		protocol := urlMatch[:protoEndIndex]
-		domain := urlMatch[atIndex:] // 包含 @ 符号及之后的内容
-
-		// 组合结果：协议 + 屏蔽的凭证 + 域名
-		return protocol + "****:****" + domain
+		return urlMatch
 	})
+}
 
-	return maskedOutput
+// buildURLString 手动构建 URL 字符串，避免自动编码
+func buildURLString(u *url.URL) string {
+	var result strings.Builder
+
+	result.WriteString(u.Scheme)
+	result.WriteString("://")
+	result.WriteString(u.Host)
+
+	if u.Path != "" {
+		result.WriteString(u.Path)
+	}
+
+	if u.RawQuery != "" {
+		result.WriteString("?")
+		result.WriteString(u.RawQuery)
+	}
+
+	if u.Fragment != "" {
+		result.WriteString("#")
+		result.WriteString(u.Fragment)
+	}
+
+	return result.String()
 }
 
 func codePush(workDir, pushURL, repoPath string, force bool) (output string, err error) {
@@ -263,7 +281,7 @@ func codePush(workDir, pushURL, repoPath string, force bool) (output string, err
 			return output, nil
 		}
 		// 屏蔽错误日志中的敏感信息
-		output = maskSensitiveInfo(output)
+		output = removeCredentialsFromURL(output)
 		logger.Logger.Warnf("%s git push 失败 (尝试 %d/%d): %v \n %s", repoPath, i+1, len(retryIntervals), err, output)
 		if i < len(retryIntervals)-1 {
 			time.Sleep(interval)
@@ -287,14 +305,14 @@ func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
 	logger.Logger.Infof("%s 下载LFS文件", repoPath)
 	output, err := system.RunCommand("git", workDir, "lfs", "fetch", "--all", "origin")
 	// 屏蔽日志输出中的敏感信息
-	maskedOutput := maskSensitiveInfo(output)
+	maskedOutput := removeCredentialsFromURL(output)
 	logger.Logger.Debugf("%s 下载LFS文件\n%s", repoPath, output)
 	if err != nil && allowIncompletePush {
 		logger.Logger.Warnf("%s 下载LFS文件失败,忽略报错继续执行lfs Push", repoPath)
 		logger.Logger.Infof("%s 正在设置lfs.allowincompletepush为true", repoPath)
 		configOutput, configErr := system.RunCommand("git", workDir, "config", "lfs.allowincompletepush", "true")
 		if configErr != nil {
-			return maskSensitiveInfo(configOutput), configErr
+			return removeCredentialsFromURL(configOutput), configErr
 		}
 		logger.Logger.Infof("%s 设置lfs.allowincompletepush为true成功", repoPath)
 		return maskedOutput, nil
@@ -312,7 +330,7 @@ func PushLFS(repoPath, pushUrl string) (string, error) {
 	output, err := system.ExecCommand(fmt.Sprintf(lfsPushCMD, pushUrl), workDir)
 	if err != nil {
 		// 屏蔽输出中的敏感信息
-		maskedOutput := maskSensitiveInfo(output)
+		maskedOutput := removeCredentialsFromURL(output)
 		logger.Logger.Errorf("%s LFS文件推送失败", repoPath)
 		return maskedOutput, err
 	}
@@ -327,7 +345,7 @@ func FixExceededLimitError(repoPath string) error {
 	output, err := system.RunCommand("git", workDir, "lfs", "migrate", "import", "--everything", above)
 	if err != nil {
 		// 屏蔽输出中的敏感信息
-		maskedOutput := maskSensitiveInfo(output)
+		maskedOutput := removeCredentialsFromURL(output)
 		return fmt.Errorf("git lfs migrate import 失败: %s\n%s", err, maskedOutput)
 	}
 	logger.Logger.Infof("%s 使用git lfs migrate 处理历史提交中的大文件成功", repoPath)
