@@ -17,8 +17,6 @@ function delete_repos() {
 
 count=0
 max_attempts=1
-apt-get update 
-apt-get install -y jq
 while [ $count -lt $max_attempts ]; do
     delete_repos "$ORG_NAME"
     count=$((count + 1))
