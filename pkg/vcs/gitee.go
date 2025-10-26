@@ -117,12 +117,15 @@ func newGiteeRepo() ([]VCS, error) {
 func GiteeCovertToVcs(repoList []api.Repo) []VCS {
 	var VCS []VCS
 	for _, repo := range repoList {
+		// 当 repo.Internal 为 true 时，自动将 Private 也设置为 true
+		// 确保内部仓库被正确标记为私有仓库
+		isPrivate := repo.Private || repo.Internal
 		VCS = append(VCS, &GiteeVcs{
 			httpURL:  repo.HtmlUrl,
 			RepoPath: repo.FullName,
 			RepoName: repo.Name,
 			RepoType: Git,
-			Private:  repo.Private,
+			Private:  isPrivate,
 			Desc:     repo.Description,
 		})
 	}
