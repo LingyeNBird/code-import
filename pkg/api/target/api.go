@@ -12,6 +12,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
@@ -437,12 +438,12 @@ func CreateRootOrganization(url, token string) (err error) {
 
 func GetPushUrl(organizationMappingLevel int, cnbURL, userName, token, projectName, repoName string) string {
 	var pushURL string
-	parts := strings.Split(cnbURL, "://")
+	u, _ := url.Parse(cnbURL)
 	switch organizationMappingLevel {
 	case 1:
-		pushURL = parts[0] + "://" + userName + ":" + token + "@" + parts[1] + "/" + RootOrganizationName + "/" + path.Join(projectName, repoName) + ".git"
+		pushURL = fmt.Sprintf("%s://%s", u.Scheme, path.Join(fmt.Sprintf("%s:%s@%s", userName, token, u.Host), RootOrganizationName, projectName, repoName))
 	case 2:
-		pushURL = parts[0] + "://" + userName + ":" + token + "@" + parts[1] + "/" + RootOrganizationName + "/" + repoName + ".git"
+		pushURL = fmt.Sprintf("%s://%s", u.Scheme, path.Join(fmt.Sprintf("%s:%s@%s", userName, token, u.Host), RootOrganizationName, repoName))
 	}
 	return pushURL
 }

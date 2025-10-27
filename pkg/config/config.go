@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"ccrctl/pkg/util"
+
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
@@ -237,6 +239,9 @@ func init() {
 		panic(err)
 	}
 
+	// 处理 cnb.root_organization，使用 TrimSlash 函数清理前后的斜杠和空格
+	processCNBRootOrganization(Cfg)
+
 	// 保存配置到文件
 	err = Cfg.WriteConfigAs(configName)
 	if err != nil {
@@ -301,6 +306,18 @@ func parseStringEnvValueToInt(v *viper.Viper, keys ...string) error {
 		v.Set(key, intValue)
 	}
 	return nil
+}
+
+// processCNBRootOrganization 处理 cnb.root_organization 配置项
+// 使用 util.TrimSlash 函数移除前后的斜杠和空格
+func processCNBRootOrganization(v *viper.Viper) {
+	key := "cnb.root_organization"
+	value := v.GetString(key)
+	if value != "" {
+		// 使用 util.TrimSlash 函数处理值
+		trimmedValue := util.TrimSlash(value)
+		v.Set(key, trimmedValue)
+	}
 }
 
 func stringCovertToListAndSetConfigValue(v *viper.Viper, keys ...string) {

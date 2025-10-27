@@ -2,7 +2,6 @@ package util
 
 import (
 	"bytes"
-	"ccrctl/pkg/logger"
 	"fmt"
 	"net/url"
 	"path"
@@ -67,7 +66,6 @@ func MatchMarkdownImgeUrl(md string) map[string]string {
 	for _, match := range matches {
 		if len(match) > 1 {
 			index := strings.Index(match[1], ";")
-			logger.Logger.Debugf("Matched img url: %s", match[1][:index])
 			imgUrls[match[1][:index]] = match[1]
 		}
 	}
@@ -277,4 +275,23 @@ func GiteaExtractAttachments(markdown string) (attachments map[string]string, im
 	exists = len(attachments) > 0 || len(images) > 0
 
 	return attachments, images, exists
+}
+
+// TrimSlash 移除字符串前后的斜杠和空格
+// 只移除最外层的空白字符和斜杠，保留内部的空格
+func TrimSlash(s string) string {
+	// 先移除前后空白字符
+	s = strings.TrimSpace(s)
+
+	// 移除前面的一个斜杠
+	if len(s) > 0 && s[0] == '/' {
+		s = s[1:]
+	}
+
+	// 移除后面的一个斜杠
+	if len(s) > 0 && s[len(s)-1] == '/' {
+		s = s[:len(s)-1]
+	}
+
+	return s
 }
