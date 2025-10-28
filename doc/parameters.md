@@ -161,7 +161,7 @@
     - 类型：布尔值
     - 必填：是
     - 默认值：false
-    - 说明：在源和目标都有变更的情况下,且CNB侧仓库对应分支根目录有`.cnb.yml`文件，使用git rebase保证代码同步，CNB侧提交的流水线配置代码不会被覆盖
+    - 说明：使用git rebase保证代码同步，CNB侧提交的流水线配置代码不会被覆盖,如遇冲突需人工解决。  
       ⚠️如开启该配置，将启用强制推送（PLUGIN_MIGRATE_FORCE_PUSH="true"），并在迁移工具执行的工作目录备份CNB侧代码仓库
 
 - **PLUGIN_SOURCE_PROJECT**

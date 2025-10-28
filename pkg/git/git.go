@@ -95,99 +95,58 @@ func Rebase(rebaseRepoPath, repoPath string) error {
 		return fmt.Errorf("%s 拉取souce远程仓库失败: %s\n %s", rebaseRepoPath, err, out)
 	}
 	logger.Logger.Infof("%s 拉取souce远程仓库成功", rebaseRepoPath)
-	rebaseBranches := config.Cfg.GetStringSlice("migrate.rebase_branch")
 	// 如果没有指定rebaseBranches, 则遍历所有分支进行处理
-	if len(rebaseBranches) == 0 {
-		// 获取所有远程分支
-		out, err := system.ExecCommand(GetOriginBranchesCommand, rebaseRepoPath)
-		if err != nil {
-			return fmt.Errorf("%s 获取远程分支列表失败: %s\n %s", rebaseRepoPath, err, out)
-		}
+	// 获取所有远程分支
+	out, err = system.ExecCommand(GetOriginBranchesCommand, rebaseRepoPath)
+	if err != nil {
+		return fmt.Errorf("%s 获取远程分支列表失败: %s\n %s", rebaseRepoPath, err, out)
+	}
 
-		// 解析分支列表，过滤掉 HEAD 和 origin/HEAD
-		remoteBranches := strings.Split(strings.TrimSpace(out), "\n")
-		var branches []string
-		for _, branch := range remoteBranches {
-			branch = strings.TrimSpace(branch)
-			if strings.Contains(branch, "->") || strings.Contains(branch, "HEAD") {
-				continue
-			}
-			// 去除 "origin/" 前缀
-			branch = strings.TrimPrefix(branch, "origin/")
-			branches = append(branches, branch)
+	// 解析分支列表，过滤掉 HEAD 和 origin/HEAD
+	remoteBranches := strings.Split(strings.TrimSpace(out), "\n")
+	var branches []string
+	for _, branch := range remoteBranches {
+		branch = strings.TrimSpace(branch)
+		if strings.Contains(branch, "->") || strings.Contains(branch, "HEAD") {
+			continue
 		}
-		logger.Logger.Infof("%s 分支列表: %s", rebaseRepoPath, branches)
+		// 去除 "origin/" 前缀
+		branch = strings.TrimPrefix(branch, "origin/")
+		branches = append(branches, branch)
+	}
+	logger.Logger.Infof("%s 分支列表: %s", rebaseRepoPath, branches)
 
-		// 遍历所有分支进行rebase
-		for _, branch := range branches {
-			// 切换到指定分支
-			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
-			if checkBranchErr != nil {
-				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
-			}
-			// 检查 .cnb.yaml文件是否存在
-			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
-			exist := system.FileExists(CNBYamlFileAbsPath)
-			if !exist {
-				logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, branch)
-				continue
-			}
-			rebaseBranch := SourceOriginName + "/" + branch
-			// rebase指定分支
-			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
-			if rebaseErr != nil {
-				// 检查是否是分支不存在的情况
-				if isInvalidUpstreamError(rebaseOut) {
-					logger.Logger.Warnf("%s 分支 %s 在源仓库中不存在，跳过 rebase", rebaseRepoPath, branch)
-					continue
-				}
-				return fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
-			}
-			logger.Logger.Infof("%s %s rebase成功", rebaseRepoPath, rebaseBranch)
-			rebasePushOut, rebasePushErr := system.ExecCommand(GitPushToLocalBareRepo, rebaseRepoPath)
-			if rebasePushErr != nil {
-				return fmt.Errorf("分支 %s rebase后push失败: %s\n %s", branch, rebasePushErr.Error(), rebasePushOut)
-			}
-			logger.Logger.Infof("%s %s rebase后push成功", rebaseRepoPath, rebaseBranch)
+	// 遍历所有分支进行rebase
+	for _, branch := range branches {
+		// 切换到指定分支
+		checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
+		if checkBranchErr != nil {
+			return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
 		}
-	} else {
-		for _, branch := range rebaseBranches {
-			// 检查分支是否存在
-			_, grepBranchErr := system.ExecCommand(fmt.Sprintf(ListAllBranchesAndGrep, branch), rebaseRepoPath)
-			if grepBranchErr != nil {
-				logger.Logger.Debugf("%s 分支: %s 不存在,跳过 rebase", rebaseRepoPath, branch)
+		// 检查 .cnb.yaml文件是否存在
+		// CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
+		// exist := system.FileExists(CNBYamlFileAbsPath)
+		// if !exist {
+		// 	logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, branch)
+		// 	continue
+		// }
+		rebaseBranch := SourceOriginName + "/" + branch
+		// rebase指定分支
+		rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
+		if rebaseErr != nil {
+			// 检查是否是分支不存在的情况
+			if isInvalidUpstreamError(rebaseOut) {
+				logger.Logger.Warnf("%s 分支 %s 在源仓库中不存在，跳过 rebase", rebaseRepoPath, branch)
 				continue
 			}
-			// 切换到指定分支
-			checkBranchErr := checkoutBranch(rebaseRepoPath, branch)
-			if checkBranchErr != nil {
-				return fmt.Errorf("%s 分支 %s checkout失败: %s", rebaseRepoPath, branch, checkBranchErr)
-			}
-			//检查 .cnb.yaml文件是否存在
-			CNBYamlFileAbsPath := path.Join(rebaseRepoPath, CNBYamlFileName)
-			exist := system.FileExists(CNBYamlFileAbsPath)
-			if !exist {
-				logger.Logger.Infof("%s分支%s .cnb.yml文件不存在,跳过 rebease", rebaseRepoPath, branch)
-				continue
-			}
-			rebaseBranch := SourceOriginName + "/" + branch
-			// rebase指定分支
-			rebaseOut, rebaseErr := system.ExecCommand(fmt.Sprintf(RebaseBranch, rebaseBranch), rebaseRepoPath)
-			if rebaseErr != nil {
-				// 检查是否是分支不存在的情况
-				if isInvalidUpstreamError(rebaseOut) {
-					logger.Logger.Warnf("%s 分支 %s 在源仓库中不存在，跳过 rebase", rebaseRepoPath, branch)
-					continue
-				}
-				return fmt.Errorf("分支 %s rebase失败: %s\n %s", branch, rebaseErr.Error(), rebaseOut)
-			}
-			logger.Logger.Infof("%s rebase %s 成功", rebaseRepoPath, rebaseBranch)
-			rebasePushOut, rebasePushErr := system.ExecCommand(GitPushToLocalBareRepo, rebaseRepoPath)
-			if rebasePushErr != nil {
-				return fmt.Errorf("分支 %s rebase后push失败: %s\n %s", branch, rebasePushErr.Error(), rebasePushOut)
-			}
-			logger.Logger.Infof("%s %s rebase后push成功", rebaseRepoPath, rebaseBranch)
+			return fmt.Errorf("仓库 %s 分支 %s rebase失败: %s\n %s", repoPath, branch, rebaseErr.Error(), rebaseOut)
 		}
+		logger.Logger.Infof("%s %s rebase成功", rebaseRepoPath, rebaseBranch)
+		rebasePushOut, rebasePushErr := system.ExecCommand(GitPushToLocalBareRepo, rebaseRepoPath)
+		if rebasePushErr != nil {
+			return fmt.Errorf("分支 %s rebase后push失败: %s\n %s", branch, rebasePushErr.Error(), rebasePushOut)
+		}
+		logger.Logger.Infof("%s %s rebase后push成功", rebaseRepoPath, rebaseBranch)
 	}
 	return nil
 }
