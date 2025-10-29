@@ -211,7 +211,7 @@ func init() {
 	// 设置默认值
 	setDefaultValues(Cfg)
 
-	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo", "migrate.rebase_branch")
+	stringCovertToListAndSetConfigValue(Cfg, "source.project", "source.repo")
 
 	// 需要转换为布尔值的配置项
 	boolKeys := []string{
@@ -362,7 +362,6 @@ func bindEnvVariables(config *viper.Viper) error {
 		"source.endpoint",
 		"migrate.ssh",
 		"source.ssh_private_key",
-		"migrate.rebase_branch",
 		"migrate.allow_select_repos",
 		"migrate.download_only",
 		"migrate.include_github_fork",
