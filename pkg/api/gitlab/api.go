@@ -5,10 +5,11 @@ import (
 	"ccrctl/pkg/logger"
 	"encoding/json"
 	"fmt"
-	gitlab "github.com/xanzy/go-gitlab"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	gitlab "github.com/xanzy/go-gitlab"
 )
 
 var (
