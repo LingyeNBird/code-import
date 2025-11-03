@@ -33,6 +33,7 @@ type Repository struct {
 	UpdatedAt         string `json:"updatedAt"`
 	Visibility        string `json:"visibility"`
 	WebUrl            string `json:"webUrl"`
+	Description string `json:"description"`
 }
 
 // RepositoryListResponse 表示获取仓库列表的响应

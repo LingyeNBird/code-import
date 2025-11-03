@@ -14,6 +14,7 @@ type AliyunVcs struct {
 	RepoName          string
 	RepoType          string
 	Private           string
+	Desc              string
 }
 
 func (c *AliyunVcs) GetRepoPath() string {
@@ -87,9 +88,10 @@ func aliyunCovertToVcs(repoList []api.Repository) []VCS {
 		VCS = append(VCS, &AliyunVcs{
 			httpURL:           repo.WebUrl,
 			PathWithNamespace: repo.PathWithNamespace,
-			RepoName:          repo.Name,
+			RepoName:          repo.Path,
 			RepoType:          Git,
 			Private:           repo.Visibility,
+			Desc:              repo.Description,
 		})
 	}
 	return VCS
@@ -100,7 +102,7 @@ func (c *AliyunVcs) GetReleaseAttachments(desc string, repoPath string, projectI
 }
 
 func (c *AliyunVcs) GetRepoDescription() string {
-	return ""
+	return c.Desc
 }
 
 func (c *AliyunVcs) ListRepos() ([]VCS, error) {
