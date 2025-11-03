@@ -12,6 +12,23 @@
         - CNB权限：account-engage:r、group-resource:r https://cnb.cool/profile/token
         - 工蜂权限: api、read_repository https://git.woa.com/profile/account
         - Gitea权限: read:organization、read:repository、read:user http(s)://<YOUR-GITEA-HOST>/user/settings/applications (设置-应用-生成新的令牌)
+        - 华为云 Codearts repo 权限: 仓库读写 https://devcloud.{YOUR-REGION}.huaweicloud.com/codehub/tokens，YOUR-REGION 替换为对应的区域, 如华北-北京四对应值为 cn-north-4,参考文档 https://support.huaweicloud.com/api-codeartsrepo/codeartsrepo_05_0001.html#section0
+- **PLUGIN_SOURCE_AK**
+    - 类型：字符串
+    - 必填：否
+    - 默认值：-
+    - 说明：调用源代码托管平台 API 的 access key (当 source_platform 为 huaweicloud 时必填)，创建位置：控制台-个人信息-我的凭证-访问密钥
+- **PLUGIN_SOURCE_SK**
+    - 类型：字符串
+    - 必填：否
+    - 默认值：-
+    - 说明：调用源代码托管平台 API 的 secret key (当 source_platform 为 huaweicloud 时必填)，创建位置：控制台-个人信息-我的凭证-访问密钥
+        - Gitea权限: read:organization、read:repository、read:user http(s)://<YOUR-GITEA-HOST>/user/settings/applications (设置-应用-生成新的令牌)
+- **PLUGIN_SOURCE_REGION**
+    - 类型：字符串
+    - 必填：否
+    - 默认值：cn-north-4
+    - 说明: 华为云 CodeArts Repo 开通所在区域编号,详见https://support.huaweicloud.com/api-codeartsrepo/codeartsrepo_05_0001.html#section0
 
 - **PLUGIN_CNB_ROOT_ORGANIZATION**
     - 类型：字符串

@@ -109,9 +109,6 @@ func CheckConfig() error {
 	downloadOnly := config.Migrate.DownloadOnly
 
 	platform := config.Source.Platform
-	if platform != "common" && platform != "coding" && platform != "gitlab" && platform != "github" && platform != "gitee" && platform != "gitea" && platform != "aliyun" && platform != "cnb" && platform != "gongfeng" && platform != "local" {
-		return fmt.Errorf("source.platform error only support common、coding、gitlab、github、gitee、gitea、aliyun、cnb、gongfeng、local")
-	}
 	if platform != "aliyun" && platform != "local" {
 		err := checkURL(config.Source.URL)
 		if err != nil {
@@ -342,6 +339,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"source.repo",
 		"source.username",
 		"source.password",
+		"source.region",
 		"cnb.url",
 		"cnb.token",
 		"cnb.root_organization",
@@ -402,6 +400,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.include_github_fork":        "true",
 		"migrate.map_coding_display_name":    "true",
 		"migrate.map_coding_description":     "true",
+		"source.region":                      "cn-north-4",
 	}
 
 	// 使用循环来设置默认值

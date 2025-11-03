@@ -117,3 +117,5 @@ ccrctl
 .vscode/*
 .vscode/settings.json
 repo-path.txt
+successful.log
+migrate.log

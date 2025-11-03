@@ -160,40 +160,7 @@ branch:
           type: input
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
-        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH
-    - name: Codeup 迁移至 CNB 
-      # 如存在，则将作为流水线 title，否则流水线使用默认 title
-      description: 从Codeup批量迁移仓库到CNB
-      event: web_trigger_code_import # 触发的 CI 事件名
-      # 权限控制，不配置则有仓库写权限的用户可触发构建
-      # 如果配置，则需要有仓库写权限，并且满足 roles 或 users 其中之一才有权限触发构建
-#      permissions:
-#        # roles 和 users 配置其中之一或都配置均可，二者满足其一即可
-#        roles:
-#          - developer
-#          - owner
-#          - master
-      env:
-        PLUGIN_SOURCE_PLATFORM: aliyun
-        PLUGIN_CNB_URL: https://cnb.cool      # 可输入环境变量，可覆盖上述 env 的变量配置
-      inputs:
-        # 目前支持以下三种格式：输入框（input）、多行文本输入框（textarea）、下拉选择框（select 支持单选和多选），switch 开关
-        # 其中 key 值（var1、var2、var3、var4、var5）为环境变量名
-        PLUGIN_SOURCE_ORGANIZATIONID:
-          # 输入框
-          name: 云效代码仓库组织ID
-          description: 在云效组织基本信息页面，查看当前组织ID。
-          required: true
-          type: input
-        PLUGIN_SOURCE_TOKEN:
-          # 输入框
-          name: "源平台token"
-          description: "权限要求: 代码仓库:只读 创建地址:https://account-devops.aliyun.com/settings/personalAccessToken"
-          required: true # 是否必填
-          type: input
-        <<: *PLUGIN_CNB_ROOT_ORGANIZATION
-        <<: *PLUGIN_CNB_TOKEN
-        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH        
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH      
     - name: Gitea 迁移至 CNB
       # 如存在，则将作为流水线 title，否则流水线使用默认 title
       description: 从Gitea批量迁移仓库到CNB
@@ -266,3 +233,88 @@ branch:
         <<: *PLUGIN_CNB_ROOT_ORGANIZATION
         <<: *PLUGIN_CNB_TOKEN
         <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH        
+    - name: 阿里云(Codeup) 迁移至 CNB 
+      # 如存在，则将作为流水线 title，否则流水线使用默认 title
+      description: 从Codeup批量迁移仓库到CNB
+      event: web_trigger_code_import # 触发的 CI 事件名
+      # 权限控制，不配置则有仓库写权限的用户可触发构建
+      # 如果配置，则需要有仓库写权限，并且满足 roles 或 users 其中之一才有权限触发构建
+#      permissions:
+#        # roles 和 users 配置其中之一或都配置均可，二者满足其一即可
+#        roles:
+#          - developer
+#          - owner
+#          - master
+      env:
+        PLUGIN_SOURCE_PLATFORM: aliyun
+        PLUGIN_CNB_URL: https://cnb.cool      # 可输入环境变量，可覆盖上述 env 的变量配置
+      inputs:
+        # 目前支持以下三种格式：输入框（input）、多行文本输入框（textarea）、下拉选择框（select 支持单选和多选），switch 开关
+        # 其中 key 值（var1、var2、var3、var4、var5）为环境变量名
+        PLUGIN_SOURCE_ORGANIZATIONID:
+          # 输入框
+          name: 云效代码仓库组织ID
+          description: 在云效组织基本信息页面，查看当前组织ID。
+          required: true
+          type: input
+        PLUGIN_SOURCE_TOKEN:
+          # 输入框
+          name: "源平台token"
+          description: "权限要求: 代码仓库:只读 创建地址:https://account-devops.aliyun.com/settings/personalAccessToken"
+          required: true # 是否必填
+          type: input
+        <<: *PLUGIN_CNB_ROOT_ORGANIZATION
+        <<: *PLUGIN_CNB_TOKEN
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH        
+    - name: 华为云(CodeArts Repo) 迁移至 CNB   
+      # 如存在，则将作为流水线 title，否则流水线使用默认 title
+      description: 从华为云(CodeArts Repo)批量迁移仓库到CNB
+      event: web_trigger_code_import # 触发的 CI 事件名
+      env:
+        PLUGIN_SOURCE_PLATFORM: huaweicloud
+        PLUGIN_CNB_URL: https://cnb.cool      # 可输入环境变量，可覆盖上述 env 的变量配置
+      inputs:
+        # 目前支持以下三种格式：输入框（input）、多行文本输入框（textarea）、下拉选择框（select 支持单选和多选），switch 开关
+        # 其中 key 值（var1、var2、var3、var4、var5）为环境变量名
+        PLUGIN_SOURCE_TOKEN:
+          # 输入框
+          name: "源平台token"
+          description: 仓库访问令牌，用于代码 clone。创建位置：仓库首页-个人设置-代码托管-访问令牌
+          type: input
+        PLUGIN_SOURCE_AK:
+          # 输入框
+          name: 华为云 access key
+          description: 用于请求华为云 API 接口。创建位置：控制台-个人信息-我的凭证-访问密钥
+          required: true
+          type: input  
+        PLUGIN_SOURCE_SK:
+          # 输入框
+          name: 华为云 secret key 
+          description: 用于请求华为云 API 接口。创建位置：控制台-个人信息-我的凭证-访问密钥
+          required: true
+          type: input
+        PLUGIN_SOURCE_REGION:
+          # 输入框
+          name: 华为云仓库服务所在区域
+          description: 默认华北-北京四，详见https://support.huaweicloud.com/api-codeartsrepo/codeartsrepo_05_0001.html
+          required: true
+          type: select
+          default: cn-north-4
+          options:
+            - name: 华北-北京四
+              value: cn-north-4
+            - name: 华南-深圳
+              value: cn-south-2
+            - name: 华东-上海二
+              value: cn-east-2
+            - name: 华东-上海一
+              value: cn-east-3
+            - name: 华北-北京一
+              value: cn-north-1
+            - name: 华南-广州
+              value: cn-south-1
+            - name: 西南-贵阳一
+              value: cn-southwest-2
+        <<: *PLUGIN_CNB_ROOT_ORGANIZATION
+        <<: *PLUGIN_CNB_TOKEN        
+        <<: *PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH           

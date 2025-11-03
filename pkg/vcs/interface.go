@@ -79,6 +79,8 @@ func NewVcs(sourceRepoPlatformName string) ([]VCS, error) {
 		return newGongfengRepo()
 	case "local":
 		return newLocalRepo()
+	case "huaweicloud":
+		return newHuaweiCloudRepo()
 	default:
 		return nil, fmt.Errorf("不支持的仓库平台: %s", sourceRepoPlatformName)
 	}

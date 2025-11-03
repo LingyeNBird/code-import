@@ -235,6 +235,24 @@
 
   </details>
 
+* <details>
+    <summary> 从 华为云(CodeArts Repo)迁移 </summary>
+
+    迁移之后的效果：原华为云下有权限的所有项目或者代码组，会在 CNB 中创建同名的子组织，并将源仓库组下的仓库迁移至该子组织下面，最终路径为 `/<CNB根组织>/<项目名>/<仓库名>`
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_AK="xxx" \
+      -e PLUGIN_SOURCE_SK="xxx" \
+      -e PLUGIN_SOURCE_REGION="xxx" \
+      -e PLUGIN_SOURCE_PLATFORM="huaweicloud" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
+  </details>
+
 ## 迁移完成后，增量更新原平台最新内容
 清空原工作目录下的 successful.log
 
