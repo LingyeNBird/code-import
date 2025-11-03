@@ -226,6 +226,24 @@
     **To re-select repositories, delete `repo-path.txt` and run command again.**
   </details>
 
+* <details>
+    <summary> Migrate from Huawei Cloud (CodeArts Repo) </summary>
+
+    Result: All projects or code groups accessible to Huawei Cloud account will create same-name sub-orgs in CNB, with repositories migrated under them. Final path will be `/<CNB root org>/<project name>/<repo name>`
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_AK="xxx" \
+      -e PLUGIN_SOURCE_SK="xxx" \
+      -e PLUGIN_SOURCE_REGION="xxx" \
+      -e PLUGIN_SOURCE_PLATFORM="huaweicloud" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
+  </details>
+
 ## Incremental updates from source platform
 Clear successful.log in working directory
 

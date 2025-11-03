@@ -5,10 +5,15 @@
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
 ## 📒Features
-1. Support batch migration from CODING, GitHub, GitLab, Gitee, Codeup(Alibaba Cloud), CNB, Tencent Git, and other third-party code hosting platforms to CNB
+1. Support batch migration from CODING, GitHub, GitLab, Gitee, Codeup(Alibaba Cloud), CNB, Tencent Git, Gitea, Huawei Cloud(CodeArts Repo), and other third-party code hosting platforms to CNB
 2. Automatically create CNB sub-organizations and repositories (migrated repository path will be `<CNB root org>/<source repo path>`)
-3. Automatically skip successfully migrated repositories (⚠️ depends on `successful.log` file in working directory)
-4. SVN repositories are not supported, please convert to git repositories first
+3. CODING source repositories will map project display names to CNB sub-organization aliases, and project descriptions to sub-organization descriptions
+4. Automatically skip successfully migrated repositories (⚠️ depends on `successful.log` file in working directory)
+
+## 💥Important Notes (Must Read)
+1. SVN repositories are not supported, please convert to git repositories first
+2. **After migration is complete, ensure code commits are only made on one platform, otherwise re-migration may cause conflicts**
+3. CNB sub-organizations are visible to external members by default. To modify this, enable Root Organization - Organization Settings - Organization Control - Hide Sub-organizations
 
 ## 🌟Preparation
 1. Create access token for source platform

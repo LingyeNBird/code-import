@@ -11,6 +11,23 @@
         - Aliyun Codeup permissions: Repository:read only https://account-devops.aliyun.com/settings/personalAccessToken
         - CNB permissions: account-engage:r, group-resource:r https://cnb.cool/profile/token
         - Tencent Git permissions: api, read_repository https://git.woa.com/profile/account
+        - Gitea permissions: read:organization, read:repository, read:user http(s)://<YOUR-GITEA-HOST>/user/settings/applications (Settings-Applications-Generate New Token)
+        - Huawei Cloud CodeArts Repo permissions: Repository read/write https://devcloud.{YOUR-REGION}.huaweicloud.com/codehub/tokens, replace YOUR-REGION with corresponding region, e.g. cn-north-4 for North China-Beijing4, see docs https://support.huaweicloud.com/api-codeartsrepo/codeartsrepo_05_0001.html#section0
+- **PLUGIN_SOURCE_AK**
+    - Type: string
+    - Required: No
+    - Default: -
+    - Description: Access key for source code hosting platform API (required when source_platform is huaweicloud), create at: Console-Personal Info-My Credentials-Access Keys
+- **PLUGIN_SOURCE_SK**
+    - Type: string
+    - Required: No
+    - Default: -
+    - Description: Secret key for source code hosting platform API (required when source_platform is huaweicloud), create at: Console-Personal Info-My Credentials-Access Keys
+- **PLUGIN_SOURCE_REGION**
+    - Type: string
+    - Required: No
+    - Default: cn-north-4
+    - Description: Huawei Cloud CodeArts Repo region code, see https://support.huaweicloud.com/api-codeartsrepo/codeartsrepo_05_0001.html#section0
 
 - **PLUGIN_CNB_ROOT_ORGANIZATION**
     - Type: string
@@ -42,7 +59,7 @@
     - Type: string
     - Required: Yes
     - Default: coding
-    - Description: Migration platform name, supports coding/gitlab/github/gitee/aliyun/cnb/gongfeng, other common platforms use common; local bare repositories use local
+    - Description: Migration platform name, supports coding/gitlab/github/gitee/aliyun/cnb/gongfeng/gitea/huaweicloud, other common platforms use common; local bare repositories use local
 
 - **PLUGIN_SOURCE_REPO**
     - Type: string
@@ -117,15 +134,15 @@
     - Type: string
     - Required: No
     - Default: 1
-    - Description: CODING to CNB organization mapping, only for CODING platform
-      1: CODING projects map to CNB sub-orgs, repositories under sub-orgs
-      2: CODING projects don't map to CNB sub-orgs, repositories directly under root org
+    - Description: Source repository path to CNB organization mapping relationship, generally keep default.  
+      1: Migrated repository path will be `<CNB root org>/<source repo path>`, e.g. if source repo path is `group1/repo1`, migrated CNB repo path will be `<CNB root org>/group1/repo1`, will auto-create sub-organizations.  
+      2: Migrated repository path will be `<CNB root org>/<source repo name>`, e.g. if source repo path is `group1/repo1`, migrated CNB repo path will be `<CNB root org>/repo1`, will not auto-create sub-organizations. ⚠️Cannot have repositories with same names, otherwise will conflict and error
 
 - **PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH**
     - Type: string
     - Required: No
-    - Default: true
-    - Description: ⚠️For repositories with missing LFS source files, ignore LFS download errors and continue push
+    - Default: false
+    - Description: ⚠️For repositories with missing LFS source files, ignore LFS file download errors and missing object errors during LFS push, continue pushing
 
 - **PLUGIN_MIGRATE_LOG_LEVEL**
     - Type: string
@@ -161,8 +178,8 @@
     - Type: boolean
     - Required: Yes
     - Default: false
-    - Description: When both source and target have changes, and CNB repository has `.cnb.yml` at root, use git rebase to preserve CNB pipeline config
-      ⚠️If enabled, will force push (PLUGIN_MIGRATE_FORCE_PUSH="true") and backup CNB repository in working directory
+    - Description: Use git rebase to ensure code sync, CNB-side committed pipeline config code will not be overwritten, conflicts need manual resolution.  
+      ⚠️If enabled, will enable force push (PLUGIN_MIGRATE_FORCE_PUSH="true") and backup CNB-side code repository in migration tool working directory
 
 - **PLUGIN_SOURCE_PROJECT**
     - Type: string
