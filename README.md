@@ -5,7 +5,7 @@
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
 ## 📒功能介绍
-1. 支持 CODING、GitHub、GitLab、Gitee、Codeup(云效)、CNB、腾讯工蜂、Gitea、通用第三方代码托管平台代码仓库批量迁移至 CNB
+1. 支持 CODING、GitHub、GitLab、Gitee、阿里云(Codeup)、CNB、腾讯工蜂、Gitea、华为云(CodeArts Repo)、通用第三方代码托管平台代码仓库批量迁移至 CNB
 2. 自动创建 CNB 子组织及仓库，迁移完后的仓库路径为`<CNB根组织>/<源仓库路径>`
 3. CODING 源仓库会将项目显示名称映射为 CNB 子组织别名，项目简介映射为子组织简介
 4. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
