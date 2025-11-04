@@ -16,6 +16,7 @@ var (
 	Git   *gitlab.Client
 	token = config.Cfg.GetString("source.token")
 	url   = config.Cfg.GetString("source.url")
+	owned = config.Cfg.GetBool("migrate.gitlab_projects_owned")
 )
 
 func init() {
@@ -35,7 +36,8 @@ func GetProjects() ([]*gitlab.Project, error) {
 				PerPage: 100,
 				Page:    page,
 			},
-			Owned: gitlab.Bool(true),
+			//仅限当前用户明确拥有的项目。
+			Owned: gitlab.Bool(owned),
 		})
 		if err != nil {
 			logger.Logger.Fatalf("Failed to get Projects: %v", err)
