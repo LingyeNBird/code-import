@@ -204,3 +204,9 @@
   - 必填：否
   - 默认值：false
   - 说明：过滤掉 GitHub fork 的仓库不执行迁移 
+
+- **PLUGIN_MIGRATE_GITLAB_PROJECTS_OWNED**
+  - 类型：布尔值
+  - 必填：否
+  - 默认值：false
+  - 说明：迁移 Gitlab 仓库时，仅限当前用户明确拥有的项目

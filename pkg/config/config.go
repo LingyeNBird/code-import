@@ -365,6 +365,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"migrate.include_github_fork",
 		"migrate.map_coding_display_name",
 		"migrate.map_coding_description",
+		"migrate.gitlab_projects_owned",
 	}
 	for _, key := range envKeys {
 		err := config.BindEnv(key)
@@ -401,6 +402,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.map_coding_display_name":    "true",
 		"migrate.map_coding_description":     "true",
 		"source.region":                      "cn-north-4",
+		"migrate.gitlab_projects_owned":      "false",
 	}
 
 	// 使用循环来设置默认值
