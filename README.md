@@ -5,15 +5,16 @@
 ![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
 
 ## 📒功能介绍
-1. 支持 CODING、GitHub、GitLab、Gitee、阿里云(Codeup)、CNB、腾讯工蜂、Gitea、华为云(CodeArts Repo)、通用第三方代码托管平台代码仓库批量迁移至 CNB
+1. 支持 CODING、GitHub、GitLab、Gitee、Gitea、阿里云(Codeup)、华为云(CodeArts Repo)、CNB、腾讯工蜂、通用第三方代码托管平台代码仓库批量迁移至 CNB
 2. 自动创建 CNB 子组织及仓库，迁移完后的仓库路径为`<CNB根组织>/<源仓库路径>`
-3. CODING 源仓库会将项目显示名称映射为 CNB 子组织别名，项目简介映射为子组织简介
-4. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件)
+3. 自动处理超过 256 MiB 的大文件，转为 LFS 对象
+4. CODING 源仓库会将项目显示名称映射为 CNB 子组织别名，项目简介映射为子组织简介
+5. 自动跳过迁移成功的仓库(⚠️依赖工作目录下的`successful.log`文件，云原生构建方法不支持)
 
 ## 💥注意事项（必读）
 1. SVN 仓库不支持迁移，请先自行转换为git仓库
 2. **迁移完成后，请确保只在一侧平台提交代码，否则再次迁移可能会冲突报错**
-3. CNB 子组织默认外部成员可查看，如需修改请开启根组织-组织设置-组织管控-隐藏子组织
+3. CNB 子组织默认外部成员可查看，如需修改请开启`根组织-组织设置-组织管控-隐藏子组织`
 
 
 ## 🌟迁移前准备
