@@ -35,6 +35,18 @@ main:
             embedding_model: hunyuan
             include: "**/*.md"
             exclude: ""
+    - services:
+        - docker
+      docker:
+        volumes:
+          - /data/codewiki/${CNB_REPO_SLUG}:data
+      stages:
+        - name: 生成 Code Wiki
+          # 当仓库比较大时，codewiki 用时会超过流水线默认的1小时，导致流水线自动结束。所以手动指定流水线超时时间
+          timeout: 2h
+          image: cnbcool/codewiki:latest
+          settings:
+            git_doc_dir: /data/codewiki/${CNB_REPO_SLUG}            
 $:
   vscode:
     - docker:
