@@ -124,7 +124,7 @@
     - 说明：跳过 CNB 已存在的仓库
 
 - **PLUGIN_MIGRATE_USE_LFS_MIGRATE**
-    - 类型：字符串
+    - 类型：布尔值
     - 必填：否
     - 默认值：true
     - 说明：是否使用lfs migrate 处理历史提交中超过CNB单文件最大限制错误
