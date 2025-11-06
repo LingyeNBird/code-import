@@ -35,8 +35,9 @@ var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
 
 func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 	logger.Logger.Infof("%s 开始clone", repoPath)
-	logger.Logger.Debugf("git clone --mirror %s %s", cloneURL, repoPath)
-	out, err := system.RunCommand("git", "./", "clone", "--mirror", cloneURL, repoPath)
+	cmd := fmt.Sprintf("git clone --mirror %s %s", cloneURL, repoPath)
+	logger.Logger.Debugf(cmd)
+	out, err := system.ExecCommand(cmd, "./")
 	if err != nil {
 		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
 	}
@@ -50,13 +51,68 @@ func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 
 func NormalClone(cloneURL, repoPath string) error {
 	logger.Logger.Infof("%s 开始clone", repoPath)
-	logger.Logger.Debugf("git clone  %s %s", cloneURL, repoPath)
-	out, err := system.RunCommand("git", "./", "clone", cloneURL, repoPath)
+	cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
+	logger.Logger.Debugf(cmd)
+	out, err := system.ExecCommand(cmd, "./")
 	if err != nil {
 		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
 	}
 	logger.Logger.Infof("%s clone成功", repoPath)
 	return nil
+}
+
+// NormalCloneWithOutput 执行Git克隆操作并返回输出内容
+// 用于需要检查克隆输出信息的场景（如空仓库检测）
+func NormalCloneWithOutput(cloneURL, repoPath string) (string, error) {
+	logger.Logger.Infof("%s 开始clone", repoPath)
+	cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
+	logger.Logger.Debugf(cmd)
+	out, err := system.ExecCommand(cmd, "./")
+	if err != nil {
+		return out, fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
+	}
+	logger.Logger.Infof("%s clone成功", repoPath)
+	return out, nil
+}
+
+// IsEmptyRepositoryOutput 检查Git命令输出是否表明是空仓库（支持中英文环境）
+// 该函数用于识别Git克隆操作输出中的空仓库相关警告信息
+//
+// 参数:
+//   - output: Git命令的输出内容
+//
+// 返回值:
+//   - bool: 如果输出表明是空仓库则返回true，否则返回false
+//
+// 支持的输出模式包括：
+//   - 英文环境: "warning: you appear to have cloned an empty repository"等
+//   - 中文环境: "警告：您似乎克隆了一个空仓库", "空仓库"等
+//   - 其他空仓库指示信息
+func IsEmptyRepositoryOutput(output string) bool {
+	if output == "" {
+		return false
+	}
+	
+	outputStr := strings.ToLower(output)
+	
+	// 检查常见的空仓库输出信息（中英文）
+	emptyRepoPatterns := []string{
+		"warning: you appear to have cloned an empty repository",
+		"警告：您似乎克隆了一个空仓库",
+		"empty repository",
+		"空仓库",
+		"仓库为空",
+		"repository is empty",
+		"remote repository is empty",
+	}
+
+	for _, pattern := range emptyRepoPatterns {
+		if strings.Contains(outputStr, pattern) {
+			return true
+		}
+	}
+	
+	return false
 }
 
 func RebasePush(rebaseRepoPath string, rebaseSuccessBranches []string) error {

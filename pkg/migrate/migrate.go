@@ -357,6 +357,8 @@ func getOperationType() string {
 	return "迁移"
 }
 
+
+
 func migrateDo(depot vcs.VCS) error {
 	var err error
 	repoName, subGroup, repoPath, repoPrivate := depot.GetRepoName(), depot.GetSubGroup(), depot.GetRepoPath(), depot.GetRepoPrivate()
@@ -446,24 +448,40 @@ func migrateDo(depot vcs.VCS) error {
 		pushURL := target.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
 		rebaseRepoPath := filepath.Join(RebaseDirPrefix, repoPath)
 		isForcePush := config.Cfg.GetBool("migrate.force_push")
+		
+		// 处理 rebase 逻辑：明确分为两种情况
 		if MigrateRebase {
-			// 如果使用rebase同步，那么需要开启强制 push，避免出现冲突
-			isForcePush = true
-			rebaseCloneErr := git.NormalClone(pushURL, rebaseRepoPath)
-			if rebaseCloneErr != nil {
-				return fmt.Errorf("git rebase clone失败: %s", rebaseCloneErr)
-			}
-			destPath := filepath.Join(rebaseBackDirPath, repoPath)
-			//备份CNB侧仓库
-			err = util.CopyDir(rebaseRepoPath, destPath)
-			if err != nil {
-				logger.Logger.Errorf("备份仓库失败: %v", err)
-				return fmt.Errorf("备份仓库失败: %w", err)
-			}
-			logger.Logger.Infof("%s 已备份仓库到 %s", repoPath, destPath)
-			rebaseErr := git.Rebase(rebaseRepoPath, depot.GetRepoPath())
-			if rebaseErr != nil {
-				return rebaseErr
+			// 情况1：当CNB侧不存在对应仓库时，跳过rebase操作，直接执行原有的迁移push流程
+			if !has {
+				logger.Logger.Infof("%s CNB侧仓库不存在，跳过rebase操作，直接执行迁移push流程", repoPath)
+			} else {
+				// CNB侧仓库存在，尝试克隆进行rebase
+				isForcePush = true // 如果使用rebase同步，那么需要开启强制 push，避免出现冲突
+				cloneOutput, rebaseCloneErr := git.NormalCloneWithOutput(pushURL, rebaseRepoPath)
+				
+				if rebaseCloneErr != nil {
+					return fmt.Errorf("git rebase clone失败: %s", rebaseCloneErr)
+				}
+				
+				// 情况2：当遇到未初始化的空仓库时，同样跳过rebase操作，执行原有的迁移push流程
+				if git.IsEmptyRepositoryOutput(cloneOutput) {
+					logger.Logger.Infof("%s CNB侧仓库为空仓库，跳过rebase操作，执行原有的迁移push流程", repoPath)
+				} else {
+					// 成功克隆非空仓库，执行正常的rebase流程
+					destPath := filepath.Join(rebaseBackDirPath, repoPath)
+					//备份CNB侧仓库
+					err = util.CopyDir(rebaseRepoPath, destPath)
+					if err != nil {
+						logger.Logger.Errorf("备份仓库失败: %v", err)
+						return fmt.Errorf("备份仓库失败: %w", err)
+					}
+					logger.Logger.Infof("%s 已备份仓库到 %s", repoPath, destPath)
+					rebaseErr := git.Rebase(rebaseRepoPath, depot.GetRepoPath())
+					if rebaseErr != nil {
+						return rebaseErr
+					}
+					logger.Logger.Infof("%s rebase操作完成", repoPath)
+				}
 			}
 		}
 
