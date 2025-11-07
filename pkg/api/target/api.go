@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -158,43 +159,124 @@ type CreateRepoBody struct {
 	Visibility  string `json:"visibility"`
 }
 
-// CreateSubOrganizationIfNotExists 创建子组织，如果不存在则创建
+// CreateSubOrganizationIfNotExists 创建子组织，如果不存在则创建（简化优化版本）
 func CreateSubOrganizationIfNotExists(url, token string, depotList []vcs.VCS) (err error) {
 	defer logger.Logger.Debugw(util.GetFunctionName(), "url", url, "token", token, "depotList", depotList)
-	subGroups, err := GetSubGroupsByRootGroup(url, token)
+
+	// 1. 收集所有需要创建的子组织路径并去重
+	uniqueSubGroups := collectUniqueSubGroups(depotList)
+	logger.Logger.Infof("预处理完成，发现 %d 个唯一子组织", len(uniqueSubGroups))
+
+	// 2. 一次性获取现有子组织列表
+	existingSubGroups, err := GetSubGroupsByRootGroup(url, token)
 	if err != nil {
 		return fmt.Errorf("获取子组织列表失败: %v", err)
 	}
+
+	// 3. 过滤出需要创建的子组织
+	toCreate := filterSubGroupsToCreate(uniqueSubGroups, existingSubGroups)
+	if len(toCreate) == 0 {
+		logger.Logger.Infof("所有子组织都已存在，无需创建")
+		return nil
+	}
+
+	logger.Logger.Infof("需要创建 %d 个新的子组织", len(toCreate))
+
+	// 4. 按层级深度顺序创建子组织
+	return createSubGroupsSequentially(url, token, toCreate)
+}
+
+// collectUniqueSubGroups 收集所有需要创建的子组织路径并去重
+func collectUniqueSubGroups(depotList []vcs.VCS) map[string]*vcs.SubGroup {
+	uniqueSubGroups := make(map[string]*vcs.SubGroup)
+
 	for _, depot := range depotList {
 		subGroup := depot.GetSubGroup()
 		subGroupName := subGroup.Name
+
+		// 处理多层级路径，确保所有父级路径都被包含
 		parts := strings.Split(subGroupName, "/")
 		tmpPath := ""
-		if len(parts) > 1 {
-			for i := 0; i < len(parts); i++ {
-				if i == 0 {
-					tmpPath = parts[i]
-				} else {
-					tmpPath = path.Join(tmpPath, parts[i])
-				}
-				err := CreateSubOrganization(url, token, tmpPath, *subGroup)
-				if err != nil {
-					return err
-				}
+
+		for i, part := range parts {
+			if i == 0 {
+				tmpPath = part
+			} else {
+				tmpPath = path.Join(tmpPath, part)
 			}
-		} else {
-			_, exists := subGroups[subGroupName]
-			if !exists {
-				err := CreateSubOrganization(url, token, subGroupName, *subGroup)
-				if err != nil {
-					return err
+
+			// 保留原有组织信息，不过度加工
+			if _, exists := uniqueSubGroups[tmpPath]; !exists {
+				if i == len(parts)-1 {
+					// 最深层使用原始SubGroup信息
+					uniqueSubGroups[tmpPath] = subGroup
+				} else {
+					// 父级使用原始信息但调整Name字段
+					parentSubGroup := &vcs.SubGroup{
+						Name:   tmpPath,
+						Desc:   subGroup.Desc,   // 保留原有描述
+						Remark: subGroup.Remark, // 保留原有备注
+					}
+					uniqueSubGroups[tmpPath] = parentSubGroup
 				}
-				subGroups[subGroupName] = true
 			}
 		}
-
 	}
-	logger.Logger.Infof("创建子组织完成")
+
+	return uniqueSubGroups
+}
+
+// filterSubGroupsToCreate 过滤出需要创建的子组织
+func filterSubGroupsToCreate(uniqueSubGroups map[string]*vcs.SubGroup, existingSubGroups map[string]bool) map[string]*vcs.SubGroup {
+	toCreate := make(map[string]*vcs.SubGroup)
+
+	for subGroupPath, subGroup := range uniqueSubGroups {
+		if !existingSubGroups[subGroupPath] {
+			toCreate[subGroupPath] = subGroup
+		}
+	}
+
+	return toCreate
+}
+
+// createSubGroupsSequentially 按层级深度顺序创建子组织
+func createSubGroupsSequentially(url, token string, toCreate map[string]*vcs.SubGroup) error {
+	// 按路径深度排序
+	paths := make([]string, 0, len(toCreate))
+	for path := range toCreate {
+		paths = append(paths, path)
+	}
+
+	// 简单的深度排序：按斜杠数量排序
+	sort.Slice(paths, func(i, j int) bool {
+		depthI := strings.Count(paths[i], "/")
+		depthJ := strings.Count(paths[j], "/")
+		if depthI != depthJ {
+			return depthI < depthJ
+		}
+		return paths[i] < paths[j]
+	})
+
+	// 顺序创建每个子组织
+	createdCount := 0
+	for _, subGroupPath := range paths {
+		subGroup := toCreate[subGroupPath]
+
+		err := CreateSubOrganization(url, token, subGroupPath, *subGroup)
+		if err != nil {
+			// 如果是组织已存在的错误，继续处理下一个
+			if strings.Contains(err.Error(), "已存在") {
+				logger.Logger.Infof("子组织 %s 已存在，跳过", subGroupPath)
+				continue
+			}
+			return fmt.Errorf("创建子组织 %s 失败: %v", subGroupPath, err)
+		}
+
+		createdCount++
+		logger.Logger.Infof("成功创建子组织 %s (%d/%d)", subGroupPath, createdCount, len(paths))
+	}
+
+	logger.Logger.Infof("子组织创建完成，共创建 %d 个", createdCount)
 	return nil
 }
 

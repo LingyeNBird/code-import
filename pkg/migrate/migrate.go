@@ -172,9 +172,9 @@ func Run() {
 			logger.Logger.Errorf("根组织%s不存在，请先创建根组织", RootGroupName)
 			return
 		}
-
 		// 创建子组织（如果需要）
 		if organizationMappingLevel == 1 {
+			logger.Logger.Infof("开始创建子组织")
 			err = target.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
 			if err != nil {
 				logger.Logger.Errorf("创建子组织失败: %s", err)
