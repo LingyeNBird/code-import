@@ -23,6 +23,39 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+// formatDuration 将 time.Duration 转换为自然时间格式
+// 例如：61秒 -> "1m1s"，3661秒 -> "1h1m1s"
+func formatDuration(d time.Duration) string {
+	if d < time.Second {
+		return "0s"
+	}
+	
+	// 转换为整秒，去掉毫秒部分
+	totalSeconds := int(d.Seconds())
+	
+	hours := totalSeconds / 3600
+	minutes := (totalSeconds % 3600) / 60
+	seconds := totalSeconds % 60
+	
+	var result string
+	if hours > 0 {
+		result += fmt.Sprintf("%dh", hours)
+	}
+	if minutes > 0 {
+		result += fmt.Sprintf("%dm", minutes)
+	}
+	if seconds > 0 {
+		result += fmt.Sprintf("%ds", seconds)
+	}
+	
+	// 如果结果为空（理论上不会发生），返回0s
+	if result == "" {
+		result = "0s"
+	}
+	
+	return result
+}
+
 const (
 	GitDirName      = "source_git_dir"
 	CnbUserName     = "cnb"
@@ -335,12 +368,12 @@ func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 	}
 
 	wg.Wait()
-	duration := int(time.Since(startTime).Seconds())
+	duration := formatDuration(time.Since(startTime))
 	if DownloadOnly {
-		logger.Logger.Infof("代码仓库下载完成，耗时%d秒。\n【仓库总数】%d【成功下载】%d【忽略下载】%d【下载失败】%d",
+		logger.Logger.Infof("代码仓库下载完成，耗时%s。\n【仓库总数】%d【成功下载】%d【忽略下载】%d【下载失败】%d",
 			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
 	} else {
-		logger.Logger.Infof("代码仓库迁移完成，耗时%d秒。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
+		logger.Logger.Infof("代码仓库迁移完成，耗时%s。\n【仓库总数】%d【成功迁移】%d【忽略迁移】%d【迁移失败】%d",
 			duration, totalRepoNumber, successfulRepoNumber, skipRepoNumber, failedRepoNumber)
 	}
 	// 检查是否有忽略迁移或迁移失败的仓库
@@ -396,7 +429,7 @@ func migrateDo(depot vcs.VCS) error {
 	if DownloadOnly {
 		atomic.AddInt64(&successfulRepoNumber, 1)
 		atomic.AddInt64(&failedRepoNumber, -1)
-		duration := time.Since(startTime)
+		duration := formatDuration(time.Since(startTime))
 		logger.Logger.Infof("%s 下载完成，耗时%s", repoPath, duration)
 		return nil
 	}
@@ -491,8 +524,8 @@ func migrateDo(depot vcs.VCS) error {
 	}
 	atomic.AddInt64(&successfulRepoNumber, 1)
 	atomic.AddInt64(&failedRepoNumber, -1)
-	duration := int(time.Since(startTime).Seconds())
-	logger.Logger.Infof("%s 迁移至CNB %s 成功,耗时%d秒", repoPath, cnbRepoPath, duration)
+	duration := formatDuration(time.Since(startTime))
+	logger.Logger.Infof("%s 迁移至CNB %s 成功,耗时%s", repoPath, cnbRepoPath, duration)
 	logger.RecordSuccessfulRepo(repoPath)
 	return nil
 }
