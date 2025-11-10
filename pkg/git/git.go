@@ -29,6 +29,7 @@ const (
 	pushCMD                         = "git push %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*"
 	pushForceCMD                    = "git push -f %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*"
 	lfsPushCMD                      = "git lfs push --all %s"
+	lfsLsFilesAllCMD                = "git lfs ls-files --all"
 )
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
@@ -159,11 +160,25 @@ func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
 		return out, err
 	}
 	logger.Logger.Infof("%s 裸仓push成功", repoPath)
-	out, err = PushLFS(repoPath, pushURL)
-	if err != nil {
-		return out, err
+
+	// 检查是否有LFS文件，如有则推送LFS
+	hasLFSFiles, lfsCheckErr := hasLFSFiles(repoPath)
+	if lfsCheckErr != nil {
+		logger.Logger.Warnf("%s 检查LFS文件失败: %s，跳过LFS推送", repoPath, lfsCheckErr)
+		return out, nil
 	}
-	return output, nil
+
+	if hasLFSFiles {
+		logger.Logger.Infof("%s 检测到LFS文件", repoPath)
+		out, err = PushLFS(repoPath, pushURL)
+		if err != nil {
+			return out, err
+		}
+	} else {
+		logger.Logger.Infof("%s 未检测到LFS文件，跳过LFS推送", repoPath)
+	}
+
+	return out, nil
 }
 
 // 强制推送
@@ -257,6 +272,30 @@ func IsLFSRepo(repoPath string) (error, bool) {
 		return err, false
 	}
 	return nil, len(output) > 0
+}
+
+// hasLFSFiles 检查仓库是否有LFS文件
+func hasLFSFiles(repoPath string) (bool, error) {
+	logger.Logger.Debugf("%s 检查是否有LFS文件", repoPath)
+
+	// 使用 git lfs ls-files --all 检查是否有实际的LFS文件
+	output, err := system.ExecCommand(lfsLsFilesAllCMD, repoPath)
+	if err != nil {
+		logger.Logger.Errorf("%s 执行git lfs ls-files --all失败: %s", repoPath, err)
+		return false, err
+	}
+
+	// 去除空白字符后检查是否有内容
+	trimmedOutput := strings.TrimSpace(output)
+	hasFiles := len(trimmedOutput) > 0
+
+	if hasFiles {
+		logger.Logger.Debugf("%s 检测到LFS文件:\n%s", repoPath, trimmedOutput)
+	} else {
+		logger.Logger.Debugf("%s 未检测到LFS文件", repoPath)
+	}
+
+	return hasFiles, nil
 }
 
 func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
