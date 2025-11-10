@@ -22,5 +22,17 @@ func ccrctl() {
 	logger.Logger.Infof("|  Build Time  : %-40s |", BuildTime)
 	logger.Logger.Infof("|  Version     : %-39s |", Version)
 	logger.Logger.Infof("===========================================================")
-	migrate.Run()
+	exitCode := migrate.Run()
+	// 将退出码设置为全局变量，让 main 函数处理
+	setExitCode(exitCode)
+}
+
+var globalExitCode int
+
+func setExitCode(code int) {
+	globalExitCode = code
+}
+
+func GetExitCode() int {
+	return globalExitCode
 }

@@ -37,6 +37,11 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
+	// 正常执行后检查退出码
+	exitCode := GetExitCode()
+	if exitCode != 0 {
+		os.Exit(exitCode)
+	}
 }
 
 func init() {

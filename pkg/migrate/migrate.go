@@ -138,12 +138,12 @@ func initMigrationStats(depotList []vcs.VCS) {
 	atomic.StoreInt64(&skipRepoNumber, 0)
 }
 
-func Run() {
+func Run() int {
 	startTime := time.Now()     // 记录迁移开始时间
 	err := config.CheckConfig() // 检查配置文件
 	if err != nil {
 		logger.Logger.Errorf("配置文件校验失败: %s", err)
-		return
+		return 1
 	}
 	logger.Logger.Infof("源平台%s", config.Cfg.GetString("source.platform"))
 	if SourcePlatformName == "aliyun" {
@@ -156,18 +156,18 @@ func Run() {
 	if err != nil {
 		logger.Logger.Errorf("设置文件描述符限制失败: %s", err)
 
-		return
+		return 1
 	}
 
 	// 获取源平台的 VCS 实例列表
 	sourceVcsList, err := vcs.NewVcs(SourcePlatformName)
 	if err != nil {
 		logger.Logger.Errorf("获取源平台仓库列表失败，请检查配置参数: %s", err)
-		return
+		return 1
 	}
 	if len(sourceVcsList) == 0 {
 		logger.Logger.Warnf("源平台仓库列表为空，无需迁移")
-		return
+		return 0
 	}
 	sourceVcs := sourceVcsList[0] // 使用第一个实例
 
@@ -175,10 +175,10 @@ func Run() {
 	shouldContinue, err := checkAndGetRepoList(sourceVcs)
 	if err != nil {
 		logger.Logger.Errorf("%s", err)
-		return
+		return 1
 	}
 	if !shouldContinue {
-		return
+		return 0
 	}
 
 	// 获取并过滤仓库列表
@@ -186,7 +186,7 @@ func Run() {
 	depotList, err = filterReposBySelection(depotList)
 	if err != nil {
 		logger.Logger.Errorf("%s", err)
-		return
+		return 1
 	}
 
 	logger.Logger.Infof("待迁移仓库总数%d", len(depotList))
@@ -199,11 +199,11 @@ func Run() {
 		exist, err := target.RootOrganizationExists(CnbApiURL, CnbToken)
 		if err != nil {
 			logger.Logger.Errorf("判断根组织是否存在失败: %s", err)
-			return
+			return 1
 		}
 		if !exist {
 			logger.Logger.Errorf("根组织%s不存在，请先创建根组织", RootGroupName)
-			return
+			return 1
 		}
 		// 创建子组织（如果需要）
 		if organizationMappingLevel == 1 {
@@ -211,7 +211,7 @@ func Run() {
 			err = target.CreateSubOrganizationIfNotExists(CnbApiURL, CnbToken, depotList)
 			if err != nil {
 				logger.Logger.Errorf("创建子组织失败: %s", err)
-				return
+				return 1
 			}
 		}
 	}
@@ -231,7 +231,7 @@ func Run() {
 	// 设置工作目录
 	if err := setupWorkDir(); err != nil {
 		logger.Logger.Errorf("%s", err)
-		return
+		return 1
 	}
 
 	// defer 删除 source_git_dir 目录，确保所有迁移操作完成后再清理（仅删除本工具创建的目录，且非 local 平台）
@@ -244,7 +244,7 @@ func Run() {
 	}
 
 	// 执行迁移
-	executeMigration(depotList, startTime)
+	return executeMigration(depotList, startTime)
 }
 
 // setupSSH 设置 SSH 配置
@@ -343,7 +343,7 @@ func setupRebase(pwdDir string) error {
 }
 
 // executeMigration 执行迁移操作
-func executeMigration(depotList []vcs.VCS, startTime time.Time) {
+func executeMigration(depotList []vcs.VCS, startTime time.Time) int {
 	if DownloadOnly {
 		logger.Logger.Infof("开始下载仓库，当前并发数:%d", Concurrency)
 	} else {
@@ -379,7 +379,9 @@ func executeMigration(depotList []vcs.VCS, startTime time.Time) {
 	// 检查是否有忽略迁移或迁移失败的仓库
 	if skipRepoNumber > 0 || failedRepoNumber > 0 {
 		logger.Logger.Errorf("存在忽略迁移或迁移失败的仓库，请检查ERROR级别日志查看详情")
+		return 1
 	}
+	return 0
 }
 
 // getOperationType 根据当前模式返回操作类型
