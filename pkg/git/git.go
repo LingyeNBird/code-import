@@ -34,14 +34,49 @@ const (
 
 var FileLimitSize = config.Cfg.GetString("migrate.file_limit_size")
 
+// Clone 镜像克隆Git仓库（带重试机制）
+// 参数:
+//   - cloneURL: Git仓库克隆地址
+//   - repoPath: 本地仓库路径
+//   - allowIncompletePush: 是否允许不完整的LFS推送
+//
+// 返回值:
+//   - error: 克隆失败时返回错误信息
+//
+// 重试机制: 失败时会自动重试3次，重试间隔分别为1秒、5秒、10秒
 func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 	logger.Logger.Infof("%s 开始clone", repoPath)
-	cmd := fmt.Sprintf("git clone --mirror %s %s", cloneURL, repoPath)
-	logger.Logger.Debugf(cmd)
-	out, err := system.ExecCommand(cmd, "./")
-	if err != nil {
-		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
+	// 重试间隔配置：第1次失败后等1秒，第2次失败后等5秒，第3次失败后等10秒
+	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
+	var out string
+	var err error
+	
+	// 重试循环：最多尝试3次
+	for i, interval := range retryIntervals {
+		cmd := fmt.Sprintf("git clone --mirror %s %s", cloneURL, repoPath)
+		logger.Logger.Debugf(cmd)
+		logger.Logger.Infof("%s git 克隆中... (尝试 %d/%d)", repoPath, i+1, len(retryIntervals))
+		out, err = system.ExecCommand(cmd, "./")
+		if err == nil {
+			// 克隆成功，跳出重试循环
+			break
+		}
+		// 克隆失败，屏蔽错误日志中的敏感信息（如Git凭证）
+		maskedOutput := removeCredentialsFromURL(out)
+		logger.Logger.Warnf("%s git clone 失败 (尝试 %d/%d): %v \n %s", repoPath, i+1, len(retryIntervals), err, maskedOutput)
+		// 如果不是最后一次尝试，则等待指定时间后重试
+		if i < len(retryIntervals)-1 {
+			time.Sleep(interval)
+		}
 	}
+	
+	// 所有重试都失败，返回错误
+	if err != nil {
+		maskedOutput := removeCredentialsFromURL(out)
+		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, maskedOutput)
+	}
+	
+	// 克隆成功后，下载LFS文件
 	out, err = FetchLFS(repoPath, allowIncompletePush)
 	if err != nil {
 		return fmt.Errorf("%s 下载LFS文件失败: %s\n %s", repoPath, err, out)
@@ -50,30 +85,89 @@ func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 	return nil
 }
 
+// NormalClone 普通克隆Git仓库（带重试机制）
+// 参数:
+//   - cloneURL: Git仓库克隆地址
+//   - repoPath: 本地仓库路径
+//
+// 返回值:
+//   - error: 克隆失败时返回错误信息
+//
+// 重试机制: 失败时会自动重试3次，重试间隔分别为1秒、5秒、10秒
 func NormalClone(cloneURL, repoPath string) error {
 	logger.Logger.Infof("%s 开始clone", repoPath)
-	cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
-	logger.Logger.Debugf(cmd)
-	out, err := system.ExecCommand(cmd, "./")
-	if err != nil {
-		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
+	// 重试间隔配置：第1次失败后等1秒，第2次失败后等5秒，第3次失败后等10秒
+	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
+	var out string
+	var err error
+	
+	// 重试循环：最多尝试3次
+	for i, interval := range retryIntervals {
+		cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
+		logger.Logger.Debugf(cmd)
+		logger.Logger.Infof("%s git 克隆中... (尝试 %d/%d)", repoPath, i+1, len(retryIntervals))
+		out, err = system.ExecCommand(cmd, "./")
+		if err == nil {
+			// 克隆成功，直接返回
+			logger.Logger.Infof("%s clone成功", repoPath)
+			return nil
+		}
+		// 克隆失败，屏蔽错误日志中的敏感信息（如Git凭证）
+		maskedOutput := removeCredentialsFromURL(out)
+		logger.Logger.Warnf("%s git clone 失败 (尝试 %d/%d): %v \n %s", repoPath, i+1, len(retryIntervals), err, maskedOutput)
+		// 如果不是最后一次尝试，则等待指定时间后重试
+		if i < len(retryIntervals)-1 {
+			time.Sleep(interval)
+		}
 	}
-	logger.Logger.Infof("%s clone成功", repoPath)
-	return nil
+	
+	// 所有重试都失败，返回错误
+	maskedOutput := removeCredentialsFromURL(out)
+	return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, maskedOutput)
 }
 
-// NormalCloneWithOutput 执行Git克隆操作并返回输出内容
+// NormalCloneWithOutput 执行Git克隆操作并返回输出内容（带重试机制）
 // 用于需要检查克隆输出信息的场景（如空仓库检测）
+//
+// 参数:
+//   - cloneURL: Git仓库克隆地址
+//   - repoPath: 本地仓库路径
+//
+// 返回值:
+//   - string: Git命令的输出内容（成功或失败时都会返回，失败时已屏蔽敏感信息）
+//   - error: 克隆失败时返回错误信息
+//
+// 重试机制: 失败时会自动重试3次，重试间隔分别为1秒、5秒、10秒
 func NormalCloneWithOutput(cloneURL, repoPath string) (string, error) {
 	logger.Logger.Infof("%s 开始clone", repoPath)
-	cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
-	logger.Logger.Debugf(cmd)
-	out, err := system.ExecCommand(cmd, "./")
-	if err != nil {
-		return out, fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, out)
+	// 重试间隔配置：第1次失败后等1秒，第2次失败后等5秒，第3次失败后等10秒
+	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
+	var out string
+	var err error
+	
+	// 重试循环：最多尝试3次
+	for i, interval := range retryIntervals {
+		cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
+		logger.Logger.Debugf(cmd)
+		logger.Logger.Infof("%s git 克隆中... (尝试 %d/%d)", repoPath, i+1, len(retryIntervals))
+		out, err = system.ExecCommand(cmd, "./")
+		if err == nil {
+			// 克隆成功，返回原始输出内容（可能包含空仓库警告等信息）
+			logger.Logger.Infof("%s clone成功", repoPath)
+			return out, nil
+		}
+		// 克隆失败，屏蔽错误日志中的敏感信息（如Git凭证）
+		maskedOutput := removeCredentialsFromURL(out)
+		logger.Logger.Warnf("%s git clone 失败 (尝试 %d/%d): %v \n %s", repoPath, i+1, len(retryIntervals), err, maskedOutput)
+		// 如果不是最后一次尝试，则等待指定时间后重试
+		if i < len(retryIntervals)-1 {
+			time.Sleep(interval)
+		}
 	}
-	logger.Logger.Infof("%s clone成功", repoPath)
-	return out, nil
+	
+	// 所有重试都失败，返回屏蔽敏感信息后的输出和错误
+	maskedOutput := removeCredentialsFromURL(out)
+	return maskedOutput, fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, maskedOutput)
 }
 
 // IsEmptyRepositoryOutput 检查Git命令输出是否表明是空仓库（支持中英文环境）
