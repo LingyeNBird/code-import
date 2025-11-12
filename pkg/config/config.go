@@ -57,15 +57,16 @@ type Config struct {
 }
 
 type Source struct {
-	URL           string   `yaml:"url"`
-	Token         string   `yaml:"token"`
-	Project       []string `yaml:"project"`
-	Repo          []string `yaml:"repo"`
-	Platform      string   `yaml:"platform"`
-	UserName      string   `yaml:"username"`
-	Password      string   `yaml:"password"`
-	SshPrivateKey string   `yaml:"ssh_private_key"`
-	Group         string   `yaml:"group"`
+	URL            string   `yaml:"url"`
+	Token          string   `yaml:"token"`
+	Project        []string `yaml:"project"`
+	Repo           []string `yaml:"repo"`
+	Platform       string   `yaml:"platform"`
+	UserName       string   `yaml:"username"`
+	Password       string   `yaml:"password"`
+	SshPrivateKey  string   `yaml:"ssh_private_key"`
+	Group          string   `yaml:"group"`
+	OrganizationId string   `yaml:"organizationid"`
 }
 
 type CNB struct {
@@ -120,6 +121,13 @@ func CheckConfig() error {
 	if platform != "common" && platform != "local" {
 		if err := checkTokenValid(config.Source.Token, platform); err != nil {
 			return err
+		}
+	}
+
+	// aliyun 平台需要检查 source.organizationid
+	if platform == "aliyun" {
+		if config.Source.OrganizationId == "" {
+			return fmt.Errorf("when platform is aliyun, source.organizationid is required")
 		}
 	}
 
@@ -340,6 +348,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"source.username",
 		"source.password",
 		"source.region",
+		"source.organizationId",
 		"cnb.url",
 		"cnb.token",
 		"cnb.root_organization",

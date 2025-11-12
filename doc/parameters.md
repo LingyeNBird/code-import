@@ -86,7 +86,7 @@
     - 类型：字符串
     - 必填：否
     - 默认值：-
-    - 说明：云效代码仓库组织ID，可在云效管理后台获取。  [云效帮助文档](https://help.aliyun.com/zh/yunxiao/user-guide/enterprise-basic-operations?spm=a2c4g.11186623.0.0.b86bb43fPj59Ic#caf924e65dbad)
+    - 说明： 当 source_platform 为 aliyun 时必填，阿里云云效代码仓库组织ID，可在云效管理后台获取。  [云效帮助文档](https://help.aliyun.com/zh/yunxiao/user-guide/enterprise-basic-operations?spm=a2c4g.11186623.0.0.b86bb43fPj59Ic#caf924e65dbad)
 
 - **PLUGIN_CNB_URL**
     - 类型：字符串
