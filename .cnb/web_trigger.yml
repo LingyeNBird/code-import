@@ -47,6 +47,7 @@ _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
 branch:
   - buttons:
     - name: CODING 迁移至 CNB
+      image: img/coding.png
       description: 从CODING批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
@@ -81,6 +82,7 @@ branch:
             - name: 关闭
               value: false        
     - name: GitLab 迁移至 CNB
+      image: img/gitlab.png
       description: 从Gitlab批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
@@ -95,6 +97,7 @@ branch:
           type: input
         <<: *ADVANCE_OPTIONS
     - name: GitHub 迁移至 CNB
+      image: img/github.png
       description: 从Github批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
@@ -109,6 +112,7 @@ branch:
           type: input
         <<: *ADVANCE_OPTIONS
     - name: Gitee 迁移至 CNB
+      image: img/gitee.png
       description: 从Gitee批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
@@ -123,6 +127,7 @@ branch:
           type: input
         <<: *ADVANCE_OPTIONS      
     - name: Gitea 迁移至 CNB
+      image: img/gitea.png
       description: 从Gitea批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
@@ -141,6 +146,7 @@ branch:
           type: input
         <<: *ADVANCE_OPTIONS
     - name: CNB 迁移至 CNB
+      image: img/cnb.png
       description: 从CNB批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
@@ -164,6 +170,7 @@ branch:
           type: input
         <<: *ADVANCE_OPTIONS        
     - name: 阿里云(Codeup) 迁移至 CNB 
+      image: img/aliyun.png
       description: 从Codeup批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
@@ -181,7 +188,8 @@ branch:
           required: true
           type: input
         <<: *ADVANCE_OPTIONS        
-    - name: 华为云(CodeArts Repo) 迁移至 CNB   
+    - name: 华为云(CodeArts Repo) 迁移至 CNB 
+      image: img/huaweiyun.png
       description: 从华为云(CodeArts Repo)批量迁移仓库到CNB
       event: web_trigger_code_import
       env:
