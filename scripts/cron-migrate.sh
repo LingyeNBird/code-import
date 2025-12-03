@@ -28,8 +28,9 @@ while true; do
   # 生成基于时间戳的工作目录名称
   date=$(date +"%Y%m%d%H%M%S")
   workDir="workdir-${date}"
-  # 创建新的工作目录
+  # 创建新的工作目录并进入
   mkdir ${workDir}
+  cd ${workDir}
   
   # TODO: 在这里添加具体的迁移命令
   # 补充迁移的docker run 命令
