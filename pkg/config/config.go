@@ -328,13 +328,16 @@ func processCNBRootOrganization(v *viper.Viper) {
 func stringCovertToListAndSetConfigValue(v *viper.Viper, keys ...string) {
 	for _, key := range keys {
 		value := v.GetString(key)
+		// 去除前后空格和末尾的逗号
+		value = strings.TrimSpace(value)
+		value = strings.TrimSuffix(value, ",")
+		
 		listValue := strings.Split(value, ",")
 		if listValue[0] == "" {
 			listValue = nil
 		}
 		v.Set(key, listValue)
 	}
-	return
 }
 
 func bindEnvVariables(config *viper.Viper) error {

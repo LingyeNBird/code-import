@@ -194,33 +194,38 @@ func collectUniqueSubGroups(depotList []vcs.VCS) map[string]*vcs.SubGroup {
 		subGroup := depot.GetSubGroup()
 		subGroupName := subGroup.Name
 
-		// 处理多层级路径，确保所有父级路径都被包含
-		parts := strings.Split(subGroupName, "/")
-		tmpPath := ""
+		// 如果子组织名称为空，跳过
+		if subGroupName == "" {
+			continue
+		}
 
-		for i, part := range parts {
-			if i == 0 {
-				tmpPath = part
+	// 处理多层级路径，确保所有父级路径都被包含
+	parts := strings.Split(subGroupName, "/")
+	tmpPath := ""
+
+	for i, part := range parts {
+		if tmpPath == "" {
+			tmpPath = part
+		} else {
+			tmpPath = path.Join(tmpPath, part)
+		}
+
+		// 保留原有组织信息，不过度加工
+		if _, exists := uniqueSubGroups[tmpPath]; !exists {
+			if i == len(parts)-1 {
+				// 最深层使用原始SubGroup信息
+				uniqueSubGroups[tmpPath] = subGroup
 			} else {
-				tmpPath = path.Join(tmpPath, part)
-			}
-
-			// 保留原有组织信息，不过度加工
-			if _, exists := uniqueSubGroups[tmpPath]; !exists {
-				if i == len(parts)-1 {
-					// 最深层使用原始SubGroup信息
-					uniqueSubGroups[tmpPath] = subGroup
-				} else {
-					// 父级使用原始信息但调整Name字段
-					parentSubGroup := &vcs.SubGroup{
-						Name:   tmpPath,
-						Desc:   subGroup.Desc,   // 保留原有描述
-						Remark: subGroup.Remark, // 保留原有备注
-					}
-					uniqueSubGroups[tmpPath] = parentSubGroup
+				// 父级使用原始信息但调整Name字段
+				parentSubGroup := &vcs.SubGroup{
+					Name:   tmpPath,
+					Desc:   subGroup.Desc,   // 保留原有描述
+					Remark: subGroup.Remark, // 保留原有备注
 				}
+				uniqueSubGroups[tmpPath] = parentSubGroup
 			}
 		}
+	}
 	}
 
 	return uniqueSubGroups
