@@ -431,20 +431,24 @@ func GetDepotListByRepoPath(url, token string, repos []string) (depotList []Depo
 	return depotList, nil
 }
 
-func GetDepotList(migrateType string) ([]Depots, error) {
+func GetDepotList() ([]Depots, error) {
 	logger.Logger.Infof("获取仓库列表中...")
 	var depotList []Depots
 	var err error
-	switch migrateType {
-	case ProjectType:
+
+	// 优化逻辑：根据 source.project 配置判断迁移维度
+	// 当 source.project 不为空时按项目维度获取，其他情况都按团队维度获取
+	if len(Projects) > 0 && Projects[0] != "" {
+		// 配置了 source.project，按项目维度获取
+		logger.Logger.Info("检测到 source.project 配置，按项目维度获取列表")
 		depotList, err = GetDepotListByProjectNames(SourceURL, SourceToken, Projects)
-	case RepoType:
-		depotList, err = GetDepotListByRepoPath(SourceURL, SourceToken, Repos)
-	case Team:
+	} else {
+		// 未配置 source.project，按团队维度获取所有仓库
+		// 如果配置了 source.repo，将在后续的 filterReposByConfigList 函数中进行过滤
+		logger.Logger.Info("未配置 source.project，按团队维度获取所有仓库")
 		depotList, err = GetDepotListByTeam(SourceURL, SourceToken)
-	default:
-		return nil, fmt.Errorf("未知的迁移类型: %s", migrateType)
 	}
+
 	if err != nil {
 		return nil, err
 	}

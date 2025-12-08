@@ -144,20 +144,22 @@ func CheckConfig() error {
 	}
 
 	// 检查 migrate 参数
+	// migrate.type 不再是必填项，如果未配置则默认为 team
 	if config.Migrate.Type == "" {
-		return fmt.Errorf("migrate.type is required")
+		config.Migrate.Type = "team"
 	}
 
 	if config.Migrate.Type != "repo" && config.Migrate.Type != "project" && config.Migrate.Type != "team" {
 		return fmt.Errorf("migrate.type error only support repo or project or team")
 	}
 
-	if config.Migrate.Type == "project" && (len(config.Source.Project) == 0 || config.Source.Project[0] == "") {
-		return fmt.Errorf("coding.project is required")
-	}
+	// CODING 平台的特殊校验已移除，改为由 source.repo 和 source.project 自动判断
+	// 其他平台保持原有逻辑
 
-	if config.Migrate.Type == "repo" && platform != "local" && (len(config.Source.Repo) == 0 || config.Source.Repo[0] == "") {
-		return fmt.Errorf("coding.repo is required")
+	// repo 模式下，只有 common 和 local 平台需要强制要求 source.repo
+	// 其他平台（gitlab、github、gitee、gongfeng等）可以通过 source.repo 过滤仓库
+	if config.Migrate.Type == "repo" && (platform == "common" || platform == "local") && (len(config.Source.Repo) == 0 || config.Source.Repo[0] == "") {
+		return fmt.Errorf("when migrate.type is repo and platform is common or local, source.repo is required")
 	}
 
 	// 如果不是只下载模式，则检查 CNB 相关配置

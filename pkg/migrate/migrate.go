@@ -130,6 +130,65 @@ func filterReposBySelection(depotList []vcs.VCS) ([]vcs.VCS, error) {
 	return filteredDepotList, nil
 }
 
+// filterReposByConfigList 根据 source.repo 配置过滤仓库列表
+// 当 source.repo 不为空时，只保留在配置列表中的仓库
+// 注意：common 和 local 平台不需要过滤，因为它们的 source.repo 是必填项，直接指定要迁移的仓库
+// 返回值: 过滤后的仓库列表, 未匹配到的仓库数量
+func filterReposByConfigList(depotList []vcs.VCS) ([]vcs.VCS, int) {
+	// common 和 local 平台不需要过滤
+	if SourcePlatformName == "common" || SourcePlatformName == "local" {
+		return depotList, 0
+	}
+
+	configRepos := config.Cfg.GetStringSlice("source.repo")
+	
+	// 如果配置为空，返回完整列表
+	if len(configRepos) == 0 || (len(configRepos) == 1 && configRepos[0] == "") {
+		return depotList, 0
+	}
+
+	// 构建仓库路径映射表，提高查找效率
+	repoMap := make(map[string]bool, len(configRepos))
+	for _, repoPath := range configRepos {
+		trimmedPath := strings.TrimSpace(repoPath)
+		if trimmedPath != "" {
+			repoMap[trimmedPath] = true
+		}
+	}
+
+	// 如果配置的仓库列表为空（全是空字符串），返回完整列表
+	if len(repoMap) == 0 {
+		return depotList, 0
+	}
+
+	logger.Logger.Infof("检测到 source.repo 配置，将只迁移指定的 %d 个仓库", len(repoMap))
+	
+	// 过滤仓库列表
+	filteredDepotList := make([]vcs.VCS, 0, len(repoMap))
+	matchedRepos := make(map[string]bool)
+	
+	for _, depot := range depotList {
+		repoPath := depot.GetRepoPath()
+		if repoMap[repoPath] {
+			filteredDepotList = append(filteredDepotList, depot)
+			matchedRepos[repoPath] = true
+			logger.Logger.Infof("匹配到配置仓库: %s", repoPath)
+		}
+	}
+
+	// 检查是否有配置的仓库未找到，并记录未匹配数量
+	notFoundCount := 0
+	for repoPath := range repoMap {
+		if !matchedRepos[repoPath] {
+			logger.Logger.Errorf("配置的仓库 %s 在源平台未找到，将计入迁移失败", repoPath)
+			notFoundCount++
+		}
+	}
+
+	logger.Logger.Infof("根据 source.repo 配置过滤后，待迁移仓库数: %d，未找到仓库数: %d", len(filteredDepotList), notFoundCount)
+	return filteredDepotList, notFoundCount
+}
+
 // initMigrationStats 初始化迁移统计信息
 func initMigrationStats(depotList []vcs.VCS) {
 	atomic.StoreInt64(&totalRepoNumber, int64(len(depotList)))
@@ -183,14 +242,42 @@ func Run() int {
 
 	// 获取并过滤仓库列表
 	depotList := sourceVcsList
+	logger.Logger.Infof("从源平台获取到仓库总数: %d", len(depotList))
+	
+	// 先根据 source.repo 配置过滤（如果配置了的话）
+	var notFoundRepoCount int
+	depotList, notFoundRepoCount = filterReposByConfigList(depotList)
+	
+	// 再根据 repo-path.txt 文件过滤（如果启用了仓库选择功能）
 	depotList, err = filterReposBySelection(depotList)
 	if err != nil {
 		logger.Logger.Errorf("%s", err)
 		return 1
 	}
 
-	logger.Logger.Infof("待迁移仓库总数%d", len(depotList))
-	initMigrationStats(depotList)
+	logger.Logger.Infof("经过过滤后，待迁移仓库总数: %d", len(depotList))
+	
+	// 初始化迁移统计：如果配置了 source.repo，仓库总数应该包含未找到的仓库
+	configRepos := config.Cfg.GetStringSlice("source.repo")
+	if len(configRepos) > 0 && configRepos[0] != "" {
+		// 计算配置的仓库总数（去除空字符串）
+		configRepoCount := 0
+		for _, repo := range configRepos {
+			if strings.TrimSpace(repo) != "" {
+				configRepoCount++
+			}
+		}
+		// 仓库总数 = 配置的仓库数量
+		atomic.StoreInt64(&totalRepoNumber, int64(configRepoCount))
+		// 失败数 = 待迁移数 + 未找到数
+		atomic.StoreInt64(&failedRepoNumber, int64(len(depotList)+notFoundRepoCount))
+		// 未找到的仓库直接计入失败数，成功数和跳过数初始化为0
+		atomic.StoreInt64(&successfulRepoNumber, 0)
+		atomic.StoreInt64(&skipRepoNumber, 0)
+	} else {
+		// 没有配置 source.repo，使用原有逻辑
+		initMigrationStats(depotList)
+	}
 
 	// 如果不是只下载模式，则执行 CNB 相关操作
 	if !DownloadOnly {

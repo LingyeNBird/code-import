@@ -60,15 +60,22 @@
     - 类型：字符串
     - 必填：是
     - 默认值：coding
-    - 说明：迁移的平台名称，支持 coding/gitlab/github/gitee/aliyun/cnb/gongfeng，其他通用平台填写 common；本地裸仓库填写 local
+    - 说明：迁移的平台名称，支持 coding/gitlab/github/gitee/aliyun/cnb/gongfeng/huaweicloud，其他通用平台填写 common；
 
 - **PLUGIN_SOURCE_REPO**
     - 类型：字符串
     - 必填：否
     - 默认值：-
-    - 说明：仓库路径，需要与source_url拼接成完整的源仓库http克隆地址,如https://common.com/group1/repo1  
-  当source_platform 为 common 或者 source_platform 为 coding 且 **migrate_type 为 repo** 时必填，多个代码仓库以英文逗号隔开
-    - Ex: group1/repo1,group1/repo2,group2/repo3
+    - 说明：  
+  仓库路径，当source_platform 为 common，需要与source_url拼接成完整的源仓库http克隆地址，如仓库地址是`https://common.git.com/group1/repo1.git`，PLUGIN_SOURCE_URL填写`https://common.git.com`，PLUGIN_SOURCE_REPO填写`group1/repo1`，多个以英文逗号分割。  
+  当source_platform 不为 common 且 PLUGIN_SOURCE_REPO 不为空时，填写仓库路径，迁移指定仓库，多个仓库以英文逗号隔开。
+    - Ex:  根据源平台不同，仓库路径格式不同，请参考下表：  
+    <项目名>/<仓库名> （CODING、华为云）  
+    <组织名>/<仓库名>（Gitlab、Gitee、Github、Gitea、Gongfeng）   
+    <组织ID>/<组织名>/<仓库名> （阿里云云效）  
+    <组织名>/<仓库名>（CNB，不用包含根组织）  
+    如不清楚如何填写，可以开启`PLUGIN_MIGRATE_ALLOW_SELECT_REPOS`选项，通过查看生成的`repo_path.txt`文件来确认，详见参数介绍。
+
 
 - **PLUGIN_SOURCE_USERNAME**
     - 类型：字符串
@@ -191,7 +198,7 @@
     - 类型：布尔值
     - 必填：否
     - 默认值：false
-    - 说明：是否允许用户选择迁移仓库。为 true 时启用 repo-path.txt 选择功能。
+    - 说明：是否允许用户选择迁移指定仓库,为 true 时启用，将在工作目录生成 `repo-path.txt` ，编辑后再次运行迁移命令及只迁移 `repo-path.txt`中命中的仓库。
 
 - **PLUGIN_MIGRATE_DOWNLOAD_ONLY**
     - 类型：布尔值

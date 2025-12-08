@@ -43,7 +43,7 @@
       cnbcool/code-import
     ```
     
-    ### 迁移指定项目仓库
+    ### 迁移指定项目仓库,多个以英文逗号分割
     PLUGIN_SOURCE_PROJECT 字段根据需要自行替换，详见[参数介绍](parameters.md)
     ```shell
     docker run --rm  \
@@ -56,15 +56,13 @@
       cnbcool/code-import
     ```
     
-    ### 迁移指定仓库
-    PLUGIN_SOURCE_REPO 字段根据需要自行替换，详见[参数介绍](parameters.md)
+    ### 迁移指定仓库,多个以英文逗号分割
     ```shell
     docker run --rm  \
       -e PLUGIN_SOURCE_TOKEN="xxx"  \
-      -e PLUGIN_SOURCE_REPO="<TEAM-NAME>/<PROJECT-NAME>/<REPO-NAME>,test-team/project1/repoA,test-team/project2/repoB" \
+      -e PLUGIN_SOURCE_REPO="<PROJECT-NAME>/<REPO-NAME>,project1/repoA,project2/repoB" \
       -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
       -e PLUGIN_CNB_TOKEN="xxx"  \
-      -e PLUGIN_MIGRATE_TYPE="repo" \
       -v $(pwd):$(pwd) -w $(pwd) \
       cnbcool/code-import
     ```
@@ -74,8 +72,22 @@
     <summary> 从 GitHub 迁移 </summary>
 
     迁移之后的效果：原 GitHub 账号下有权限的所有组织，会在 CNB 中创建同名的子组织，并将原组织下的仓库迁移至该子组织下面
+    ### 迁移所有有权限的仓库
     ```shell
     docker run --rm  \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_URL="https://github.com" \
+      -e PLUGIN_SOURCE_PLATFORM="github" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
+
+    ### 迁移指定仓库,多个以英文逗号分割
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_REPO='<GROUP-NAME>/<REPO-NAME>,<GROUP-NAME>/<REPO-NAME>' \
       -e PLUGIN_SOURCE_TOKEN="xxx"  \
       -e PLUGIN_SOURCE_URL="https://github.com" \
       -e PLUGIN_SOURCE_PLATFORM="github" \
@@ -100,6 +112,18 @@
       -v $(pwd):$(pwd) -w $(pwd) \
       cnbcool/code-import
     ```
+    ### 迁移指定仓库,多个以英文逗号分割
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_REPO='<GROUP-NAME>/<REPO-NAME>,<GROUP-NAME>/<REPO-NAME>' \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_URL="https://gitlab.com" \
+      -e PLUGIN_SOURCE_PLATFORM="gitlab" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
   </details>
 
 * <details>
@@ -108,6 +132,19 @@
     迁移之后的效果：原 Gitee 账号下有权限的所有组织，会在 CNB 中创建同名的子组织，并将原组织下的仓库迁移至该子组织下面（如果 Gitee 是多级的组织/仓库组，迁移至 CNB 子组织和仓库仍会保留原有的多层级结构）
     ```shell
     docker run --rm  \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_URL="https://gitee.com" \
+      -e PLUGIN_SOURCE_PLATFORM="gitee" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
+
+    ### 迁移指定仓库,多个以英文逗号分割
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_REPO='<GROUP-NAME>/<REPO-NAME>,<GROUP-NAME>/<REPO-NAME>' \
       -e PLUGIN_SOURCE_TOKEN="xxx"  \
       -e PLUGIN_SOURCE_URL="https://gitee.com" \
       -e PLUGIN_SOURCE_PLATFORM="gitee" \
@@ -132,36 +169,16 @@
       -v $(pwd):$(pwd) -w $(pwd) \
       cnbcool/code-import
     ```
-  </details>
 
-* <details>
-    <summary> 从通用第三方代码平台迁移 </summary>
-
-    PLUGIN_SOURCE_REPO 字段中，group字段会映射为子组织，如果 cnb 的根组织下，没有该命名的子组织将会自动创建，如果有该命名的子组织会将仓库创建在已有的同名子组织下面
-    ### http协议
+    ### 迁移指定仓库,多个以英文逗号分割
     ```shell
     docker run --rm  \
-      -e PLUGIN_SOURCE_USERNAME="xxx"  \
-      -e PLUGIN_SOURCE_PASSWORD="xxx"  \
-      -e PLUGIN_SOURCE_REPO="group1/repo1,group1/repo2,group2/repo3" \
-      -e PLUGIN_SOURCE_URL="https://common.example.com" \
-      -e PLUGIN_SOURCE_PLATFORM="common" \
+      -e PLUGIN_SOURCE_REPO='<ORGANIZATIONID>/<GROUP-NAME>/<REPO-NAME>,<ORGANIZATIONID>/<GROUP-NAME>/<REPO-NAME>' \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_PLATFORM="aliyun" \
+      -e PLUGIN_SOURCE_ORGANIZATIONID="xxx" \
       -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
       -e PLUGIN_CNB_TOKEN="xxx"  \
-      -v $(pwd):$(pwd) -w $(pwd) \
-      cnbcool/code-import
-    ```
-    
-    ### ssh协议
-    ⚠️使用ssh协议时请在当前工作目录确保有对应的私钥文件，文件名固定为`ssh.key`
-    ```shell
-    docker run --rm  \
-      -e PLUGIN_SOURCE_REPO="group1/repo1,group1/repo2,group2/repo3" \
-      -e PLUGIN_SOURCE_URL="https://common.example.com" \
-      -e PLUGIN_SOURCE_PLATFORM="common" \
-      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
-      -e PLUGIN_CNB_TOKEN="xxx"  \
-      -e GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' \  
       -v $(pwd):$(pwd) -w $(pwd) \
       cnbcool/code-import
     ```
@@ -172,6 +189,19 @@
 
   ```shell
     docker run --rm  \
+    -e PLUGIN_SOURCE_TOKEN="xxx"  \
+    -e PLUGIN_SOURCE_URL="https://git.woa.com" \
+    -e PLUGIN_SOURCE_PLATFORM="gongfeng" \
+    -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+    -e PLUGIN_CNB_TOKEN="xxx"  \
+    -v $(pwd):$(pwd) -w $(pwd) \
+    cnbcool/code-import
+  ```
+
+  ### 迁移指定仓库,多个以英文逗号分割
+  ```shell
+    docker run --rm  \
+    -e PLUGIN_SOURCE_REPO='<GROUP-NAME>/<REPO-NAME>,<GROUP-NAME>/<REPO-NAME>' \
     -e PLUGIN_SOURCE_TOKEN="xxx"  \
     -e PLUGIN_SOURCE_URL="https://git.woa.com" \
     -e PLUGIN_SOURCE_PLATFORM="gongfeng" \
@@ -198,10 +228,57 @@
       -v $(pwd):$(pwd) -w $(pwd) \
       cnbcool/code-import
     ```
+
+    ### 迁移指定仓库,多个以英文逗号分割
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_REPO='<GROUP-NAME>/<REPO-NAME>,<GROUP-NAME>/<REPO-NAME>' \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_URL="https://cnb.example1.com" \
+      -e PLUGIN_SOURCE_PLATFORM="cnb" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -e PLUGIN_CNB_URL="https://cnb.example2.com" \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
   </details>
 
 * <details>
-    <summary> 只迁移部分仓库（仓库选择功能） </summary>
+    <summary> 从 华为云(CodeArts Repo)迁移 </summary>
+
+    迁移之后的效果：原华为云下有权限的所有项目或者代码组，会在 CNB 中创建同名的子组织，并将源仓库组下的仓库迁移至该子组织下面，最终路径为 `/<CNB根组织>/<项目名>/<仓库名>`
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_AK="xxx" \
+      -e PLUGIN_SOURCE_SK="xxx" \
+      -e PLUGIN_SOURCE_REGION="xxx" \
+      -e PLUGIN_SOURCE_PLATFORM="huaweicloud" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
+
+    ### 迁移指定仓库,多个以英文逗号分割
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_REPO='<PROJECT-NAME>/<REPO-NAME>,<PROJECT-NAME>/<REPO-NAME>' \
+      -e PLUGIN_SOURCE_TOKEN="xxx"  \
+      -e PLUGIN_SOURCE_AK="xxx" \
+      -e PLUGIN_SOURCE_SK="xxx" \
+      -e PLUGIN_SOURCE_REGION="xxx" \
+      -e PLUGIN_SOURCE_PLATFORM="huaweicloud" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
+  </details>
+
+* <details>
+    <summary> 迁移指定仓库（适用于不想迁移全部仓库，但是需指定较多迁移仓库场景） </summary>
     
     首次运行，生成仓库列表文件 `repo-path.txt`
     
@@ -236,23 +313,37 @@
   </details>
 
 * <details>
-    <summary> 从 华为云(CodeArts Repo)迁移 </summary>
+    <summary> 从通用第三方代码平台迁移（适用于工具暂不支持的源代码托管平台迁移，或者只需迁移极少数仓库） </summary>
 
-    迁移之后的效果：原华为云下有权限的所有项目或者代码组，会在 CNB 中创建同名的子组织，并将源仓库组下的仓库迁移至该子组织下面，最终路径为 `/<CNB根组织>/<项目名>/<仓库名>`
+    PLUGIN_SOURCE_REPO 字段中，group字段会映射为子组织，如果 cnb 的根组织下，没有该命名的子组织将会自动创建，如果有该命名的子组织会将仓库创建在已有的同名子组织下面
+    ### http协议
     ```shell
     docker run --rm  \
-      -e PLUGIN_SOURCE_TOKEN="xxx"  \
-      -e PLUGIN_SOURCE_AK="xxx" \
-      -e PLUGIN_SOURCE_SK="xxx" \
-      -e PLUGIN_SOURCE_REGION="xxx" \
-      -e PLUGIN_SOURCE_PLATFORM="huaweicloud" \
+      -e PLUGIN_SOURCE_USERNAME="xxx"  \
+      -e PLUGIN_SOURCE_PASSWORD="xxx"  \
+      -e PLUGIN_SOURCE_REPO="group1/repo1,group1/repo2,group2/repo3" \
+      -e PLUGIN_SOURCE_URL="https://common.example.com" \
+      -e PLUGIN_SOURCE_PLATFORM="common" \
       -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
       -e PLUGIN_CNB_TOKEN="xxx"  \
       -v $(pwd):$(pwd) -w $(pwd) \
       cnbcool/code-import
     ```
+    
+    ### ssh协议
+    ⚠️使用ssh协议时请在当前工作目录确保有对应的私钥文件，文件名固定为`ssh.key`
+    ```shell
+    docker run --rm  \
+      -e PLUGIN_SOURCE_REPO="group1/repo1,group1/repo2,group2/repo3" \
+      -e PLUGIN_SOURCE_URL="https://common.example.com" \
+      -e PLUGIN_SOURCE_PLATFORM="common" \
+      -e PLUGIN_CNB_ROOT_ORGANIZATION="xxx" \
+      -e PLUGIN_CNB_TOKEN="xxx"  \
+      -e GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' \  
+      -v $(pwd):$(pwd) -w $(pwd) \
+      cnbcool/code-import
+    ```
   </details>
-
 ## 迁移完成后，增量更新原平台最新内容
 清空原工作目录下的 successful.log
 

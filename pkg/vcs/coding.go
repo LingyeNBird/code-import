@@ -139,7 +139,8 @@ func (c *CodingVcs) GetProjectID() string {
 }
 
 func newCodingRepo() ([]VCS, error) {
-	repoList, err := coding.GetDepotList(config.Cfg.GetString("migrate.type"))
+	// 不再需要传入 migrate.type，由 GetDepotList 内部根据配置自动判断
+	repoList, err := coding.GetDepotList()
 	if err != nil {
 		return nil, err
 	}
