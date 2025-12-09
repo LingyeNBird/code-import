@@ -93,38 +93,41 @@ INFO  代码仓库迁移完成，耗时1m30s。
 
 | 平台 | 仓库路径格式 | 示例 |
 |------|-------------|------|
-| **Gitee** | `owner/repo` 或 `org/project/repo` | `openeuler/kernel` |
-| **Gitea** | `owner/repo` | `myorg/myrepo` |
-| **阿里云** | `org/project/repo` | `myorg/myproject/repo1` |
-| **华为云** | `project/group/repo` | `project1/group1/repo1` |
-| GitLab | `group/subgroup/repo` | `gitlab-org/gitlab-ce` |
-| GitHub | `owner/repo` | `octocat/Hello-World` |
-| 工蜂 | `org/team/project/repo` | `tencent/WXG/project1/repo1` |
-| CODING | `team/project/repo` | `my-team/my-project/repo` |
+| **Gitee** | `group/repo` | `openeuler/kernel` |
+| **Gitea** | `group/repo` | `myorg/myrepo` |
+| **阿里云** | `orgID/group/repo` | `111111/mygroup/repo1` |
+| **华为云** | `project/repo` | `project1/repo1` |
+| GitLab | `group/repo` | `gitlab-org/gitlab-ce` |
+| GitHub | `group/repo` | `octocat/Hello-World` |
+| 工蜂 | `group/repo` | `mygroup/repo1` |
+| CODING | `project/repo` | `my-project/repo` |
 
 ## 使用方法
 
-### 方式1: 环境变量
+### Docker 环境变量方式
 
 ```bash
 # 单个仓库
-export PLUGIN_SOURCE_REPO="owner/repo1"
+docker run --rm \
+  -e PLUGIN_SOURCE_REPO="owner/repo1" \
+  -e PLUGIN_SOURCE_PLATFORM=gitlab \
+  -e PLUGIN_SOURCE_URL=https://gitlab.example.com \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 
 # 多个仓库（逗号分隔）
-export PLUGIN_SOURCE_REPO="group1/repo1,group2/subgroup/repo2,owner/repo3"
-
-./ccrctl migrate
-```
-
-### 方式2: 配置文件
-
-```yaml
-source:
-  platform: gitlab
-  repo:
-    - group1/subgroup1/repo1
-    - group2/repo2
-    - group3/subgroup3/repo3
+docker run --rm \
+  -e PLUGIN_SOURCE_REPO="group1/repo1,group2/subgroup/repo2,owner/repo3" \
+  -e PLUGIN_SOURCE_PLATFORM=gitlab \
+  -e PLUGIN_SOURCE_URL=https://gitlab.example.com \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 ```
 
 ## 测试覆盖

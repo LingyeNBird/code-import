@@ -12,15 +12,30 @@
 
 ```bash
 # 按仓库迁移
-export PLUGIN_MIGRATE_TYPE=repo
-export PLUGIN_SOURCE_REPO="team1/project1/repo1,team1/project1/repo2"
+docker run --rm \
+  -e PLUGIN_MIGRATE_TYPE=repo \
+  -e PLUGIN_SOURCE_REPO="team1/project1/repo1,team1/project1/repo2" \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  cnbcool/code-import:latest
 
 # 按项目迁移
-export PLUGIN_MIGRATE_TYPE=project
-export PLUGIN_SOURCE_PROJECT="project1,project2"
+docker run --rm \
+  -e PLUGIN_MIGRATE_TYPE=project \
+  -e PLUGIN_SOURCE_PROJECT="project1,project2" \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  cnbcool/code-import:latest
 
 # 按团队迁移
-export PLUGIN_MIGRATE_TYPE=team
+docker run --rm \
+  -e PLUGIN_MIGRATE_TYPE=team \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  cnbcool/code-import:latest
 ```
 
 **问题**：
@@ -34,14 +49,38 @@ export PLUGIN_MIGRATE_TYPE=team
 
 ```bash
 # 场景1: 按仓库迁移（配置了 source.repo）
-export PLUGIN_SOURCE_REPO="team1/project1/repo1,team1/project1/repo2"
+docker run --rm \
+  -e PLUGIN_SOURCE_REPO="team1/project1/repo1,team1/project1/repo2" \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # 自动识别为按仓库迁移，无需配置 PLUGIN_MIGRATE_TYPE
 
 # 场景2: 按项目迁移（配置了 source.project）
-export PLUGIN_SOURCE_PROJECT="project1,project2"
+docker run --rm \
+  -e PLUGIN_SOURCE_PROJECT="project1,project2" \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # 自动识别为按项目迁移，无需配置 PLUGIN_MIGRATE_TYPE
 
 # 场景3: 按团队迁移（都未配置）
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # 自动获取团队下所有仓库，无需配置 PLUGIN_MIGRATE_TYPE
 ```
 
@@ -163,13 +202,16 @@ if config.Migrate.Type == "" {
 ### 场景1: 按仓库迁移（指定具体仓库）
 
 ```bash
-export PLUGIN_SOURCE_PLATFORM=coding
-export PLUGIN_SOURCE_URL=https://your-team.coding.net
-export PLUGIN_SOURCE_TOKEN=your_token
-export PLUGIN_SOURCE_REPO="team1/project1/repo1,team1/project1/repo2"
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your_token \
+  -e PLUGIN_SOURCE_REPO="team1/project1/repo1,team1/project1/repo2" \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # 不需要配置 PLUGIN_MIGRATE_TYPE，自动识别为按仓库迁移
-
-./ccrctl migrate
 ```
 
 **日志输出**：
@@ -182,13 +224,16 @@ INFO  从源平台获取到仓库总数: 2
 ### 场景2: 按项目迁移（迁移整个项目）
 
 ```bash
-export PLUGIN_SOURCE_PLATFORM=coding
-export PLUGIN_SOURCE_URL=https://your-team.coding.net
-export PLUGIN_SOURCE_TOKEN=your_token
-export PLUGIN_SOURCE_PROJECT="project1,project2"
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your_token \
+  -e PLUGIN_SOURCE_PROJECT="project1,project2" \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # 不需要配置 PLUGIN_MIGRATE_TYPE，自动识别为按项目迁移
-
-./ccrctl migrate
 ```
 
 **日志输出**：
@@ -201,13 +246,16 @@ INFO  从源平台获取到仓库总数: 25
 ### 场景3: 按团队迁移（迁移全部仓库）
 
 ```bash
-export PLUGIN_SOURCE_PLATFORM=coding
-export PLUGIN_SOURCE_URL=https://your-team.coding.net
-export PLUGIN_SOURCE_TOKEN=your_token
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your_token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # 不配置 PLUGIN_SOURCE_REPO 和 PLUGIN_SOURCE_PROJECT
 # 不需要配置 PLUGIN_MIGRATE_TYPE，自动获取全部仓库
-
-./ccrctl migrate
 ```
 
 **日志输出**：
@@ -220,14 +268,17 @@ INFO  从源平台获取到仓库总数: 100
 ### 场景4: 同时配置（按优先级选择）
 
 ```bash
-export PLUGIN_SOURCE_PLATFORM=coding
-export PLUGIN_SOURCE_URL=https://your-team.coding.net
-export PLUGIN_SOURCE_TOKEN=your_token
-export PLUGIN_SOURCE_REPO="team1/project1/repo1"
-export PLUGIN_SOURCE_PROJECT="project2"
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your_token \
+  -e PLUGIN_SOURCE_REPO="team1/project1/repo1" \
+  -e PLUGIN_SOURCE_PROJECT="project2" \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # source.repo 优先级高，按仓库迁移
-
-./ccrctl migrate
 ```
 
 **日志输出**：
@@ -245,8 +296,16 @@ INFO  从源平台获取到仓库总数: 1
 
 ```bash
 # 旧的配置方式仍然有效
-export PLUGIN_MIGRATE_TYPE=repo
-export PLUGIN_SOURCE_REPO="team1/project1/repo1"
+docker run --rm \
+  -e PLUGIN_MIGRATE_TYPE=repo \
+  -e PLUGIN_SOURCE_REPO="team1/project1/repo1" \
+  -e PLUGIN_SOURCE_PLATFORM=coding \
+  -e PLUGIN_SOURCE_URL=https://your-team.coding.net \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 # 仍然可以正常工作
 ```
 
@@ -279,9 +338,8 @@ export PLUGIN_SOURCE_REPO="team1/project1/repo1"
 
 ### 编译测试
 ```bash
-cd /Users/vincentliu/git_dir/code-import
-go build -o ccrctl main.go
-# ✅ 编译成功
+docker build -t ccrctl:latest .
+# ✅ 构建成功
 ```
 
 ### 单元测试

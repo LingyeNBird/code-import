@@ -13,37 +13,30 @@
 
 ## 配置方式
 
-### 方式一：使用环境变量（推荐）
+### Docker 环境变量方式
 
 ```bash
 # 单个仓库
-export PLUGIN_SOURCE_REPO="owner/repo1"
+docker run --rm \
+  -e PLUGIN_SOURCE_REPO="owner/repo1" \
+  -e PLUGIN_SOURCE_PLATFORM=gitlab \
+  -e PLUGIN_SOURCE_URL=https://gitlab.example.com \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 
 # 多个仓库（逗号分隔）
-export PLUGIN_SOURCE_REPO="owner/repo1,owner/repo2,group/subgroup/repo3"
-
-# 执行迁移
-./ccrctl migrate
-```
-
-### 方式二：使用配置文件
-
-编辑 `config.yaml` 文件：
-
-```yaml
-source:
-  platform: gitlab  # 或 github、gitee、gongfeng 等
-  url: https://gitlab.example.com
-  token: your-token
-  # 指定要迁移的仓库列表（逗号分隔）
-  repo:
-    - group1/subgroup1/repo1
-    - group1/subgroup2/repo2
-    - group2/repo3
-
-migrate:
-  type: team  # 或 project
-  # 其他迁移配置...
+docker run --rm \
+  -e PLUGIN_SOURCE_REPO="owner/repo1,owner/repo2,group/subgroup/repo3" \
+  -e PLUGIN_SOURCE_PLATFORM=gitlab \
+  -e PLUGIN_SOURCE_URL=https://gitlab.example.com \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 ```
 
 ## 仓库路径格式
@@ -93,75 +86,46 @@ team/project/repository
 ### 示例 1: GitLab 迁移指定仓库
 
 ```bash
-export PLUGIN_SOURCE_PLATFORM=gitlab
-export PLUGIN_SOURCE_URL=https://gitlab.example.com
-export PLUGIN_SOURCE_TOKEN=glpat-xxxxxxxxxxxx
-export PLUGIN_SOURCE_REPO="group1/repo1,group2/subgroup/repo2"
-export PLUGIN_MIGRATE_TYPE=team
-export PLUGIN_CNB_URL=https://cnb.example.com
-export PLUGIN_CNB_TOKEN=your-cnb-token
-export PLUGIN_CNB_ROOT_ORGANIZATION=your-org
-
-./ccrctl migrate
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=gitlab \
+  -e PLUGIN_SOURCE_URL=https://gitlab.example.com \
+  -e PLUGIN_SOURCE_TOKEN=glpat-xxxxxxxxxxxx \
+  -e PLUGIN_SOURCE_REPO="group1/repo1,group2/subgroup/repo2" \
+  -e PLUGIN_MIGRATE_TYPE=team \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 ```
 
 ### 示例 2: GitHub 迁移指定仓库
 
 ```bash
-export PLUGIN_SOURCE_PLATFORM=github
-export PLUGIN_SOURCE_URL=https://github.com
-export PLUGIN_SOURCE_TOKEN=ghp_xxxxxxxxxxxx
-export PLUGIN_SOURCE_REPO="owner1/repo1,owner2/repo2"
-export PLUGIN_MIGRATE_TYPE=team
-export PLUGIN_CNB_URL=https://cnb.example.com
-export PLUGIN_CNB_TOKEN=your-cnb-token
-export PLUGIN_CNB_ROOT_ORGANIZATION=your-org
-
-./ccrctl migrate
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=github \
+  -e PLUGIN_SOURCE_URL=https://github.com \
+  -e PLUGIN_SOURCE_TOKEN=ghp_xxxxxxxxxxxx \
+  -e PLUGIN_SOURCE_REPO="owner1/repo1,owner2/repo2" \
+  -e PLUGIN_MIGRATE_TYPE=team \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 ```
 
 ### 示例 3: 工蜂迁移指定仓库
 
 ```bash
-export PLUGIN_SOURCE_PLATFORM=gongfeng
-export PLUGIN_SOURCE_URL=https://git.code.tencent.com
-export PLUGIN_SOURCE_TOKEN=your-token
-export PLUGIN_SOURCE_REPO="tencent/WXG/project1/repo1,tencent/PCG/repo2"
-export PLUGIN_MIGRATE_TYPE=team
-export PLUGIN_CNB_URL=https://cnb.example.com
-export PLUGIN_CNB_TOKEN=your-cnb-token
-export PLUGIN_CNB_ROOT_ORGANIZATION=your-org
-
-./ccrctl migrate
-```
-
-### 示例 4: 配置文件方式（GitLab）
-
-`config.yaml`:
-```yaml
-source:
-  platform: gitlab
-  url: https://gitlab.example.com
-  token: glpat-xxxxxxxxxxxx
-  repo:
-    - group1/subgroup1/repo1
-    - group1/subgroup2/repo2
-    - group2/repo3
-
-cnb:
-  url: https://cnb.example.com
-  token: your-cnb-token
-  root_organization: your-org
-
-migrate:
-  type: team
-  concurrency: 5
-  force_push: false
-```
-
-执行迁移：
-```bash
-./ccrctl migrate
+docker run --rm \
+  -e PLUGIN_SOURCE_PLATFORM=gongfeng \
+  -e PLUGIN_SOURCE_URL=https://git.code.tencent.com \
+  -e PLUGIN_SOURCE_TOKEN=your-token \
+  -e PLUGIN_SOURCE_REPO="tencent/WXG/project1/repo1,tencent/PCG/repo2" \
+  -e PLUGIN_MIGRATE_TYPE=team \
+  -e PLUGIN_CNB_URL=https://cnb.example.com \
+  -e PLUGIN_CNB_TOKEN=your-cnb-token \
+  -e PLUGIN_CNB_ROOT_ORGANIZATION=your-org \
+  cnbcool/code-import:latest
 ```
 
 ## 行为说明
