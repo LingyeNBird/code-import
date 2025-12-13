@@ -18,13 +18,14 @@ const (
 )
 
 type GitlabVcs struct {
-	httpURL   string
-	RepoPath  string
-	RepoName  string
-	RepoType  string
-	Private   string
-	ProjectId int
-	Desc      string
+	httpURL         string
+	RepoPath        string
+	RepoName        string
+	RepoDisplayName string
+	RepoType        string
+	Private         string
+	ProjectId       int
+	Desc            string
 }
 
 func (c *GitlabVcs) GetRepoPath() string {
@@ -122,13 +123,14 @@ func GitlabCovertToVcs(repoList []*gitlab.Project) []VCS {
 	var VCS []VCS
 	for _, repo := range repoList {
 		VCS = append(VCS, &GitlabVcs{
-			httpURL:   repo.HTTPURLToRepo,
-			RepoPath:  repo.PathWithNamespace,
-			RepoName:  repo.Name,
-			RepoType:  Git,
-			Private:   string(repo.Visibility),
-			ProjectId: repo.ID,
-			Desc:      repo.Description,
+			httpURL:         repo.HTTPURLToRepo,
+			RepoPath:        repo.PathWithNamespace,
+			RepoName:        repo.Path,
+			RepoDisplayName: repo.Name,
+			RepoType:        Git,
+			Private:         string(repo.Visibility),
+			ProjectId:       repo.ID,
+			Desc:            repo.Description,
 		})
 	}
 	return VCS
