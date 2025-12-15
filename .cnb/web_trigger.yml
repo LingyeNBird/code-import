@@ -1,7 +1,7 @@
 _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
   PLUGIN_CNB_ROOT_ORGANIZATION:
     name: CNB根组织名称
-    description: "你创建的CNB根组织名称,示例: root"
+    description: "你创建的CNB根组织名称,示例: root,创建地址:https://cnb.cool/new/groups"
     required: true
     type: input
   PLUGIN_CNB_TOKEN:
@@ -10,21 +10,21 @@ _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
     required: true
     type: input
   PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH:
-    name: 忽略 LFS 文件下载报错，继续迁移，默认不忽略，一般保持默认即可，谨慎开启！
+    name: ⚠️忽略 LFS 文件下载报错，继续迁移，默认不开启，一般保持默认即可，谨慎开启！
     description: "忽略 LFS 文件下载报错，继续迁移，默认不忽略，一般保持默认即可，谨慎开启！"
     required: true
-    type: select
+    type: switch
     default: false
     options:
-      - name: 忽略
+      - name: 开启
         value: true
-      - name: 不忽略
+      - name: 不开启
         value: false
   PLUGIN_MIGRATE_REBASE:
     name: ⚠️当两侧都有提交代码时，可以尝试使用git rebase保证代码双向同步，CNB侧提交的代码不会被覆盖，但是如遇冲突需人工解决。
     description: "使用git rebase保证代码同步，CNB侧提交的流水线配置代码不会被覆盖,如遇冲突需人工解决。⚠️如开启该配置，将启用强制推送（PLUGIN_MIGRATE_FORCE_PUSH=\"true\"），并在迁移工具执行的工作目录备份CNB侧代码仓库"
     required: true
-    type: select
+    type: switch
     default: false
     options:
       - name: 开启
@@ -35,7 +35,7 @@ _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
     name: ⚠️强制push到CNB仓库,CNB侧仓库会被强制覆盖，一般默认关闭即可,谨慎开启！
     description: "⚠️强制push到CNB仓库,CNB侧仓库会被强制覆盖，谨慎开启！"
     required: true
-    type: select
+    type: switch
     default: false
     options:
       - name: 开启
@@ -47,6 +47,7 @@ _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
 branch:
   - buttons:
     - name: CODING 迁移至 CNB
+      isDefault: true
       image: img/coding.png
       description: 从CODING批量迁移仓库到CNB
       event: web_trigger_code_import
@@ -64,7 +65,7 @@ branch:
         PLUGIN_MIGRATE_MAP_CODING_DISPLAY_NAME:
           name: 映射 CODING 项目名为 CNB 子组织别名
           description: 映射 CODING 项目显示名称为 CNB 子组织别名，默认开启，一般保持默认即可,如遇创建子组织报错，可尝试关闭此选项
-          type: select
+          type: switch
           default: true
           options:
             - name: 开启
@@ -74,7 +75,7 @@ branch:
         PLUGIN_MIGRATE_MAP_CODING_DESCRIPTION:
           name: 映射 CODING 项目简介为 CNB 子组织简介
           description: 映射 CODING 项目简介为 CNB 子组织简介，默认开启，一般保持默认即可,如遇创建子组织报错，可尝试关闭此选项
-          type: select
+          type: switch
           default: true
           options:
             - name: 开启
