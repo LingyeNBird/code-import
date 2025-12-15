@@ -39,7 +39,7 @@
 
 
 ## ❓常见问题
-1. 可请点击仓库详情页上方`知识库`按钮(迁移按钮旁边），直接提问，或者按`/`键直接输入问题，结尾带上`?`，如果仍然解决不了欢迎提issue。
+1. 可请点击仓库详情页上方![知识库](img/zhishiku-logo.png)按钮(迁移按钮旁边），直接提问，或者按`/`键直接输入问题，结尾带上`?`，如果仍然解决不了欢迎提issue。
 1. 超过了单个文件大小限制 256 MiB
 可以开启`PLUGIN_MIGRATE_USE_LFS_MIGRATE`参数，详见[更多参数](doc/parameters.md)
 2. 获取仓库列表失败/获取项目信息失败: `The current scope does not support access to this API`
