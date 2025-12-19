@@ -15,7 +15,9 @@
 ⚠️ tips : 一年只能创建一个
 
 ## 3. 创建 CNB 访问令牌
-权限要求: 常见场景勾选 `迁移工具凭据` ，即可快速完成授权。  
-创建地址: https://cnb.cool/profile/token
+过期时间：按需选择  
+使用范围：全部仓库  
+常见场景：勾选 `迁移工具凭据` ，即可快速完成授权。  
+创建地址：https://cnb.cool/profile/token
 
 ![img.png](../img/ready_3.png)
