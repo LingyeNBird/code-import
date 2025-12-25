@@ -390,6 +390,11 @@ func buildURLString(u *url.URL) string {
 }
 
 func codePush(workDir, pushURL, repoPath string, force bool) (output string, err error) {
+	// 强制推送警告:提醒用户此操作的风险性
+	if force {
+		logger.Logger.Warnf("%s 即将执行强制推送(git push -f),此操作将覆盖目标仓库的历史记录,请确保您了解此操作的风险", repoPath)
+	}
+	
 	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
 	var cmd string
 	for i, interval := range retryIntervals {

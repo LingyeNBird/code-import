@@ -122,7 +122,7 @@
     - 类型：布尔值
     - 必填：否
     - 默认值：false
-    - 说明：⚠️强制push到CNB仓库,CNB侧仓库会被强制覆盖
+    - 说明：⚠️强制push到CNB仓库,CNB侧仓库会被强制覆盖。启用该选项时，迁移日志中会输出 WARN 级别的警告信息，提醒用户此操作的风险性。
 
 - **PLUGIN_MIGRATE_SKIP_EXISTS_REPO**
     - 类型：布尔值

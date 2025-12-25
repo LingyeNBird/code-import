@@ -115,7 +115,7 @@
     - Type: boolean
     - Required: No
     - Default: false
-    - Description: ⚠️Force push to CNB repositories, will overwrite existing CNB repositories
+    - Description: ⚠️Force push to CNB repositories, will overwrite existing CNB repositories. When enabled, a WARN-level warning message will be logged to alert users about the risks of this operation.
 
 - **PLUGIN_MIGRATE_SKIP_EXISTS_REPO**
     - Type: boolean
