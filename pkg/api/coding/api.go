@@ -4,6 +4,7 @@ import (
 	"ccrctl/pkg/config"
 	"ccrctl/pkg/http_client"
 	"ccrctl/pkg/logger"
+	"ccrctl/pkg/util"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -436,12 +437,33 @@ func GetDepotList() ([]Depots, error) {
 	var depotList []Depots
 	var err error
 
+	// 对 Projects 进行去重并输出日志
+	result := util.DeduplicateStringSlice(Projects)
+	projects := result.Deduplicated
+	if result.DuplicateCount > 0 {
+		// 输出去重日志
+		if len(result.DuplicateItems) > 0 {
+			displayItems := result.DuplicateItems
+			if len(result.DuplicateItems) > 3 {
+				displayItems = result.DuplicateItems[:3]
+			}
+			for _, item := range displayItems {
+				logger.Logger.Warnf("配置 source.project 中发现重复项: %s，已自动过滤", item)
+			}
+			if len(result.DuplicateItems) > 3 {
+				logger.Logger.Warnf("配置 source.project 中还有 %d 个重复项未显示", len(result.DuplicateItems)-3)
+			}
+		}
+		logger.Logger.Infof("配置 source.project 去重完成：原始配置 %d 项，去重后 %d 项，移除重复项 %d 个",
+			len(Projects), len(projects), result.DuplicateCount)
+	}
+
 	// 优化逻辑：根据 source.project 配置判断迁移维度
 	// 当 source.project 不为空时按项目维度获取，其他情况都按团队维度获取
-	if len(Projects) > 0 && Projects[0] != "" {
+	if len(projects) > 0 && projects[0] != "" {
 		// 配置了 source.project，按项目维度获取
 		logger.Logger.Info("检测到 source.project 配置，按项目维度获取列表")
-		depotList, err = GetDepotListByProjectNames(SourceURL, SourceToken, Projects)
+		depotList, err = GetDepotListByProjectNames(SourceURL, SourceToken, projects)
 	} else {
 		// 未配置 source.project，按团队维度获取所有仓库
 		// 如果配置了 source.repo，将在后续的 filterReposByConfigList 函数中进行过滤

@@ -295,3 +295,49 @@ func TrimSlash(s string) string {
 
 	return s
 }
+
+// DeduplicationResult 去重结果
+type DeduplicationResult struct {
+	Deduplicated   []string // 去重后的切片
+	DuplicateCount int      // 重复项数量
+	DuplicateItems []string // 重复项列表（用于日志输出）
+}
+
+// DeduplicateStringSlice 对字符串切片进行去重（静默版本，不输出日志）
+// 参数:
+//   - slice: 需要去重的字符串切片
+//
+// 返回: 去重结果，包含去重后的切片和重复信息
+func DeduplicateStringSlice(slice []string) DeduplicationResult {
+	result := DeduplicationResult{
+		Deduplicated:   make([]string, 0, len(slice)),
+		DuplicateItems: make([]string, 0),
+	}
+
+	if len(slice) == 0 {
+		result.Deduplicated = slice
+		return result
+	}
+
+	seen := make(map[string]bool)
+
+	for _, item := range slice {
+		trimmedItem := strings.TrimSpace(item)
+		// 跳过空字符串
+		if trimmedItem == "" {
+			continue
+		}
+
+		// 如果已经见过这个值，记录重复并跳过
+		if seen[trimmedItem] {
+			result.DuplicateItems = append(result.DuplicateItems, trimmedItem)
+			result.DuplicateCount++
+			continue
+		}
+
+		seen[trimmedItem] = true
+		result.Deduplicated = append(result.Deduplicated, trimmedItem)
+	}
+
+	return result
+}

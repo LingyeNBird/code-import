@@ -29,14 +29,14 @@ func formatDuration(d time.Duration) string {
 	if d < time.Second {
 		return "0s"
 	}
-	
+
 	// 转换为整秒，去掉毫秒部分
 	totalSeconds := int(d.Seconds())
-	
+
 	hours := totalSeconds / 3600
 	minutes := (totalSeconds % 3600) / 60
 	seconds := totalSeconds % 60
-	
+
 	var result string
 	if hours > 0 {
 		result += fmt.Sprintf("%dh", hours)
@@ -47,13 +47,39 @@ func formatDuration(d time.Duration) string {
 	if seconds > 0 {
 		result += fmt.Sprintf("%ds", seconds)
 	}
-	
+
 	// 如果结果为空（理论上不会发生），返回0s
 	if result == "" {
 		result = "0s"
 	}
-	
+
 	return result
+}
+
+// deduplicateWithLog 对字符串切片进行去重并输出日志
+func deduplicateWithLog(slice []string, configKey string) []string {
+	result := util.DeduplicateStringSlice(slice)
+
+	// 如果有重复项，输出日志
+	if result.DuplicateCount > 0 {
+		// 只输出前几个重复项，避免日志过多
+		if len(result.DuplicateItems) > 0 {
+			displayItems := result.DuplicateItems
+			if len(result.DuplicateItems) > 3 {
+				displayItems = result.DuplicateItems[:3]
+			}
+			for _, item := range displayItems {
+				logger.Logger.Warnf("配置 %s 中发现重复项: %s，已自动过滤", configKey, item)
+			}
+			if len(result.DuplicateItems) > 3 {
+				logger.Logger.Warnf("配置 %s 中还有 %d 个重复项未显示", configKey, len(result.DuplicateItems)-3)
+			}
+		}
+		logger.Logger.Infof("配置 %s 去重完成：原始配置 %d 项，去重后 %d 项，移除重复项 %d 个",
+			configKey, len(slice), len(result.Deduplicated), result.DuplicateCount)
+	}
+
+	return result.Deduplicated
 }
 
 const (
@@ -141,11 +167,14 @@ func filterReposByConfigList(depotList []vcs.VCS) ([]vcs.VCS, int) {
 	}
 
 	configRepos := config.Cfg.GetStringSlice("source.repo")
-	
+
 	// 如果配置为空，返回完整列表
 	if len(configRepos) == 0 || (len(configRepos) == 1 && configRepos[0] == "") {
 		return depotList, 0
 	}
+
+	// 对配置的仓库列表进行去重
+	configRepos = deduplicateWithLog(configRepos, "source.repo")
 
 	// 构建仓库路径映射表，提高查找效率
 	repoMap := make(map[string]bool, len(configRepos))
@@ -162,11 +191,11 @@ func filterReposByConfigList(depotList []vcs.VCS) ([]vcs.VCS, int) {
 	}
 
 	logger.Logger.Infof("检测到 source.repo 配置，将只迁移指定的 %d 个仓库", len(repoMap))
-	
+
 	// 过滤仓库列表
 	filteredDepotList := make([]vcs.VCS, 0, len(repoMap))
 	matchedRepos := make(map[string]bool)
-	
+
 	for _, depot := range depotList {
 		repoPath := depot.GetRepoPath()
 		if repoMap[repoPath] {
@@ -243,11 +272,11 @@ func Run() int {
 	// 获取并过滤仓库列表
 	depotList := sourceVcsList
 	logger.Logger.Infof("从源平台获取到仓库总数: %d", len(depotList))
-	
+
 	// 先根据 source.repo 配置过滤（如果配置了的话）
 	var notFoundRepoCount int
 	depotList, notFoundRepoCount = filterReposByConfigList(depotList)
-	
+
 	// 再根据 repo-path.txt 文件过滤（如果启用了仓库选择功能）
 	depotList, err = filterReposBySelection(depotList)
 	if err != nil {
@@ -256,7 +285,7 @@ func Run() int {
 	}
 
 	logger.Logger.Infof("经过过滤后，待迁移仓库总数: %d", len(depotList))
-	
+
 	// 初始化迁移统计：如果配置了 source.repo，仓库总数应该包含未找到的仓库
 	configRepos := config.Cfg.GetStringSlice("source.repo")
 	if len(configRepos) > 0 && configRepos[0] != "" {
@@ -479,8 +508,6 @@ func getOperationType() string {
 	return "迁移"
 }
 
-
-
 func migrateDo(depot vcs.VCS) error {
 	var err error
 	repoName, subGroup, repoPath, repoPrivate := depot.GetRepoName(), depot.GetSubGroup(), depot.GetRepoPath(), depot.GetRepoPrivate()
@@ -570,7 +597,7 @@ func migrateDo(depot vcs.VCS) error {
 		pushURL := target.GetPushUrl(organizationMappingLevel, CnbURL, CnbUserName, CnbToken, subGroupName, repoName)
 		rebaseRepoPath := filepath.Join(RebaseDirPrefix, repoPath)
 		isForcePush := config.Cfg.GetBool("migrate.force_push")
-		
+
 		// 处理 rebase 逻辑：明确分为两种情况
 		if MigrateRebase {
 			// 情况1：当CNB侧不存在对应仓库时，跳过rebase操作，直接执行原有的迁移push流程
@@ -580,11 +607,11 @@ func migrateDo(depot vcs.VCS) error {
 				// CNB侧仓库存在，尝试克隆进行rebase
 				isForcePush = true // 如果使用rebase同步，那么需要开启强制 push，避免出现冲突
 				cloneOutput, rebaseCloneErr := git.NormalCloneWithOutput(pushURL, rebaseRepoPath)
-				
+
 				if rebaseCloneErr != nil {
 					return fmt.Errorf("git rebase clone失败: %s", rebaseCloneErr)
 				}
-				
+
 				// 情况2：当遇到未初始化的空仓库时，同样跳过rebase操作，执行原有的迁移push流程
 				if git.IsEmptyRepositoryOutput(cloneOutput) {
 					logger.Logger.Infof("%s CNB侧仓库为空仓库，跳过rebase操作，执行原有的迁移push流程", repoPath)

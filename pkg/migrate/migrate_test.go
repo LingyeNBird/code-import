@@ -15,19 +15,19 @@ type MockVCS struct {
 	subGroup *vcs.SubGroup
 }
 
-func (m *MockVCS) GetRepoPath() string                   { return m.repoPath }
-func (m *MockVCS) GetRepoName() string                   { return m.repoName }
-func (m *MockVCS) GetSubGroup() *vcs.SubGroup            { return m.subGroup }
-func (m *MockVCS) GetRepoType() string                   { return "git" }
-func (m *MockVCS) GetCloneUrl() string                   { return "" }
-func (m *MockVCS) GetUserName() string                   { return "" }
-func (m *MockVCS) GetToken() string                      { return "" }
-func (m *MockVCS) Clone() error                          { return nil }
-func (m *MockVCS) GetRepoPrivate() bool                  { return false }
-func (m *MockVCS) GetReleases() []vcs.Releases           { return nil }
-func (m *MockVCS) GetProjectID() string                  { return "" }
-func (m *MockVCS) GetRepoDescription() string            { return "" }
-func (m *MockVCS) ListRepos() ([]vcs.VCS, error)         { return nil, nil }
+func (m *MockVCS) GetRepoPath() string           { return m.repoPath }
+func (m *MockVCS) GetRepoName() string           { return m.repoName }
+func (m *MockVCS) GetSubGroup() *vcs.SubGroup    { return m.subGroup }
+func (m *MockVCS) GetRepoType() string           { return "git" }
+func (m *MockVCS) GetCloneUrl() string           { return "" }
+func (m *MockVCS) GetUserName() string           { return "" }
+func (m *MockVCS) GetToken() string              { return "" }
+func (m *MockVCS) Clone() error                  { return nil }
+func (m *MockVCS) GetRepoPrivate() bool          { return false }
+func (m *MockVCS) GetReleases() []vcs.Releases   { return nil }
+func (m *MockVCS) GetProjectID() string          { return "" }
+func (m *MockVCS) GetRepoDescription() string    { return "" }
+func (m *MockVCS) ListRepos() ([]vcs.VCS, error) { return nil, nil }
 func (m *MockVCS) GetReleaseAttachments(desc string, repoPath string, projectID string) ([]vcs.Attachment, error) {
 	return nil, nil
 }
@@ -114,12 +114,12 @@ func TestFilterReposByConfigList_MultipleRepos(t *testing.T) {
 	if len(result) != 2 {
 		t.Errorf("应该返回2个仓库，实际 %d 个", len(result))
 	}
-	
+
 	resultPaths := make(map[string]bool)
 	for _, r := range result {
 		resultPaths[r.GetRepoPath()] = true
 	}
-	
+
 	if !resultPaths["org1/project1/repo1"] {
 		t.Error("结果应包含 org1/project1/repo1")
 	}
@@ -271,9 +271,9 @@ func TestFilterReposByConfigList_MixedFormats(t *testing.T) {
 	defer func() { config.Cfg = oldCfg }()
 
 	config.Cfg = setupTestConfig([]string{
-		"owner/repo",                    // GitHub格式
-		"group/subgroup/repo",           // GitLab格式
-		"org/team/project/repo",         // 工蜂格式
+		"owner/repo",            // GitHub格式
+		"group/subgroup/repo",   // GitLab格式
+		"org/team/project/repo", // 工蜂格式
 	})
 
 	depotList := []vcs.VCS{
@@ -299,9 +299,9 @@ func TestFilterReposByConfigList_ExactMatch(t *testing.T) {
 
 	depotList := []vcs.VCS{
 		&MockVCS{repoPath: "org/project/repo"},
-		&MockVCS{repoPath: "org/project/repo2"},      // 不应匹配
-		&MockVCS{repoPath: "org/project2/repo"},      // 不应匹配
-		&MockVCS{repoPath: "org2/project/repo"},      // 不应匹配
+		&MockVCS{repoPath: "org/project/repo2"}, // 不应匹配
+		&MockVCS{repoPath: "org/project2/repo"}, // 不应匹配
+		&MockVCS{repoPath: "org2/project/repo"}, // 不应匹配
 	}
 
 	result, _ := filterReposByConfigList(depotList)
@@ -425,4 +425,3 @@ func TestFilterReposByConfigList_AllNotFound(t *testing.T) {
 		t.Errorf("应该有2个未找到的仓库，实际 %d 个", notFoundCount)
 	}
 }
-
