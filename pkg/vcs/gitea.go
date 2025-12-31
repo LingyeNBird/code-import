@@ -19,6 +19,7 @@ type GiteaVcs struct {
 	RepoName string
 	RepoType string
 	Private  bool
+	Internal bool
 	Desc     string
 }
 
@@ -69,7 +70,8 @@ func (c *GiteaVcs) Clone() error {
 }
 
 func (c *GiteaVcs) GetRepoPrivate() bool {
-	return c.Private
+	// Gitea Internal 仓库应映射为 CNB Private 仓库
+	return c.Private || c.Internal
 }
 
 func (c *GiteaVcs) GetReleases() (cnbReleases []Releases) {
@@ -123,6 +125,7 @@ func GiteaCovertToVcs(repoList []api.Repo) []VCS {
 			RepoName: repo.Name,
 			RepoType: Git,
 			Private:  repo.Private,
+			Internal: repo.Internal,
 			Desc:     repo.Description,
 		})
 	}
