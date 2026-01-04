@@ -306,7 +306,13 @@ func Push(repoPath, pushURL string, forcePush bool) (output string, err error) {
 	logger.Logger.Infof("%s 开始push", repoPath)
 	out, err := codePush(repoPath, pushURL, repoPath, forcePush)
 	if err != nil {
-		logger.Logger.Errorf("%s 裸仓push失败: %s", repoPath, err)
+		// 如果是大文件超限错误，使用 WARN 级别（系统会自动处理）
+		if IsExceededLimitError(out) {
+			logger.Logger.Warnf("%s 裸仓push失败(文件超过大小限制，系统将自动处理): %s", repoPath, err)
+		} else {
+			// 其他错误仍使用 ERROR 级别
+			logger.Logger.Errorf("%s 裸仓push失败: %s", repoPath, err)
+		}
 		return out, err
 	}
 	logger.Logger.Infof("%s 裸仓push成功", repoPath)
