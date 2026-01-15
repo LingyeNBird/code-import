@@ -1,8 +1,8 @@
 # CNB Code Import(CNB代码仓库批量迁移工具)
 
-![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/pipeline-as-code)
-![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/git-clone-yyds)
-![badge](https://cnb.cool/cnb/plugins/cnbcool/code-import/-/badge/git/latest/ci/status/push)
+![badge](/-/badge/git/latest/ci/pipeline-as-code)
+![badge](/-/badge/git/latest/ci/git-clone-yyds)
+![badge](/-/badge/git/latest/ci/status/push)
 
 ## 📒功能介绍
 1. 支持 CODING、GitHub、GitLab、Gitee、Gitea、阿里云(Codeup)、华为云(CodeArts Repo)、CNB、腾讯工蜂、通用第三方代码托管平台代码仓库批量迁移至 CNB
