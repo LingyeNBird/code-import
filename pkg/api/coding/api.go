@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 )
 
 const (
@@ -29,6 +30,10 @@ var (
 	Repos       = config.Cfg.GetStringSlice("source.repo")
 	c           = http_client.NewClient(SourceURL)
 	c2          = http_client.NewCodingClient()
+
+	// projectCache 项目元数据缓存,用于减少 GetProjectByName API 调用次数
+	// 键为项目名称(string),值为 Project 结构体
+	projectCache sync.Map
 )
 
 type UserInfo struct {
@@ -248,7 +253,13 @@ func GetCurrentUserName(url, token string) (userName string, err error) {
 }
 
 func GetProjectByName(url, token, projectName string) (project Project, err error) {
+	// 先检查缓存
+	if cachedProject, ok := projectCache.Load(projectName); ok {
+		logger.Logger.Debugf("从缓存获取项目 %s 信息", projectName)
+		return cachedProject.(Project), nil
+	}
 
+	// 缓存未命中,调用 API
 	body := &DescribeProjectByNameRequest{
 		Action:      "DescribeProjectByName",
 		ProjectName: projectName,
@@ -267,7 +278,12 @@ func GetProjectByName(url, token, projectName string) (project Project, err erro
 		return project, err
 	}
 	logger.Logger.Debugf("%s项目ID: %d", projectName, projectInfo.Response.Project.Id)
-	return projectInfo.Response.Project, nil
+
+	// 存入缓存
+	project = projectInfo.Response.Project
+	projectCache.Store(projectName, project)
+
+	return project, nil
 }
 
 func GetProjectIdsByNames(projects []string, url, token string) (projectIds []int, err error) {
