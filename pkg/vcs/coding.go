@@ -8,9 +8,9 @@ import (
 	"ccrctl/pkg/logger"
 	"ccrctl/pkg/util"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -38,18 +38,46 @@ func (c *CodingVcs) GetRepoName() string {
 }
 
 func (c *CodingVcs) GetSubGroup() *SubGroup {
-	project, err := coding.GetProjectByName(config.Cfg.GetString("source.url"), c.GetToken(), c.SubGroupName)
-	if err != nil {
-		logger.Logger.Errorf("获取项目信息失败: %v", err)
-		os.Exit(1)
+	// 重试间隔配置:第1次失败后等1秒,第2次失败后等5秒,第3次失败后等10秒
+	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
+
+	var project coding.Project
+	var err error
+
+	// 重试循环:最多尝试3次
+	for i, interval := range retryIntervals {
+		project, err = coding.GetProjectByName(config.Cfg.GetString("source.url"), c.GetToken(), c.SubGroupName)
+		if err == nil {
+			// 成功,跳出重试循环
+			break
+		}
+
+		// 记录警告日志
+		logger.Logger.Warnf("获取项目 %s 信息失败 (尝试 %d/%d): %v",
+			c.SubGroupName, i+1, len(retryIntervals), err)
+
+		// 如果不是最后一次尝试,则等待指定时间后重试
+		if i < len(retryIntervals)-1 {
+			time.Sleep(interval)
+		}
 	}
+
+	// 所有重试都失败,记录最终警告并返回最小 SubGroup
+	if err != nil {
+		logger.Logger.Warnf("获取项目 %s 信息最终失败,已重试%d次,仅使用项目名称继续迁移: %v",
+			c.SubGroupName, len(retryIntervals), err)
+		return &SubGroup{
+			Name: c.SubGroupName,
+		}
+	}
+
 	// 初始化描述和备注字段
 	var desc, remark string
-	// 如果配置了映射 Coding 项目描述，则使用项目的描述作为子组织描述
+	// 如果配置了映射 Coding 项目描述,则使用项目的描述作为子组织描述
 	if config.Cfg.GetBool("migrate.map_coding_description") {
 		desc = strings.TrimSpace(project.Description)
 	}
-	// 如果配置了映射 Coding 项目显示名称，则使用项目的显示名称作为子组织别名
+	// 如果配置了映射 Coding 项目显示名称,则使用项目的显示名称作为子组织别名
 	if config.Cfg.GetBool("migrate.map_coding_display_name") {
 		remark = strings.TrimSpace(project.DisplayName)
 	}
