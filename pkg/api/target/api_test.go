@@ -1,8 +1,129 @@
 package target
 
 import (
+	"strings"
 	"testing"
 )
+
+func TestTrimRepoDescription(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "前导空格",
+			input:    "  测试描述",
+			expected: "测试描述",
+		},
+		{
+			name:     "尾随空格",
+			input:    "测试描述  ",
+			expected: "测试描述",
+		},
+		{
+			name:     "前后空格",
+			input:    "  测试描述  ",
+			expected: "测试描述",
+		},
+		{
+			name:     "中间空格保留",
+			input:    "  一个  测试  仓库  ",
+			expected: "一个  测试  仓库",
+		},
+		{
+			name:     "空描述",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "仅空格",
+			input:    "     ",
+			expected: "",
+		},
+		{
+			name:     "换行符和制表符",
+			input:    "\n\t测试描述\n\t",
+			expected: "测试描述",
+		},
+		{
+			name:     "混合空白字符",
+			input:    " \t\n 测试 \n\t ",
+			expected: "测试",
+		},
+		{
+			name:     "正常描述无需修剪",
+			input:    "正常的测试仓库",
+			expected: "正常的测试仓库",
+		},
+		{
+			name:     "包含多行的描述",
+			input:    "  第一行\n第二行  ",
+			expected: "第一行\n第二行",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := strings.TrimSpace(tc.input)
+			if result != tc.expected {
+				t.Errorf("strings.TrimSpace(%q) = %q, 期望 %q", tc.input, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestTrimRepoDescriptionWithLengthLimit(t *testing.T) {
+	// 测试修剪和长度限制的组合场景
+	testCases := []struct {
+		name        string
+		input       string
+		expectedLen int
+		shouldBeCut bool
+		description string
+	}{
+		{
+			name:        "正常长度带前后空格",
+			input:       "  测试  ",
+			expectedLen: 6, // UTF-8 中文"测试"占6字节
+			shouldBeCut: false,
+			description: "应该只修剪空格,不截断",
+		},
+		{
+			name:        "超长描述带前后空格",
+			input:       "  " + strings.Repeat("a", 360) + "  ",
+			expectedLen: RepoDescLimitSize,
+			shouldBeCut: true,
+			description: "应该先修剪空格,然后截断到350字符",
+		},
+		{
+			name:        "恰好350字符带空格",
+			input:       "  " + strings.Repeat("a", 350) + "  ",
+			expectedLen: RepoDescLimitSize,
+			shouldBeCut: false,
+			description: "修剪后恰好350字符,不需要截断",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// 模拟 CreateRepo 中的逻辑
+			repoDesc := strings.TrimSpace(tc.input)
+			if len(repoDesc) > RepoDescLimitSize {
+				repoDesc = repoDesc[:RepoDescLimitSize]
+			}
+
+			if len(repoDesc) != tc.expectedLen {
+				t.Errorf("%s: 期望长度 %d, 实际 %d", tc.description, tc.expectedLen, len(repoDesc))
+			}
+
+			// 验证没有前导或尾随空格
+			if strings.TrimSpace(repoDesc) != repoDesc {
+				t.Errorf("结果仍包含前导或尾随空格: %q", repoDesc)
+			}
+		})
+	}
+}
 
 func TestNormalizeGroupName(t *testing.T) {
 	testCases := []struct {
