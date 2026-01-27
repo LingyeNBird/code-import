@@ -104,5 +104,5 @@ $:
             -e PLUGIN_MIGRATE_FORCE_PUSH=${PLUGIN_MIGRATE_FORCE_PUSH} \
             -v $(pwd):$(pwd) -w $(pwd) \
             cnbcool/code-import
-          timeout: 10h
+          timeout: 12h
        
