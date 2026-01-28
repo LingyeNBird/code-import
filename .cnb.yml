@@ -83,6 +83,18 @@ $:
     - services:
         - docker
       stages:
+        - name: 获取当前仓库根组织
+          script: echo ${CNB_GROUP_SLUG} | awk -F '/' '{print $1}'
+          exports:
+            info: ROOT_GROUP_NAME
+        # - name: 获取CNB URL
+        #   script: echo ${CNB_WEB_ENDPOINT} 
+        #   exports:
+        #     info: CNB_URL    
+        # - name: ECHO
+        #   script: 
+        #     - echo ${CNB_URL} 
+        #     - echo ${ROOT_GROUP_NAME}                    
         - name: code-import
           script: |
             docker run --rm  \
@@ -92,8 +104,8 @@ $:
             -e PLUGIN_SROUCE_AK=${PLUGIN_SROUCE_AK}  \
             -e PLUGIN_SROUCE_SK=${PLUGIN_SROUCE_SK}  \
             -e PLUGIN_SOURCE_REGION=${PLUGIN_SOURCE_REGION}  \
-            -e PLUGIN_CNB_URL=${PLUGIN_CNB_URL}  \
-            -e PLUGIN_CNB_ROOT_ORGANIZATION=${PLUGIN_CNB_ROOT_ORGANIZATION} \
+            -e PLUGIN_CNB_URL=${CNB_WEB_ENDPOINT}  \
+            -e PLUGIN_CNB_ROOT_ORGANIZATION=${ROOT_GROUP_NAME} \
             -e PLUGIN_CNB_TOKEN=${PLUGIN_CNB_TOKEN}  \
             -e PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH=${PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH} \
             -e PLUGIN_SOURCE_GROUP=${PLUGIN_SOURCE_GROUP} \

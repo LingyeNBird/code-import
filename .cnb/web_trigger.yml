@@ -1,9 +1,9 @@
 _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
-  PLUGIN_CNB_ROOT_ORGANIZATION:
-    name: CNB根组织名称
-    description: "你创建的CNB根组织名称,示例: root,创建地址:https://cnb.cool/new/groups"
-    required: true
-    type: input
+  # PLUGIN_CNB_ROOT_ORGANIZATION:
+  #   name: CNB根组织名称
+  #   description: "你创建的CNB根组织名称,示例: root,创建地址:https://cnb.cool/new/groups"
+  #   required: true
+  #   type: input
   PLUGIN_CNB_TOKEN:
     name: CNB平台token
     description: "CNB平台token,常见场景勾选\"迁移工具凭据\"，即可快速完成授权。 创建地址:https://cnb.cool/profile/token"
@@ -53,7 +53,7 @@ branch:
       event: web_trigger_code_import
       env:
         PLUGIN_SOURCE_PLATFORM: coding
-        PLUGIN_CNB_URL: https://cnb.cool
+        #PLUGIN_CNB_URL: https://cnb\.cool
         PLUGIN_SOURCE_URL: https://e.coding.net
       inputs:
         PLUGIN_SOURCE_TOKEN:
@@ -88,7 +88,7 @@ branch:
       event: web_trigger_code_import
       env:
         PLUGIN_SOURCE_PLATFORM: gitlab
-        PLUGIN_CNB_URL: https://cnb.cool
+        #PLUGIN_CNB_URL: https://cnb\.cool
         PLUGIN_SOURCE_URL: https://gitlab.com
       inputs:
         PLUGIN_SOURCE_TOKEN:
@@ -103,7 +103,7 @@ branch:
       event: web_trigger_code_import
       env:
         PLUGIN_SOURCE_PLATFORM: github
-        PLUGIN_CNB_URL: https://cnb.cool
+        #PLUGIN_CNB_URL: https://cnb\.cool
         PLUGIN_SOURCE_URL: https://github.com        
       inputs:
         PLUGIN_SOURCE_TOKEN:
@@ -118,7 +118,7 @@ branch:
       event: web_trigger_code_import
       env:
         PLUGIN_SOURCE_PLATFORM: gitee
-        PLUGIN_CNB_URL: https://cnb.cool
+        #PLUGIN_CNB_URL: https://cnb\.cool
         PLUGIN_SOURCE_URL: https://gitee.com        
       inputs:
         PLUGIN_SOURCE_TOKEN:
@@ -133,7 +133,7 @@ branch:
       event: web_trigger_code_import
       env:
         PLUGIN_SOURCE_PLATFORM: gitea
-        PLUGIN_CNB_URL: https://cnb.cool
+        #PLUGIN_CNB_URL: https://cnb\.cool
       inputs:
         PLUGIN_SOURCE_URL:
           name: "源平台 URL"
@@ -176,7 +176,7 @@ branch:
       event: web_trigger_code_import
       env:
         PLUGIN_SOURCE_PLATFORM: aliyun
-        PLUGIN_CNB_URL: https://cnb.cool
+        #PLUGIN_CNB_URL: https://cnb\.cool
       inputs:
         PLUGIN_SOURCE_ORGANIZATIONID:
           name: 云效代码仓库组织ID
@@ -195,7 +195,7 @@ branch:
       event: web_trigger_code_import
       env:
         PLUGIN_SOURCE_PLATFORM: huaweicloud
-        PLUGIN_CNB_URL: https://cnb.cool
+        #PLUGIN_CNB_URL: https://cnb\.cool
       inputs:
         PLUGIN_SOURCE_TOKEN:
           name: "源平台token"
