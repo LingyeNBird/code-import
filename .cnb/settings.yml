@@ -18,7 +18,7 @@ reaction:
     image: .cnb/hi.gif
 
 knowledgeBase:
-  defaultRole: 资中工程师
+  defaultRole: π
   roles:
     - name: 猿芳
       avatar:
