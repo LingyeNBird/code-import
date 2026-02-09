@@ -1,0 +1,10 @@
+.pai_npc: &pai_npc
+  - stages:
+      - name: pai huo
+        image: docker.cnb.cool/cnb/cool/pai-npc:latest
+        settings:
+          PAI_SAY: "你怎么看。"
+# NPC 事件可以匹配角色名下的事件
+π:
+  issue.comment@npc: *pai_npc
+  pull_request.comment@npc: *pai_npc
