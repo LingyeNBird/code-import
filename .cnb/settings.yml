@@ -7,7 +7,7 @@ workspace:
     button:
       name: 开源协作
       description: 有feat?有bug?云原生开发走起，快来提交PR吧！
-      hoverImage: img/CNB-EveryThingAsCode.png
+      hoverImage: .cnb/CNB-EveryThingAsCode.png
     autoOpenWebIDE: true    
 issue:
   button:
