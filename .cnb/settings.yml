@@ -5,9 +5,9 @@ fork:
 workspace:
   launch:
     button:
-      name: 开源协作
+      name: 云原生开发
       description: 有feat?有bug?云原生开发走起，快来提交PR吧！
-      hoverImage: .cnb/CNB-EveryThingAsCode.png
+      hoverImage: .cnb/yyds.gif
     autoOpenWebIDE: true    
 issue:
   button:
