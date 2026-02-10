@@ -45,8 +45,8 @@
 2. 获取仓库列表失败/获取项目信息失败: `The current scope does not support access to this API`
 检查 PLUGIN_SOURCE_TOKEN 权限是否符合要求，如源平台为 CODING，确保 token 属于团队所有者或团队管理员，详见[CODDING Token要求](doc/ready.md)
 3. 下载 LFS 文件失败 `LFS: Repository or object not found`  
-可以开启`PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH`详见[更多参数](doc/parameters.md)
+ 谨慎开启`PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH`详见[更多参数](doc/parameters.md#更多参数)
 4. push 失败：`git pull before pushing again`  
-可根据实际情况开启`PLUGIN_MIGRATE_FORCE_PUSH`，详见[更多参数](doc/parameters.md)
+可根据实际情况开启`PLUGIN_MIGRATE_FORCE_PUSH`，详见[更多参数](doc/parameters.md#更多参数)
 5. 只迁移部分仓库怎么操作？  
 设置 `PLUGIN_MIGRATE_ALLOW_SELECT_REPOS=true`，首次运行后编辑 `repo-path.txt`，只保留需要迁移的仓库路径即可。
