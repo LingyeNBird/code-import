@@ -149,7 +149,19 @@
     - 类型：字符串
     - 必填：否
     - 默认值：false
-    - 说明：⚠️针对LFS源文件丢失的仓库，忽略LFS文件下载报错，LFS推送时忽略丢失的对象报错，继续推送
+    - 说明：⚠️**谨慎开启！仅在确认源仓库 LFS 文件确实丢失或损坏时使用。**  
+      **适用场景**：源仓库历史文件已损坏，下载 LFS 文件报错 `LFS: Repository or object not found`，需要忽略这些文件继续迁移。  
+      **重试机制**：LFS 下载/推送失败时会自动重试 3 次（间隔 2s/5s/10s），可有效应对网络抖动等临时故障。  
+      **智能判断**：即使开启此选项，也会智能判断错误类型：
+      - ✅ **仅对 `Repository or object not found` 错误生效**：确认源文件损坏才忽略
+      - ❌ **其他错误仍会报错**：网络超时、权限问题、连接失败等可恢复的错误不会被忽略
+      - 这样可以最大化数据完整性，避免误用该参数导致正常 LFS 文件未迁移  
+      **建议做法**：
+      1. 先不开启此选项尝试迁移（自动重试可解决大部分网络问题）
+      2. 如果重试后仍失败，检查错误日志中是否包含 `Repository or object not found`
+      3. 确认是源端文件损坏（非临时故障）后，再开启此选项
+      4. 迁移后使用 `git lfs fsck` 验证目标仓库 LFS 文件完整性  
+      详见 [git-lfs 官方文档](https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-config.adoc#push-settings) `lfs.allowincompletepush` 选项。
 
 - **PLUGIN_MIGRATE_LOG_LEVEL**
     - 类型：字符串

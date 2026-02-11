@@ -50,7 +50,7 @@ func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
 	var out string
 	var err error
-	
+
 	// 重试循环：最多尝试3次
 	for i, interval := range retryIntervals {
 		cmd := fmt.Sprintf("git clone --mirror %s %s", cloneURL, repoPath)
@@ -69,13 +69,13 @@ func Clone(cloneURL, repoPath string, allowIncompletePush bool) error {
 			time.Sleep(interval)
 		}
 	}
-	
+
 	// 所有重试都失败，返回错误
 	if err != nil {
 		maskedOutput := removeCredentialsFromURL(out)
 		return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, maskedOutput)
 	}
-	
+
 	// 克隆成功后，下载LFS文件
 	out, err = FetchLFS(repoPath, allowIncompletePush)
 	if err != nil {
@@ -100,7 +100,7 @@ func NormalClone(cloneURL, repoPath string) error {
 	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
 	var out string
 	var err error
-	
+
 	// 重试循环：最多尝试3次
 	for i, interval := range retryIntervals {
 		cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
@@ -120,7 +120,7 @@ func NormalClone(cloneURL, repoPath string) error {
 			time.Sleep(interval)
 		}
 	}
-	
+
 	// 所有重试都失败，返回错误
 	maskedOutput := removeCredentialsFromURL(out)
 	return fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, maskedOutput)
@@ -144,7 +144,7 @@ func NormalCloneWithOutput(cloneURL, repoPath string) (string, error) {
 	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
 	var out string
 	var err error
-	
+
 	// 重试循环：最多尝试3次
 	for i, interval := range retryIntervals {
 		cmd := fmt.Sprintf("git clone %s %s", cloneURL, repoPath)
@@ -164,7 +164,7 @@ func NormalCloneWithOutput(cloneURL, repoPath string) (string, error) {
 			time.Sleep(interval)
 		}
 	}
-	
+
 	// 所有重试都失败，返回屏蔽敏感信息后的输出和错误
 	maskedOutput := removeCredentialsFromURL(out)
 	return maskedOutput, fmt.Errorf("%s clone失败: %s\n %s", repoPath, err, maskedOutput)
@@ -187,9 +187,9 @@ func IsEmptyRepositoryOutput(output string) bool {
 	if output == "" {
 		return false
 	}
-	
+
 	outputStr := strings.ToLower(output)
-	
+
 	// 检查常见的空仓库输出信息（中英文）
 	emptyRepoPatterns := []string{
 		"warning: you appear to have cloned an empty repository",
@@ -206,7 +206,7 @@ func IsEmptyRepositoryOutput(output string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -400,7 +400,7 @@ func codePush(workDir, pushURL, repoPath string, force bool) (output string, err
 	if force {
 		logger.Logger.Warnf("%s 即将执行强制推送(git push -f),此操作将覆盖目标仓库的历史记录,请确保您了解此操作的风险", repoPath)
 	}
-	
+
 	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
 	var cmd string
 	for i, interval := range retryIntervals {
@@ -459,42 +459,122 @@ func hasLFSFiles(repoPath string) (bool, error) {
 	return hasFiles, nil
 }
 
+// FetchLFS 下载 LFS 文件（带重试机制）
+// 参数:
+//   - repoPath: 本地仓库路径
+//   - allowIncompletePush: 是否允许不完整的 LFS 推送
+//
+// 返回值:
+//   - string: 命令输出（已屏蔽敏感信息）
+//   - error: 错误信息
+//
+// 重试机制: 失败时会自动重试 3 次，重试间隔分别为 2 秒、5 秒、10 秒
 func FetchLFS(repoPath string, allowIncompletePush bool) (string, error) {
 	workDir := repoPath
-	logger.Logger.Infof("%s 下载LFS文件", repoPath)
-	output, err := system.RunCommand("git", workDir, "lfs", "fetch", "--all", "origin")
-	// 屏蔽日志输出中的敏感信息
-	maskedOutput := removeCredentialsFromURL(output)
-	logger.Logger.Debugf("%s 下载LFS文件\n%s", repoPath, output)
-	if err != nil && allowIncompletePush {
-		logger.Logger.Warnf("%s 下载LFS文件失败,忽略报错继续执行lfs Push", repoPath)
-		logger.Logger.Infof("%s 正在设置lfs.allowincompletepush为true", repoPath)
-		configOutput, configErr := system.RunCommand("git", workDir, "config", "lfs.allowincompletepush", "true")
-		if configErr != nil {
-			return removeCredentialsFromURL(configOutput), configErr
+	logger.Logger.Infof("%s 开始下载 LFS 文件", repoPath)
+
+	// 重试间隔配置：第 1 次失败后等 2 秒，第 2 次失败后等 5 秒，第 3 次失败后等 10 秒
+	retryIntervals := []time.Duration{2 * time.Second, 5 * time.Second, 10 * time.Second}
+	var output string
+	var err error
+
+	// 重试循环：最多尝试 3 次
+	for i, interval := range retryIntervals {
+		logger.Logger.Infof("%s 下载 LFS 文件中... (尝试 %d/%d)", repoPath, i+1, len(retryIntervals))
+		output, err = system.RunCommand("git", workDir, "lfs", "fetch", "--all", "origin")
+
+		if err == nil {
+			// 下载成功
+			logger.Logger.Infof("%s LFS 文件下载成功", repoPath)
+			maskedOutput := removeCredentialsFromURL(output)
+			logger.Logger.Debugf("%s LFS 文件下载输出:\n%s", repoPath, maskedOutput)
+			return maskedOutput, nil
 		}
-		logger.Logger.Infof("%s 设置lfs.allowincompletepush为true成功", repoPath)
-		return maskedOutput, nil
+
+		// 下载失败，屏蔽日志输出中的敏感信息
+		maskedOutput := removeCredentialsFromURL(output)
+		logger.Logger.Warnf("%s LFS 文件下载失败 (尝试 %d/%d): %v\n%s", repoPath, i+1, len(retryIntervals), err, maskedOutput)
+
+		// 如果不是最后一次尝试，则等待指定时间后重试
+		if i < len(retryIntervals)-1 {
+			logger.Logger.Infof("%s 等待 %v 后重试...", repoPath, interval)
+			time.Sleep(interval)
+		}
 	}
-	if err != nil {
-		logger.Logger.Errorf("%s 下载LFS文件失败", repoPath)
-		return maskedOutput, err
+
+	// 所有重试都失败
+	maskedOutput := removeCredentialsFromURL(output)
+
+	// 如果允许不完整推送，且确认是源文件损坏错误，设置对应配置并继续
+	if allowIncompletePush {
+		// 检查是否是 LFS 源文件损坏/丢失的错误
+		if IsLFSObjectNotFoundError(output) {
+			logger.Logger.Warnf("%s 检测到 LFS 源文件损坏/丢失错误（重试 %d 次后），由于开启了 allow_incomplete_push，将忽略错误继续迁移", repoPath, len(retryIntervals))
+			logger.Logger.Infof("%s 正在设置 lfs.allowincompletepush=true", repoPath)
+			configOutput, configErr := system.RunCommand("git", workDir, "config", "lfs.allowincompletepush", "true")
+			if configErr != nil {
+				return removeCredentialsFromURL(configOutput), fmt.Errorf("设置 lfs.allowincompletepush 失败: %w", configErr)
+			}
+			logger.Logger.Warnf("%s 已设置 lfs.allowincompletepush=true，将尝试推送已下载的 LFS 文件", repoPath)
+			return maskedOutput, nil
+		} else {
+			// 不是源文件损坏错误（可能是网络、权限等可恢复的问题）
+			logger.Logger.Errorf("%s LFS 文件下载失败（重试 %d 次后），错误类型不是源文件损坏，建议检查网络、权限等问题后重试", repoPath, len(retryIntervals))
+			logger.Logger.Errorf("%s 错误详情: %v\n%s", repoPath, err, maskedOutput)
+			return maskedOutput, fmt.Errorf("LFS 文件下载失败（非源文件损坏错误）: %w", err)
+		}
 	}
-	return maskedOutput, err
+
+	// 不允许不完整推送，返回错误
+	logger.Logger.Errorf("%s LFS 文件下载失败（重试 %d 次后）", repoPath, len(retryIntervals))
+	return maskedOutput, fmt.Errorf("LFS 文件下载失败: %w", err)
 }
 
+// PushLFS 推送 LFS 文件到远程仓库（带重试机制）
+// 参数:
+//   - repoPath: 本地仓库路径
+//   - pushUrl: 推送目标 URL
+//
+// 返回值:
+//   - string: 命令输出（已屏蔽敏感信息）
+//   - error: 错误信息
+//
+// 重试机制: 失败时会自动重试 3 次，重试间隔分别为 2 秒、5 秒、10 秒
 func PushLFS(repoPath, pushUrl string) (string, error) {
-	logger.Logger.Infof("%s 开始推送LFS文件", repoPath)
+	logger.Logger.Infof("%s 开始推送 LFS 文件", repoPath)
 	workDir := repoPath
-	output, err := system.ExecCommand(fmt.Sprintf(lfsPushCMD, pushUrl), workDir)
-	if err != nil {
-		// 屏蔽输出中的敏感信息
+
+	// 重试间隔配置：第 1 次失败后等 2 秒，第 2 次失败后等 5 秒，第 3 次失败后等 10 秒
+	retryIntervals := []time.Duration{2 * time.Second, 5 * time.Second, 10 * time.Second}
+	var output string
+	var err error
+
+	// 重试循环：最多尝试 3 次
+	for i, interval := range retryIntervals {
+		logger.Logger.Infof("%s 推送 LFS 文件中... (尝试 %d/%d)", repoPath, i+1, len(retryIntervals))
+		output, err = system.ExecCommand(fmt.Sprintf(lfsPushCMD, pushUrl), workDir)
+
+		if err == nil {
+			// 推送成功
+			logger.Logger.Infof("%s LFS 文件推送成功", repoPath)
+			return output, nil
+		}
+
+		// 推送失败，屏蔽输出中的敏感信息
 		maskedOutput := removeCredentialsFromURL(output)
-		logger.Logger.Errorf("%s LFS文件推送失败", repoPath)
-		return maskedOutput, err
+		logger.Logger.Warnf("%s LFS 文件推送失败 (尝试 %d/%d): %v\n%s", repoPath, i+1, len(retryIntervals), err, maskedOutput)
+
+		// 如果不是最后一次尝试，则等待指定时间后重试
+		if i < len(retryIntervals)-1 {
+			logger.Logger.Infof("%s 等待 %v 后重试...", repoPath, interval)
+			time.Sleep(interval)
+		}
 	}
-	logger.Logger.Infof("%s LFS文件推送成功", repoPath)
-	return output, err
+
+	// 所有重试都失败
+	maskedOutput := removeCredentialsFromURL(output)
+	logger.Logger.Errorf("%s LFS 文件推送失败（重试 %d 次后）", repoPath, len(retryIntervals))
+	return maskedOutput, fmt.Errorf("LFS 文件推送失败: %w", err)
 }
 
 func FixExceededLimitError(repoPath string) error {
@@ -517,6 +597,12 @@ func IsExceededLimitError(output string) bool {
 		return true
 	}
 	return false
+}
+
+// IsLFSObjectNotFoundError 判断是否是 LFS 源文件损坏/丢失的错误
+// 只匹配 "Repository or object not found" 错误，这是最典型的源文件丢失错误
+func IsLFSObjectNotFoundError(output string) bool {
+	return strings.Contains(strings.ToLower(output), "repository or object not found")
 }
 
 func IsSvnRepo(vcsType string) bool {

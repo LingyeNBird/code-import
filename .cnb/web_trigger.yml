@@ -9,9 +9,20 @@ _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
     description: "CNB平台token,常见场景勾选\"迁移工具凭据\"，即可快速完成授权。 创建地址:https://cnb.cool/profile/token"
     required: true
     type: input
+  PLUGIN_MIGRATE_FORCE_PUSH:
+    name: ⚠️谨慎开启！强制push到CNB仓库,CNB侧仓库会被强制覆盖，一般默认关闭即可。
+    description: "⚠️谨慎开启！强制push到CNB仓库,CNB侧仓库会被强制覆盖。"
+    required: true
+    type: switch
+    default: false
+    options:
+      - name: 开启
+        value: true
+      - name: 不开启
+        value: false     
   PLUGIN_MIGRATE_ALLOW_INCOMPLETE_PUSH:
-    name: ⚠️忽略 LFS 文件下载报错，继续迁移，默认不开启，一般保持默认即可，谨慎开启！
-    description: "忽略 LFS 文件下载报错，继续迁移，默认不忽略，一般保持默认即可，谨慎开启！"
+    name: ⚠️谨慎开启！适用于你明确知道某些历史文件已丢失或损坏，下载和拖送 LFS 文件时忽略报错，继续迁移，默认不开启，一般保持默认即可。
+    description: "⚠️谨慎开启！适用于你明确知道某些历史文件已丢失或损坏，针对LFS源文件丢失的仓库，如下载LFS文件报错`LFS: Repository or object not found`,忽略LFS文件下载报错，LFS推送时忽略丢失的对象报错，继续推送。详见[git-lfs 官方文档](https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-config.adoc#push-settings) `lfs.allowincompletepush`选项。"
     required: true
     type: switch
     default: false
@@ -31,17 +42,7 @@ _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
         value: true
       - name: 不开启
         value: false
-  PLUGIN_MIGRATE_FORCE_PUSH:
-    name: ⚠️强制push到CNB仓库,CNB侧仓库会被强制覆盖，一般默认关闭即可,谨慎开启！
-    description: "⚠️强制push到CNB仓库,CNB侧仓库会被强制覆盖，谨慎开启！"
-    required: true
-    type: switch
-    default: false
-    options:
-      - name: 开启
-        value: true
-      - name: 不开启
-        value: false        
+       
 
 
 branch:
