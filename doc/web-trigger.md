@@ -7,6 +7,8 @@
 
 2. 点击仓库上方`CODING 迁移至 CNB`按钮，如果是其他平台，点击按钮旁边`...`，选择对应`源平台`，根据提示填写必填参数。  
 
+   如果选择新增的 `同步Sealantern` 选项，只需要输入两个参数：`PLUGIN_SOURCE_TOKEN`（GitHub Token）和 `PLUGIN_CNB_TOKEN`（CNB Token），其余关键迁移参数已在流水线里硬编码。
+
     Tips:有提供默认参数的一般可以直接使用默认参数，不需要修改。
 
     >从 CODING 迁移至 CNB，只需填写 源平台 Token、CNB平台 Token，如未提前准备，请参考[迁移前准备](./ready.md)

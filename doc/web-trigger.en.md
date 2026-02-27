@@ -5,6 +5,8 @@
 ![img.png](../img/web_trigger_1.png)
 
 2. Click `Execute` button above repository, select corresponding `source platform`, fill in configuration parameters as prompted.
+
+   If you select the new `同步Sealantern` option, you only need to provide two values: `PLUGIN_SOURCE_TOKEN` (GitHub token) and `PLUGIN_CNB_TOKEN` (CNB token). Other key migration settings are hardcoded in pipeline config.
 ![img.png](../img/web_trigger_2.png)
 
 3. Click `orange button at bottom left` to trigger custom event and start migration task

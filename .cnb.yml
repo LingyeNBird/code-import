@@ -117,4 +117,24 @@ $:
             -v $(pwd):$(pwd) -w $(pwd) \
             cnbcool/code-import
           timeout: 12h
+
+  "web_trigger_同步Sealantern":
+    - services:
+        - docker
+      stages:
+        - name: code-import-sealantern
+          script: |
+            docker run --rm  \
+            -e PLUGIN_SOURCE_URL=https://github.com  \
+            -e PLUGIN_SOURCE_PLATFORM=github  \
+            -e PLUGIN_SOURCE_REPO=SeaLantern-Studio/SeaLantern  \
+            -e PLUGIN_MIGRATE_ORGANIZATION_MAPPING_LEVEL=2  \
+            -e PLUGIN_MIGRATE_RELEASE=true  \
+            -e PLUGIN_CNB_ROOT_ORGANIZATION=SeaLantern-studio \
+            -e PLUGIN_SOURCE_TOKEN=${PLUGIN_SOURCE_TOKEN}  \
+            -e PLUGIN_CNB_TOKEN=${PLUGIN_CNB_TOKEN}  \
+            -e PLUGIN_CNB_URL=${CNB_WEB_ENDPOINT}  \
+            -v $(pwd):$(pwd) -w $(pwd) \
+            cnbcool/code-import
+          timeout: 12h
        
