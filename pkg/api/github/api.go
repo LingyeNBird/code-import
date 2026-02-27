@@ -94,9 +94,8 @@ func GetReleases(owner, repo string) ([]*github.RepositoryRelease, error) {
 		opts.Page = resp.NextPage
 	}
 
-	// 基于 PublishedAt 正序排序
 	sort.Slice(allReleases, func(i, j int) bool {
-		return allReleases[i].PublishedAt.Time.Before(allReleases[j].PublishedAt.Time)
+		return allReleases[i].PublishedAt.Time.After(allReleases[j].PublishedAt.Time)
 	})
 
 	return allReleases, nil
