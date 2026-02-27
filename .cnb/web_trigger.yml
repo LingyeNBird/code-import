@@ -42,6 +42,17 @@ _ADVANCE_OPTIONS: &ADVANCE_OPTIONS
         value: true
       - name: 不开启
         value: false
+  PLUGIN_MIGRATE_RELEASE:
+    name: 是否同步release
+    description: 是否同步release
+    required: true
+    type: switch
+    default: true
+    options:
+      - name: 开启
+        value: true
+      - name: 不开启
+        value: false
        
 
 
