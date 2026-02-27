@@ -651,7 +651,7 @@ func migrateDo(depot vcs.VCS) error {
 		}
 	}
 	if MigrateRelease {
-		err = migrateRelease(depot)
+		err = migrateRelease(depot, cnbRepoPath)
 		if err != nil {
 			return err
 		}
@@ -684,7 +684,7 @@ func isMigrated(repoPath, filePath string) (error, bool) {
 //
 // 返回:
 //   - error: 迁移过程中的错误信息
-func migrateRelease(depot vcs.VCS) error {
+func migrateRelease(depot vcs.VCS, targetRepoPath string) error {
 	if SourcePlatformName == "common" {
 		return nil
 	}
@@ -693,33 +693,34 @@ func migrateRelease(depot vcs.VCS) error {
 		logger.Logger.Infof("%s 无release需要迁移", depot.GetRepoPath())
 		return nil
 	}
-	repoPath := depot.GetRepoPath()
+	sourceRepoPath := depot.GetRepoPath()
+	normalizedTargetRepoPath := strings.Trim(strings.TrimSpace(targetRepoPath), "/")
 	releaseTag := strings.TrimSpace(config.Cfg.GetString("migrate.release_tag"))
 
-	logger.Logger.Infof("%s 开始迁移 release", repoPath)
+	logger.Logger.Infof("%s 开始迁移 release", sourceRepoPath)
 
 	selectedReleases, err := filterReleasesByTagOrLatest(releases, releaseTag)
 	if err != nil {
-		return fmt.Errorf("%s release筛选失败: %w", repoPath, err)
+		return fmt.Errorf("%s release筛选失败: %w", sourceRepoPath, err)
 	}
 	if len(selectedReleases) == 0 {
-		logger.Logger.Infof("%s 无release需要迁移", repoPath)
+		logger.Logger.Infof("%s 无release需要迁移", sourceRepoPath)
 		return nil
 	}
 	if releaseTag == "" {
-		logger.Logger.Infof("%s 未指定 release tag，仅同步最新release: %s", repoPath, selectedReleases[0].TagName)
+		logger.Logger.Infof("%s 未指定 release tag，仅同步最新release: %s", sourceRepoPath, selectedReleases[0].TagName)
 	} else {
-		logger.Logger.Infof("%s 已指定 release tag，仅同步: %s", repoPath, selectedReleases[0].TagName)
+		logger.Logger.Infof("%s 已指定 release tag，仅同步: %s", sourceRepoPath, selectedReleases[0].TagName)
 	}
 
 	// 遍历处理每个release
 	for _, release := range selectedReleases {
-		if err := migrateOneRelease(depot, release, repoPath); err != nil {
+		if err := migrateOneRelease(depot, release, sourceRepoPath, normalizedTargetRepoPath); err != nil {
 			return err
 		}
 	}
 
-	logger.Logger.Infof("%s 迁移 release 成功", repoPath)
+	logger.Logger.Infof("%s 迁移 release 成功", sourceRepoPath)
 	return nil
 }
 
@@ -752,30 +753,30 @@ func filterReleasesByTagOrLatest(releases []vcs.Releases, releaseTag string) ([]
 //
 // 返回:
 //   - error: 迁移过程中的错误信息
-func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) error {
-	logger.Logger.Infof("%s 开始迁移release: %s", repoPath, release.Name)
+func migrateOneRelease(depot vcs.VCS, release vcs.Releases, sourceRepoPath, targetRepoPath string) error {
+	logger.Logger.Infof("%s 开始迁移release: %s", sourceRepoPath, release.Name)
 
 	// 在目标平台创建release
-	releaseID, exist, err := target.CreateRelease(repoPath, depot.GetProjectID(), release, depot)
+	releaseID, exist, err := target.CreateRelease(targetRepoPath, sourceRepoPath, depot.GetProjectID(), release, depot)
 	if err != nil {
-		logger.Logger.Errorf("%s 迁移 release %s 失败: %s", repoPath, release.Name, err)
+		logger.Logger.Errorf("%s 迁移 release %s 失败: %s", sourceRepoPath, release.Name, err)
 		return err
 	}
 
 	// 如果release已存在则跳过
 	if exist {
-		logger.Logger.Warnf("%s 迁移release: %s 已存在，忽略迁移", repoPath, release.Name)
+		logger.Logger.Warnf("%s 迁移release: %s 已存在，忽略迁移", sourceRepoPath, release.Name)
 		return nil
 	}
 
 	// 处理release附带的资源文件
 	if len(release.Assets) > 0 {
-		if err := migrateReleaseAssets(repoPath, releaseID, release); err != nil {
+		if err := migrateReleaseAssets(sourceRepoPath, targetRepoPath, releaseID, release); err != nil {
 			return err
 		}
 	}
 
-	logger.Logger.Infof("%s 迁移 release %s 成功", repoPath, release.Name)
+	logger.Logger.Infof("%s 迁移 release %s 成功", sourceRepoPath, release.Name)
 	return nil
 }
 
@@ -787,13 +788,13 @@ func migrateOneRelease(depot vcs.VCS, release vcs.Releases, repoPath string) err
 //
 // 返回:
 //   - error: 迁移过程中的错误信息
-func migrateReleaseAssets(repoPath, releaseID string, release vcs.Releases) error {
+func migrateReleaseAssets(sourceRepoPath, targetRepoPath, releaseID string, release vcs.Releases) error {
 	// 遍历处理每个资源文件
 	for _, asset := range release.Assets {
 
-		if err := migrateReleaseAsset(repoPath, releaseID, asset.Name, asset.Url); err != nil {
+		if err := migrateReleaseAsset(targetRepoPath, releaseID, asset.Name, asset.Url); err != nil {
 			logger.Logger.Errorf("%s 迁移 release %s asset %s 失败: %s",
-				repoPath, release.Name, asset.Name, err)
+				sourceRepoPath, release.Name, asset.Name, err)
 			return err
 		}
 	}

@@ -577,31 +577,38 @@ type CreateReleaseRes struct {
 //   - releaseID: 发布版本的ID
 //   - exist: 是否已存在相同发布版本
 //   - err: 错误信息
-func CreateRelease(repoPath, projectID string, release vcs.Releases, vcs vcs.VCS) (releaseID string, exist bool, err error) {
+func normalizeRepoPath(repoPath string) string {
+	return strings.Trim(strings.TrimSpace(repoPath), "/")
+}
+
+func CreateRelease(targetRepoPath, sourceRepoPath, projectID string, release vcs.Releases, vcs vcs.VCS) (releaseID string, exist bool, err error) {
 	// 记录函数调用信息
 	defer logger.Logger.Debugw(util.GetFunctionName(),
-		"repoPath", repoPath,
+		"targetRepoPath", targetRepoPath,
+		"sourceRepoPath", sourceRepoPath,
 		"name", release.Name,
 		"body", release.Body,
 		"tagName", release.TagName)
+	normalizedTargetRepoPath := normalizeRepoPath(targetRepoPath)
 
 	// 构建API端点
-	endpoint := fmt.Sprintf("/%s/%s/-/releases", RootOrganizationName, repoPath)
+	endpoint := fmt.Sprintf("/%s/-/releases", normalizedTargetRepoPath)
 
 	// 获取发布版本中的附件信息
-	attachments, err := vcs.GetReleaseAttachments(release.Body, repoPath, projectID)
+	attachments, err := vcs.GetReleaseAttachments(release.Body, sourceRepoPath, projectID)
 	if err != nil {
-		logger.Logger.Errorf("获取发布版本附件失败 [%s:%s]: %v", repoPath, release.Name, err)
+		logger.Logger.Errorf("获取发布版本附件失败 [%s:%s]: %v", sourceRepoPath, release.Name, err)
 		return "", false, fmt.Errorf("获取发布版本附件失败: %w", err)
 	}
 
 	// 处理附件并更新描述内容
 	newDesc := release.Body
 	for _, attachment := range attachments {
+		attachment.RepoPath = normalizedTargetRepoPath
 		// 上传附件到CNB平台
 		path, err := UploadReleaseDescImgAndAttachments(attachment)
 		if err != nil {
-			logger.Logger.Errorf("上传发布版本附件失败 [%s:%s]: %v", repoPath, release.Name, err)
+			logger.Logger.Errorf("上传发布版本附件失败 [%s:%s]: %v", sourceRepoPath, release.Name, err)
 			return "", false, fmt.Errorf("上传发布版本附件失败: %w", err)
 		}
 		// 替换描述中的附件链接
@@ -621,17 +628,17 @@ func CreateRelease(repoPath, projectID string, release vcs.Releases, vcs vcs.VCS
 	res, _, statusCode, err := c.RequestV4(http.MethodPost, endpoint, body)
 	if err != nil {
 		if statusCode == http.StatusConflict {
-			logger.Logger.Warnf("发布版本已存在 [%s:%s]", repoPath, release.Name)
+			logger.Logger.Warnf("发布版本已存在 [%s:%s]", sourceRepoPath, release.Name)
 			return "", true, nil
 		}
-		logger.Logger.Errorf("创建发布版本失败 [%s:%s]: %v", repoPath, release.Name, err)
+		logger.Logger.Errorf("创建发布版本失败 [%s:%s]: %v", sourceRepoPath, release.Name, err)
 		return "", false, fmt.Errorf("创建发布版本失败: %v", err)
 	}
 
 	// 解析响应数据
 	var data CreateReleaseRes
 	if err := json.Unmarshal(res, &data); err != nil {
-		logger.Logger.Errorf("解析发布版本响应失败 [%s:%s]: %v", repoPath, release.Name, err)
+		logger.Logger.Errorf("解析发布版本响应失败 [%s:%s]: %v", sourceRepoPath, release.Name, err)
 		return "", false, fmt.Errorf("解析发布版本响应失败: %w", err)
 	}
 
@@ -723,7 +730,7 @@ type GetReleaseUploadUrlReq struct {
 }
 
 func GetReleaseAssetUploadUrl(repoPath, releaseID, assetName string, size int) (uploadURL UploadUrl, err error) {
-	reqPath := fmt.Sprintf("/%s/%s/-/releases/%s/asset-upload-url", RootOrganizationName, repoPath, releaseID)
+	reqPath := fmt.Sprintf("/%s/-/releases/%s/asset-upload-url", normalizeRepoPath(repoPath), releaseID)
 	body := &GetReleaseUploadUrlReq{
 		AssetName: assetName,
 		Size:      size,
@@ -793,7 +800,10 @@ func PlatformConfirmUpload(repoPath, token string) (err error) {
 
 func GetCosUploadUrlAndForm(attachment vcs.Attachment) (form UploadImgOrFileRes, err error) {
 	var reqPath string
-	repoPath := RootOrganizationName + "/" + attachment.RepoPath
+	repoPath := normalizeRepoPath(attachment.RepoPath)
+	if !strings.HasPrefix(repoPath, RootOrganizationName+"/") {
+		repoPath = normalizeRepoPath(path.Join(RootOrganizationName, repoPath))
+	}
 	if attachment.Type == "img" {
 		reqPath = fmt.Sprintf(UploadImgEndPoint, repoPath)
 	} else {
