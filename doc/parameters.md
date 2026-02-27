@@ -175,6 +175,12 @@
     - 默认值：false
     - 说明：迁移release（暂时只支持 gitlab/github/gitee/coding release迁移）
 
+- **PLUGIN_MIGRATE_RELEASE_TAG**
+    - 类型：字符串
+    - 必填：否
+    - 默认值：空
+    - 说明：指定仅同步某个release的tag（例如 `v1.0.1`）。未设置时仅同步最新release。
+
 - **PLUGIN_MIGRATE_FILE_LIMIT_SIZE**
     - 类型：数值
     - 必填：否

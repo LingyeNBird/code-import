@@ -82,6 +82,7 @@ type Migrate struct {
 	IgnoreLFSNotFoundError   bool   `yaml:"ignore_lfs_not_found_error"`
 	useLfsMigrate            bool   `yaml:"use_lfs_migrate"`
 	organizationMappingLevel int    `yaml:"organization_mapping_level"`
+	ReleaseTag               string `yaml:"release_tag"`
 	//针对LFS源文件丢失的仓库，LFS推送时，允许本地缓存中丢失对象，而无需停止 Git 推送。https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-config.adoc
 	allowIncompletePush  bool   `yaml:"allow_incomplete_push"`
 	LogLevel             string `yaml:"log_level"`
@@ -369,6 +370,7 @@ func bindEnvVariables(config *viper.Viper) error {
 		"migrate.file_limit_size",
 		"migrate.skip_exists_repo",
 		"migrate.release",
+		"migrate.release_tag",
 		"migrate.code",
 		"source.ak",
 		"source.as",
@@ -406,6 +408,7 @@ func setDefaultValues(config *viper.Viper) {
 		"migrate.file_limit_size":            "256",
 		"migrate.skip_exists_repo":           "false",
 		"migrate.release":                    "false",
+		"migrate.release_tag":                "",
 		"migrate.code":                       "true",
 		"migrate.ssh":                        "false",
 		"migrate.rebase":                     "false",

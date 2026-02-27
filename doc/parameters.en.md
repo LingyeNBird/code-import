@@ -156,6 +156,12 @@
     - Default: false
     - Description: Migrate releases (currently only supports gitlab/github/gitee/coding release migration)
 
+- **PLUGIN_MIGRATE_RELEASE_TAG**
+    - Type: string
+    - Required: No
+    - Default: empty
+    - Description: Sync only the release with this tag (for example `v1.0.1`). If not set, only the latest release is synced.
+
 - **PLUGIN_MIGRATE_FILE_LIMIT_SIZE**
     - Type: number
     - Required: No

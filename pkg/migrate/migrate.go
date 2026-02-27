@@ -694,11 +694,26 @@ func migrateRelease(depot vcs.VCS) error {
 		return nil
 	}
 	repoPath := depot.GetRepoPath()
+	releaseTag := strings.TrimSpace(config.Cfg.GetString("migrate.release_tag"))
 
 	logger.Logger.Infof("%s 开始迁移 release", repoPath)
 
+	selectedReleases, err := filterReleasesByTagOrLatest(releases, releaseTag)
+	if err != nil {
+		return fmt.Errorf("%s release筛选失败: %w", repoPath, err)
+	}
+	if len(selectedReleases) == 0 {
+		logger.Logger.Infof("%s 无release需要迁移", repoPath)
+		return nil
+	}
+	if releaseTag == "" {
+		logger.Logger.Infof("%s 未指定 release tag，仅同步最新release: %s", repoPath, selectedReleases[0].TagName)
+	} else {
+		logger.Logger.Infof("%s 已指定 release tag，仅同步: %s", repoPath, selectedReleases[0].TagName)
+	}
+
 	// 遍历处理每个release
-	for _, release := range releases {
+	for _, release := range selectedReleases {
 		if err := migrateOneRelease(depot, release, repoPath); err != nil {
 			return err
 		}
@@ -706,6 +721,27 @@ func migrateRelease(depot vcs.VCS) error {
 
 	logger.Logger.Infof("%s 迁移 release 成功", repoPath)
 	return nil
+}
+
+func filterReleasesByTagOrLatest(releases []vcs.Releases, releaseTag string) ([]vcs.Releases, error) {
+	if len(releases) == 0 {
+		return nil, nil
+	}
+
+	releaseTag = strings.TrimSpace(releaseTag)
+	if releaseTag == "" {
+		return []vcs.Releases{releases[0]}, nil
+	}
+
+	normalizedTag := strings.TrimPrefix(releaseTag, "refs/tags/")
+	for _, release := range releases {
+		releaseTagName := strings.TrimPrefix(strings.TrimSpace(release.TagName), "refs/tags/")
+		if releaseTagName == normalizedTag {
+			return []vcs.Releases{release}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("未找到tag=%s对应的release", releaseTag)
 }
 
 // migrateOneRelease 处理单个release的迁移

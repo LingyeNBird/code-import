@@ -425,3 +425,71 @@ func TestFilterReposByConfigList_AllNotFound(t *testing.T) {
 		t.Errorf("应该有2个未找到的仓库，实际 %d 个", notFoundCount)
 	}
 }
+
+func TestFilterReleasesByTagOrLatest_DefaultLatest(t *testing.T) {
+	releases := []vcs.Releases{
+		{TagName: "v2.0.0", Name: "latest"},
+		{TagName: "v1.0.0", Name: "old"},
+	}
+
+	selected, err := filterReleasesByTagOrLatest(releases, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(selected) != 1 {
+		t.Fatalf("expected 1 release, got %d", len(selected))
+	}
+	if selected[0].TagName != "v2.0.0" {
+		t.Fatalf("expected latest tag v2.0.0, got %s", selected[0].TagName)
+	}
+}
+
+func TestFilterReleasesByTagOrLatest_ByTag(t *testing.T) {
+	releases := []vcs.Releases{
+		{TagName: "v2.0.0", Name: "latest"},
+		{TagName: "v1.0.1", Name: "target"},
+		{TagName: "v1.0.0", Name: "old"},
+	}
+
+	selected, err := filterReleasesByTagOrLatest(releases, "v1.0.1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(selected) != 1 {
+		t.Fatalf("expected 1 release, got %d", len(selected))
+	}
+	if selected[0].TagName != "v1.0.1" {
+		t.Fatalf("expected tag v1.0.1, got %s", selected[0].TagName)
+	}
+}
+
+func TestFilterReleasesByTagOrLatest_ByRefsTag(t *testing.T) {
+	releases := []vcs.Releases{
+		{TagName: "refs/tags/v1.0.1", Name: "target"},
+	}
+
+	selected, err := filterReleasesByTagOrLatest(releases, "v1.0.1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(selected) != 1 {
+		t.Fatalf("expected 1 release, got %d", len(selected))
+	}
+	if selected[0].TagName != "refs/tags/v1.0.1" {
+		t.Fatalf("unexpected selected tag: %s", selected[0].TagName)
+	}
+}
+
+func TestFilterReleasesByTagOrLatest_NotFound(t *testing.T) {
+	releases := []vcs.Releases{
+		{TagName: "v2.0.0", Name: "latest"},
+	}
+
+	selected, err := filterReleasesByTagOrLatest(releases, "v1.0.1")
+	if err == nil {
+		t.Fatal("expected error when tag not found")
+	}
+	if len(selected) != 0 {
+		t.Fatalf("expected no selected releases, got %d", len(selected))
+	}
+}
