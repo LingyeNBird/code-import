@@ -124,6 +124,21 @@ branch:
           required: true
           type: input
         <<: *ADVANCE_OPTIONS
+    - name: 同步Sealantern
+      image: img/github.png
+      description: 仅同步 SeaLantern-Studio/SeaLantern 到 SeaLantern-studio
+      event: web_trigger_同步Sealantern
+      inputs:
+        PLUGIN_SOURCE_TOKEN:
+          name: "GitHub token"
+          description: "权限要求: repo:all、read:org  创建地址:https://github.com/settings/tokens （classic token)"
+          required: true
+          type: input
+        PLUGIN_CNB_TOKEN:
+          name: CNB平台token
+          description: "CNB平台token,常见场景勾选\"迁移工具凭据\"，即可快速完成授权。 创建地址:https://cnb.cool/profile/token"
+          required: true
+          type: input
     - name: Gitee 迁移至 CNB
       image: img/gitee.png
       description: 从Gitee批量迁移仓库到CNB
