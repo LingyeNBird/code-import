@@ -26,7 +26,8 @@ const (
 	GitPushToLocalBareRepo          = "git push -f source"
 	ErrInvalidUpstreamEN            = "fatal: invalid upstream"
 	ErrInvalidUpstreamZH            = "致命错误：无效的上游"
-	pushCMD                         = "git push %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*"
+	pushBranchCMD                   = "git push %s refs/heads/*:refs/heads/*"
+	pushTagCMD                      = "git push %s --tags"
 	pushForceCMD                    = "git push -f %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*"
 	lfsPushCMD                      = "git lfs push --all %s"
 	lfsLsFilesAllCMD                = "git lfs ls-files --all"
@@ -399,16 +400,31 @@ func codePush(workDir, pushURL, repoPath string, force bool) (output string, err
 	// 强制推送警告:提醒用户此操作的风险性
 	if force {
 		logger.Logger.Warnf("%s 即将执行强制推送(git push -f),此操作将覆盖目标仓库的历史记录,请确保您了解此操作的风险", repoPath)
+		return pushWithRetry(workDir, repoPath, fmt.Sprintf(pushForceCMD, pushURL), nil)
 	}
 
-	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
-	var cmd string
-	for i, interval := range retryIntervals {
-		if force {
-			cmd = fmt.Sprintf(pushForceCMD, pushURL)
-		} else {
-			cmd = fmt.Sprintf(pushCMD, pushURL)
+	branchOutput, err := pushWithRetry(workDir, repoPath, fmt.Sprintf(pushBranchCMD, pushURL), nil)
+	if err != nil {
+		return branchOutput, err
+	}
+
+	tagOutput, err := pushWithRetry(workDir, repoPath, fmt.Sprintf(pushTagCMD, pushURL), func(output string) bool {
+		if isTagAlreadyExistsPushError(output) {
+			logger.Logger.Warnf("%s 目标仓库已存在同名tag，跳过这些tag继续迁移\n %s", repoPath, output)
+			return true
 		}
+		return false
+	})
+	if err != nil {
+		return branchOutput + tagOutput, err
+	}
+
+	return branchOutput + tagOutput, nil
+}
+
+func pushWithRetry(workDir, repoPath, cmd string, shouldSkipError func(string) bool) (output string, err error) {
+	retryIntervals := []time.Duration{1 * time.Second, 5 * time.Second, 10 * time.Second}
+	for i, interval := range retryIntervals {
 		logger.Logger.Debugf(cmd)
 		logger.Logger.Infof("%s git 推送中... (尝试 %d/%d)", repoPath, i+1, len(retryIntervals))
 		output, err = system.ExecCommand(cmd, workDir)
@@ -417,12 +433,35 @@ func codePush(workDir, pushURL, repoPath string, force bool) (output string, err
 		}
 		// 屏蔽错误日志中的敏感信息
 		output = removeCredentialsFromURL(output)
+		if shouldSkipError != nil && shouldSkipError(output) {
+			return output, nil
+		}
 		logger.Logger.Warnf("%s git push 失败 (尝试 %d/%d): %v \n %s", repoPath, i+1, len(retryIntervals), err, output)
 		if i < len(retryIntervals)-1 {
 			time.Sleep(interval)
 		}
 	}
 	return output, err
+}
+
+func isTagAlreadyExistsPushError(output string) bool {
+	if strings.TrimSpace(output) == "" {
+		return false
+	}
+
+	foundRejectedTag := false
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.Contains(line, "[rejected]") {
+			continue
+		}
+		foundRejectedTag = true
+		if !strings.Contains(line, "(already exists)") {
+			return false
+		}
+	}
+
+	return foundRejectedTag
 }
 
 func IsLFSRepo(repoPath string) (error, bool) {

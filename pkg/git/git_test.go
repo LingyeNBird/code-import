@@ -186,6 +186,53 @@ func TestIsLFSObjectNotFoundError(t *testing.T) {
 	}
 }
 
+func TestIsTagAlreadyExistsPushError(t *testing.T) {
+	tests := []struct {
+		name     string
+		output   string
+		expected bool
+	}{
+		{
+			name: "远端tag已存在",
+			output: "To https://cnb.cool/SeaLantern-studio/SeaLantern\n" +
+				" ! [rejected]          v1.2.0 -> v1.2.0 (already exists)\n" +
+				"error: failed to push some refs to 'https://cnb.cool/SeaLantern-studio/SeaLantern'\n" +
+				"hint: Updates were rejected because the tag already exists in the remote.",
+			expected: true,
+		},
+		{
+			name: "多个tag都已存在",
+			output: " ! [rejected]          v1.0.0 -> v1.0.0 (already exists)\n" +
+				" ! [rejected]          v1.1.0 -> v1.1.0 (already exists)",
+			expected: true,
+		},
+		{
+			name:     "非已存在原因的tag拒绝不能忽略",
+			output:   " ! [rejected]          v1.2.0 -> v1.2.0 (non-fast-forward)",
+			expected: false,
+		},
+		{
+			name:     "没有rejected行不能忽略",
+			output:   "error: failed to push some refs",
+			expected: false,
+		},
+		{
+			name:     "空输出不能忽略",
+			output:   "",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isTagAlreadyExistsPushError(tt.output)
+			if result != tt.expected {
+				t.Errorf("isTagAlreadyExistsPushError() = %v, 期望 %v\n输出: %q", result, tt.expected, tt.output)
+			}
+		})
+	}
+}
+
 // 注意：FetchLFS 和 PushLFS 函数包含重试机制
 // 重试配置：失败时自动重试 3 次，重试间隔为 2s、5s、10s
 // 这可以有效应对以下临时故障场景：
