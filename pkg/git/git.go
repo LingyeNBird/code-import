@@ -27,7 +27,7 @@ const (
 	ErrInvalidUpstreamEN            = "fatal: invalid upstream"
 	ErrInvalidUpstreamZH            = "致命错误：无效的上游"
 	pushBranchCMD                   = "git push %s refs/heads/*:refs/heads/*"
-	pushTagCMD                      = "git push %s --tags"
+	pushTagForceCMD                 = "git push -f %s refs/tags/*:refs/tags/*"
 	pushForceCMD                    = "git push -f %s refs/heads/*:refs/heads/* refs/tags/*:refs/tags/*"
 	lfsPushCMD                      = "git lfs push --all %s"
 	lfsLsFilesAllCMD                = "git lfs ls-files --all"
@@ -408,13 +408,8 @@ func codePush(workDir, pushURL, repoPath string, force bool) (output string, err
 		return branchOutput, err
 	}
 
-	tagOutput, err := pushWithRetry(workDir, repoPath, fmt.Sprintf(pushTagCMD, pushURL), func(output string) bool {
-		if isTagAlreadyExistsPushError(output) {
-			logger.Logger.Warnf("%s 目标仓库已存在同名tag，跳过这些tag继续迁移\n %s", repoPath, output)
-			return true
-		}
-		return false
-	})
+	logger.Logger.Warnf("%s 即将强制同步tag到目标仓库，目标仓库同名tag将以源仓库为准", repoPath)
+	tagOutput, err := pushWithRetry(workDir, repoPath, fmt.Sprintf(pushTagForceCMD, pushURL), nil)
 	if err != nil {
 		return branchOutput + tagOutput, err
 	}
@@ -442,26 +437,6 @@ func pushWithRetry(workDir, repoPath, cmd string, shouldSkipError func(string) b
 		}
 	}
 	return output, err
-}
-
-func isTagAlreadyExistsPushError(output string) bool {
-	if strings.TrimSpace(output) == "" {
-		return false
-	}
-
-	foundRejectedTag := false
-	for _, line := range strings.Split(output, "\n") {
-		line = strings.TrimSpace(line)
-		if !strings.Contains(line, "[rejected]") {
-			continue
-		}
-		foundRejectedTag = true
-		if !strings.Contains(line, "(already exists)") {
-			return false
-		}
-	}
-
-	return foundRejectedTag
 }
 
 func IsLFSRepo(repoPath string) (error, bool) {
